@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
 
-const geistSans = Geist({
+const inter = Inter({
     variable: "--font-geist-sans",
     subsets: ["latin"],
+    display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -12,9 +14,30 @@ const geistMono = Geist_Mono({
     subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: "cover",
+    themeColor: "#0a0a0f",
+};
+
 export const metadata: Metadata = {
-    title: "UHC Care | Couple Routine Dashboard",
-    description: "Modern couple accountability and daily routine dashboard.",
+    title: "UHC Care | Couple Routine & Habit Tracker",
+    description:
+        "Build stronger routines together. Track daily habits, prayer times, and wellness goals with your partner.",
+    applicationName: "UHC Care",
+    manifest: "/manifest.json",
+    icons: {
+        icon: "/icon.svg",
+        apple: "/icon.svg",
+    },
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: "black-translucent",
+        title: "UHC Care",
+    },
 };
 
 export default function RootLayout({
@@ -23,10 +46,11 @@ export default function RootLayout({
     return (
         <html
             lang="en"
-            className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+            suppressHydrationWarning
+            className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
         >
-            <body className="min-h-full bg-slate-50 text-slate-900">
-                {children}
+            <body suppressHydrationWarning className="min-h-full bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-200">
+                <Providers>{children}</Providers>
             </body>
         </html>
     );
