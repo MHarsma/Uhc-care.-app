@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
 
 const ICONS = ["✨", "🏃", "💧", "📖", "🧘", "🌙", "💼", "🍎", "📚", "✍️", "🎯", "🧹", "💊", "🌿", "🚶", "🥗"];
 const CATEGORIES = ["All", "Health", "Study", "Deen", "Work", "Prayer", "Other"];

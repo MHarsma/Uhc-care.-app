@@ -41,7 +41,7 @@ function ResetPasswordForm() {
     }
 
     const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+      process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
 
     try {
       const response = await fetch(`${apiUrl}/auth/reset-password`, {

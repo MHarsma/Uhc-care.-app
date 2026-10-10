@@ -20,7 +20,7 @@ import {
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
 
 type Reaction = {
   id: number;
