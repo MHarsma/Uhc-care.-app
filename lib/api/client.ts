@@ -1,4 +1,4 @@
-const TUNNEL_URL = "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
+const TUNNEL_URL = "https://trials-pine-complex-pointed.trycloudflare.com/api";
 
 export function getApiBaseUrl(): string {
   const envUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim();
