@@ -9,6 +9,7 @@ import { Mail, ArrowRight, Sparkles } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { csrfHeaders } from "@/lib/csrf";
+import { getApiBaseUrl, getBackendBaseUrl } from "@/lib/api/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,9 +23,8 @@ export default function LoginPage() {
     setSubmitting(true);
     setError("");
 
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
-    const backendUrl = apiUrl.replace(/\/api\/?$/, "");
+    const apiUrl = getApiBaseUrl();
+    const backendUrl = getBackendBaseUrl();
 
     try {
       const headers = await csrfHeaders(backendUrl);

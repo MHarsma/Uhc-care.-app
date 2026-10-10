@@ -17,10 +17,10 @@ import {
   Smile,
   Paperclip,
 } from "lucide-react";
-import { api } from "@/lib/api/client";
+import { api, getApiBaseUrl } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
+const apiUrl = getApiBaseUrl();
 
 type Reaction = {
   id: number;

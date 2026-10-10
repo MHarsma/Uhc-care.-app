@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ArrowLeft, KeyRound, Mail, Sparkles } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/api/client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -18,8 +19,7 @@ export default function ForgotPasswordPage() {
     setError("");
     setMessage("");
 
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
+    const apiUrl = getApiBaseUrl();
 
     try {
       const response = await fetch(`${apiUrl}/auth/forgot-password`, {

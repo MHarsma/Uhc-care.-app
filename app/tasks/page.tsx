@@ -26,8 +26,9 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getApiBaseUrl } from "@/lib/api/client";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
+const apiUrl = getApiBaseUrl();
 
 const ICONS = ["✨", "🏃", "💧", "📖", "🧘", "🌙", "💼", "🍎", "📚", "✍️", "🎯", "🧹", "💊", "🌿", "🚶", "🥗"];
 const CATEGORIES = ["All", "Health", "Study", "Deen", "Work", "Prayer", "Other"];

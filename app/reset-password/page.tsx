@@ -7,6 +7,7 @@ import type { FormEvent } from "react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/api/client";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -40,8 +41,7 @@ function ResetPasswordForm() {
       return;
     }
 
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
+    const apiUrl = getApiBaseUrl();
 
     try {
       const response = await fetch(`${apiUrl}/auth/reset-password`, {

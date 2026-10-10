@@ -14,6 +14,7 @@ import {
   NotificationSettings,
   PrayerTimeItem,
 } from "@/lib/api/settings";
+import { getApiBaseUrl } from "@/lib/api/client";
 import {
   User,
   MapPin,
@@ -308,7 +309,7 @@ export default function SettingsPage() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api"}/auth/logout`, {
+      await fetch(`${getApiBaseUrl()}/auth/logout`, {
         method: "POST",
         credentials: "include",
       });

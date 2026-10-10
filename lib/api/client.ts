@@ -1,5 +1,29 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
+const TUNNEL_URL = "https://becoming-spring-zoning-detailed.trycloudflare.com/api";
+
+export function getApiBaseUrl(): string {
+  const envUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim();
+
+  if (typeof window !== "undefined") {
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+
+    if (!isLocalhost) {
+      if (!envUrl || envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
+        return TUNNEL_URL;
+      }
+    }
+  }
+
+  const resolved = envUrl || TUNNEL_URL;
+  return resolved.replace(/[\r\n]+/g, "").replace(/\/+$/, "");
+}
+
+export function getBackendBaseUrl(): string {
+  return getApiBaseUrl().replace(/\/api\/?$/, "");
+}
+
+export const API_BASE_URL = getApiBaseUrl();
 
 /** Read a cookie value by name from document.cookie */
 function getCookie(name: string): string | undefined {
@@ -36,9 +60,10 @@ export async function apiClient<T = any>(
 ): Promise<T> {
   const { params, headers, ...customConfig } = options;
 
+  const baseUrl = getApiBaseUrl();
   let url = endpoint.startsWith("http")
     ? endpoint
-    : `${API_BASE_URL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+    : `${baseUrl}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
 
   if (params) {
     const searchParams = new URLSearchParams();
