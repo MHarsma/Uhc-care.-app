@@ -214,64 +214,154 @@ export function DashboardShell() {
       headerSubtitle={`${greeting}, ${user?.name?.split(" ")[0] || "there"} 👋`}
     >
       {/* Replan Review Banner for Unfinished Tasks */}
-      <div className="mb-6">
+      <div className="mb-4">
         <ReplanUnfinishedDialog />
       </div>
 
+      {/* MOBILE COUPLE SYNC HEADER (< lg) */}
+      {partner ? (
+        <div className="lg:hidden rounded-2xl glass-card p-3.5 border border-rose-500/25 bg-rose-500/5 mb-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center -space-x-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600 text-white font-bold text-xs ring-2 ring-[var(--bg-card)]">
+                  {user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 text-white font-bold text-xs ring-2 ring-[var(--bg-card)]">
+                  {partner.name.charAt(0).toUpperCase()}
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[var(--text-primary)] truncate">
+                    {partner.name}
+                  </span>
+                  <span className="text-[10px] text-rose-500 font-bold bg-rose-500/10 px-1.5 py-0.5 rounded-full">
+                    {partnerData?.stats?.percentage ?? 0}%
+                  </span>
+                </div>
+                <p className="text-[11px] text-[var(--text-tertiary)] truncate">
+                  {partnerData?.stats?.completed ?? 0} of {partnerData?.stats?.total ?? 0} completed
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleSendNudge}
+                disabled={nudgeSent}
+                className="flex items-center gap-1 rounded-xl bg-rose-500/15 border border-rose-500/30 px-3 py-1.5 text-xs font-bold text-rose-500 active:scale-95 transition-all"
+              >
+                <Heart className="h-3.5 w-3.5 fill-rose-500 text-rose-500" />
+                <span>{nudgeSent ? "Sent!" : "Nudge"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Dual mini progress bars */}
+          <div className="mt-2.5 grid grid-cols-2 gap-3 text-[10px]">
+            <div>
+              <div className="flex justify-between text-[var(--text-tertiary)] mb-1">
+                <span>You</span>
+                <span className="font-bold text-[var(--text-primary)]">{progressPercent}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-[var(--glass-border)] overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-violet-600 to-indigo-500 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-[var(--text-tertiary)] mb-1">
+                <span className="truncate">{partner.name}</span>
+                <span className="font-bold text-rose-500">{partnerData?.stats?.percentage ?? 0}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-[var(--glass-border)] overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-500"
+                  style={{ width: `${partnerData?.stats?.percentage ?? 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="lg:hidden rounded-2xl glass-card p-3.5 border border-violet-500/20 bg-violet-500/5 mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-500">
+              <Heart className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[var(--text-primary)]">Pair with Partner</p>
+              <p className="text-[10px] text-[var(--text-tertiary)]">Sync routines & habits together</p>
+            </div>
+          </div>
+          <Link
+            href="/pairing"
+            className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs"
+          >
+            Pair Now
+          </Link>
+        </div>
+      )}
+
       {/* Main Responsive Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-start">
         {/* ============================================================ */}
         {/* LEFT COLUMN: ROUTINES & DAILY HABITS (8 cols)                 */}
         {/* ============================================================ */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Bigger, High-Aesthetic Hero Progress Banner */}
+        <div className="lg:col-span-8 space-y-5">
+          {/* Sleek, Compact Hero Progress Card */}
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-3xl glass-card p-6 sm:p-8 relative overflow-hidden shadow-xl"
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="rounded-2xl glass-card p-4 sm:p-6 relative overflow-hidden shadow-lg border border-[var(--glass-border)]"
           >
             {/* Ambient decorative glow */}
-            <div className="absolute -right-16 -bottom-16 h-56 w-56 rounded-full bg-violet-500/15 blur-3xl pointer-events-none" />
-            <div className="absolute right-24 -top-12 h-44 w-44 rounded-full bg-rose-500/10 blur-2xl pointer-events-none" />
+            <div className="absolute -right-12 -bottom-12 h-44 w-44 rounded-full bg-violet-500/12 blur-3xl pointer-events-none" />
+            <div className="absolute right-20 -top-10 h-32 w-32 rounded-full bg-rose-500/8 blur-2xl pointer-events-none" />
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-3 max-w-lg">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-muted)] border border-[var(--glass-border)] px-3.5 py-1 text-xs font-bold text-violet-500 dark:text-violet-400">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <span>Daily Couple Momentum</span>
+            <div className="relative z-10 flex items-center justify-between gap-4">
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-muted)] border border-[var(--glass-border)] px-2.5 py-0.5 text-[11px] font-bold text-violet-500 dark:text-violet-400">
+                    <Sparkles className="h-3 w-3" />
+                    <span>Today&apos;s Momentum</span>
                   </span>
                   {streakDays > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-bold text-amber-500">
-                      <Flame className="h-3.5 w-3.5 fill-amber-500" />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-500">
+                      <Flame className="h-3 w-3 fill-amber-500" />
                       <span>{streakDays}d Streak 🔥</span>
                     </span>
                   )}
                 </div>
 
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-[var(--text-primary)]">
+                <h2 className="text-xl sm:text-3xl font-black tracking-tight text-[var(--text-primary)]">
                   {completedTasks} of {totalTasks} Completed
                 </h2>
                 
-                <p className="text-sm sm:text-base text-[var(--text-secondary)] leading-relaxed">
+                <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-snug line-clamp-2">
                   {progressPercent === 100
-                    ? "🌟 Outstanding! You and your partner crushed every routine scheduled for today."
+                    ? "🌟 All routines crushed today!"
                     : totalTasks === 0
-                    ? "Start building positive habits together by adding your first daily routine."
-                    : `${totalTasks - completedTasks} routines remaining today. Keep the positive momentum going!`}
+                    ? "Add your first routine to start building habits together."
+                    : `${totalTasks - completedTasks} routines remaining today. Keep going!`}
                 </p>
 
-                {/* Atomic Habits Quote */}
-                <div className="pt-2 flex items-center gap-2 text-xs font-medium text-[var(--text-tertiary)] italic">
-                  <Quote className="h-3.5 w-3.5 shrink-0 opacity-70" />
-                  <span>&ldquo;You do not rise to the level of your goals. You fall to the level of your systems.&rdquo;</span>
+                {/* Atomic Habits Quote - hidden on tiny screens to save height */}
+                <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-tertiary)] italic pt-0.5">
+                  <Quote className="h-3 w-3 shrink-0 opacity-70" />
+                  <span className="truncate">&ldquo;You fall to the level of your systems.&rdquo;</span>
                 </div>
               </div>
 
-              {/* Circular Dual Gauge */}
-              <div className="flex items-center gap-6 shrink-0 self-center md:self-auto">
-                <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center">
+              {/* Circular Gauge */}
+              <div className="flex items-center shrink-0">
+                <div className="relative flex h-16 w-16 sm:h-22 sm:w-22 items-center justify-center">
                   <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
                     {/* Background Ring */}
                     <path
@@ -290,14 +380,14 @@ export function DashboardShell() {
                       stroke="currentColor"
                       fill="none"
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      style={{ filter: "drop-shadow(0 0 8px rgba(124, 92, 252, 0.4))" }}
+                      style={{ filter: "drop-shadow(0 0 6px rgba(124, 92, 252, 0.35))" }}
                     />
                   </svg>
                   <div className="absolute flex flex-col items-center justify-center text-center">
-                    <span className="text-xl sm:text-2xl font-black tracking-tight gradient-text">
+                    <span className="text-base sm:text-xl font-black tracking-tight gradient-text">
                       {progressPercent}%
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
                       Done
                     </span>
                   </div>
@@ -305,13 +395,13 @@ export function DashboardShell() {
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="relative z-10 mt-6 h-2 w-full overflow-hidden rounded-full bg-[var(--glass-border)]">
+            {/* Linear Progress Bar */}
+            <div className="relative z-10 mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--glass-border)]">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
-                transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                className="h-full rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-purple-500 shadow-sm"
+                transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+                className="h-full rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-purple-500 shadow-xs"
               />
             </div>
           </motion.div>
@@ -523,14 +613,15 @@ export function DashboardShell() {
         {/* ============================================================ */}
         {/* RIGHT COLUMN: PARTNER SYNC, STREAKS & WIDGETS (4 cols)        */}
         {/* ============================================================ */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 lg:gap-6">
           {/* Partner Status Card */}
           {partner ? (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15, duration: 0.4 }}
-              className="rounded-3xl glass-card p-6 shadow-md"
+              className="rounded-2xl lg:rounded-3xl glass-card p-4 sm:p-5 lg:p-6 shadow-md"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
@@ -611,7 +702,7 @@ export function DashboardShell() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15, duration: 0.4 }}
-              className="rounded-3xl glass-card p-6 shadow-md"
+              className="rounded-2xl lg:rounded-3xl glass-card p-4 sm:p-5 lg:p-6 shadow-md"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white mb-4 shadow-lg glow-accent">
                 <Heart className="h-6 w-6" />
@@ -637,7 +728,7 @@ export function DashboardShell() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.4 }}
-            className="rounded-3xl glass-card p-6 shadow-md"
+            className="rounded-2xl lg:rounded-3xl glass-card p-4 sm:p-5 lg:p-6 shadow-md"
           >
             <div className="flex items-center gap-3.5">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500">
@@ -665,7 +756,7 @@ export function DashboardShell() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.4 }}
-            className="rounded-3xl glass-card p-6 shadow-md"
+            className="rounded-2xl lg:rounded-3xl glass-card p-4 sm:p-5 lg:p-6 shadow-md"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
@@ -689,6 +780,7 @@ export function DashboardShell() {
               <span>Explore Templates</span>
             </button>
           </motion.div>
+          </div>
         </div>
       </div>
 
@@ -846,29 +938,29 @@ function ModernTaskCard({
       custom={index}
       onClick={handleToggle}
       className={cn(
-        "group flex items-center justify-between p-4 sm:p-5 rounded-2xl border transition-all duration-200 cursor-pointer select-none relative shadow-xs",
+        "group flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border transition-all duration-200 cursor-pointer select-none relative shadow-xs",
         isDone
           ? "border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/5"
-          : "border-[var(--glass-border)] bg-[var(--bg-card)] hover:border-violet-500/30 hover:shadow-md"
+          : "border-[var(--glass-border)] bg-[var(--bg-card)] hover:border-violet-500/30 hover:shadow-sm"
       )}
     >
-      <div className="flex items-center gap-4 flex-1 min-w-0 mr-2">
+      <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
         {/* Animated Checkbox */}
         <button
           type="button"
           onClick={handleToggle}
           disabled={isPending}
           className={cn(
-            "flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border-2 transition-all duration-200 active:scale-90",
+            "flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-lg border-2 transition-all duration-200 active:scale-90",
             isDone
-              ? "border-emerald-500 bg-emerald-500 text-white shadow-sm glow-success"
+              ? "border-emerald-500 bg-emerald-500 text-white shadow-xs glow-success"
               : "border-[var(--glass-border)] bg-[var(--glass-bg)] text-transparent group-hover:border-violet-500/50"
           )}
           aria-label={isDone ? `Mark "${task.title}" incomplete` : `Mark "${task.title}" complete`}
         >
           <Check
             className={cn(
-              "h-4 w-4 stroke-[3] transition-all duration-200",
+              "h-3.5 w-3.5 stroke-[3] transition-all duration-200",
               isDone ? "scale-100 opacity-100 animate-check" : "scale-50 opacity-0"
             )}
           />
@@ -876,15 +968,15 @@ function ModernTaskCard({
 
         {/* Task Title & Meta */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {task.icon && (
-              <span className="text-lg shrink-0 select-none">
+              <span className="text-base shrink-0 select-none">
                 {task.icon}
               </span>
             )}
             <p
               className={cn(
-                "text-sm sm:text-base font-bold truncate transition-all duration-150",
+                "text-xs sm:text-sm font-semibold truncate transition-all duration-150",
                 isDone
                   ? "text-[var(--text-muted)] line-through font-normal"
                   : "text-[var(--text-primary)]"
@@ -894,23 +986,23 @@ function ModernTaskCard({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 mt-1.5">
+          <div className="flex flex-wrap items-center gap-2 mt-0.5">
             {task.category && (
-              <span className="inline-block rounded-md bg-[var(--bg-hover)] border border-[var(--glass-border)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--text-secondary)] capitalize">
+              <span className="inline-block rounded-md bg-[var(--bg-hover)] border border-[var(--glass-border)] px-2 py-0.2 text-[9px] font-bold text-[var(--text-secondary)] capitalize">
                 {task.category}
               </span>
             )}
 
             {formattedTime && (
-              <span className="flex items-center gap-1 text-xs font-medium text-[var(--text-tertiary)]">
-                <Clock className="h-3.5 w-3.5" />
+              <span className="flex items-center gap-1 text-[11px] font-medium text-[var(--text-tertiary)]">
+                <Clock className="h-3 w-3" />
                 <span>{formattedTime}</span>
               </span>
             )}
 
             {isDone && (
-              <span className="text-emerald-500 font-bold text-xs flex items-center gap-1">
-                ✓ Completed
+              <span className="text-emerald-500 font-bold text-[11px] flex items-center gap-1">
+                ✓ Done
               </span>
             )}
           </div>
@@ -918,7 +1010,7 @@ function ModernTaskCard({
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
         {!isDone && onRequestLeave && !task.is_prayer && (
           <button
             type="button"
@@ -926,10 +1018,10 @@ function ModernTaskCard({
               e.stopPropagation();
               onRequestLeave(task);
             }}
-            className="flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-violet-500 hover:bg-violet-500/10 hover:border-violet-500/20 transition-all mr-1"
+            className="flex items-center gap-1 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:text-violet-500 hover:bg-violet-500/10 hover:border-violet-500/20 transition-all mr-0.5"
             title="Ask partner for a day pass"
           >
-            <CalendarOff className="h-3.5 w-3.5" />
+            <CalendarOff className="h-3 w-3" />
             <span className="hidden sm:inline">Day Pass</span>
           </button>
         )}
@@ -942,10 +1034,10 @@ function ModernTaskCard({
               e.stopPropagation();
               onEdit(task);
             }}
-            className="p-2 rounded-xl text-[var(--text-muted)] hover:text-violet-500 hover:bg-violet-500/10 transition-all"
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-violet-500 hover:bg-violet-500/10 transition-all"
             title="Edit Routine"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </button>
         )}
 
@@ -957,10 +1049,10 @@ function ModernTaskCard({
               e.stopPropagation();
               onDelete(task);
             }}
-            className="p-2 rounded-xl text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-all"
             title="Delete Routine"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         )}
       </div>

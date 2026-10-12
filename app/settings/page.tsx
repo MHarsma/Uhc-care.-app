@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useTheme } from "@/components/theme-provider";
+import { InstallAppCard } from "@/components/pwa-install-prompt";
 import {
   settingsApi,
   UserProfile,
@@ -737,6 +738,9 @@ export default function SettingsPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Mobile PWA Install Card */}
+              <InstallAppCard />
 
               {/* Password & Security Card */}
               <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm">

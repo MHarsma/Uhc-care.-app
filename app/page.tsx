@@ -248,36 +248,37 @@ export default function HomePage() {
       {/* ==================================================================== */}
       {/* NAVIGATION BAR */}
       {/* ==================================================================== */}
-      <header className="relative z-30 mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-        <nav className="flex items-center justify-between rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)]/80 px-6 py-4 shadow-sm backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-rose-500 text-white font-black text-xl shadow-lg shadow-violet-500/25">
+      <header className="relative z-30 mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-5 lg:px-8">
+        <nav className="flex items-center justify-between rounded-2xl sm:rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)]/80 px-3 py-2.5 sm:px-6 sm:py-4 shadow-sm backdrop-blur-xl">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-rose-500 text-white font-black text-base sm:text-xl shadow-lg shadow-violet-500/25">
               U
             </div>
             <div>
-              <span className="text-base font-extrabold tracking-tight text-[var(--text-primary)]">
+              <span className="text-sm sm:text-base font-extrabold tracking-tight text-[var(--text-primary)]">
                 UHC Care
               </span>
-              <p className="text-xs font-semibold text-[var(--text-secondary)]">
+              <p className="text-[10px] sm:text-xs font-semibold text-[var(--text-secondary)] hidden sm:block">
                 Couple Routine & Wellness OS
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-1.5 sm:gap-4">
             <ThemeToggle />
             <Link
               href="/login"
-              className="rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              className="rounded-xl px-2.5 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               Sign In
             </Link>
             <Link
               href="/dashboard"
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-violet-600/25 hover:shadow-violet-600/40 hover:opacity-95 transition-all"
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-violet-600/25 hover:shadow-violet-600/40 hover:opacity-95 transition-all"
             >
-              <span>Open Dashboard</span>
-              <ArrowRight className="h-4 w-4" />
+              <span className="hidden sm:inline">Open Dashboard</span>
+              <span className="sm:hidden">Dashboard</span>
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Link>
           </div>
         </nav>
@@ -286,8 +287,8 @@ export default function HomePage() {
       {/* ==================================================================== */}
       {/* HERO SECTION WITH INTERACTIVE 4-IN-1 LIVE PREVIEW */}
       {/* ==================================================================== */}
-      <section className="relative z-20 mx-auto max-w-7xl px-4 pt-10 pb-20 sm:px-6 lg:px-8 lg:pt-16">
-        <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+      <section className="relative z-20 mx-auto max-w-7xl px-4 pt-6 pb-12 sm:pt-10 sm:pb-20 sm:px-6 lg:px-8 lg:pt-16">
+        <div className="grid gap-8 sm:gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           {/* Left Column: Headline & CTA */}
           <div className="space-y-6">
             <motion.div
@@ -304,7 +305,7 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 25 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl text-[var(--text-primary)] leading-[1.1]"
+              className="text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl text-[var(--text-primary)] leading-[1.1]"
             >
               Build a calmer,{" "}
               <span className="bg-gradient-to-r from-violet-600 via-indigo-500 to-rose-500 bg-clip-text text-transparent">
@@ -317,7 +318,7 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="max-w-xl text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed font-normal"
+              className="max-w-xl text-sm sm:text-lg text-[var(--text-secondary)] leading-relaxed font-normal"
             >
               Sync daily habits, mutual prayer routines, full 28-day hormonal fitness, headache prevention, and heartfelt accountability in one private, beautifully encrypted haven.
             </motion.p>
@@ -331,16 +332,16 @@ export default function HomePage() {
             >
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-rose-600 px-8 py-4 text-base font-bold text-white shadow-xl shadow-violet-600/30 hover:opacity-95 transition-all transform hover:-translate-y-0.5"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-rose-600 px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-bold text-white shadow-xl shadow-violet-600/30 hover:opacity-95 transition-all transform hover:-translate-y-0.5 flex-1 sm:flex-initial"
               >
                 <span>Launch Your Space</span>
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </Link>
               <Link
                 href="/login"
-                className="flex items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] px-7 py-4 text-base font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] px-5 py-3.5 sm:px-7 sm:py-4 text-sm sm:text-base font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all flex-1 sm:flex-initial"
               >
-                <span>Sign In with Partner</span>
+                <span>Sign In</span>
               </Link>
             </motion.div>
 
@@ -349,7 +350,7 @@ export default function HomePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="flex flex-wrap items-center gap-6 pt-4 text-xs font-semibold text-[var(--text-secondary)]"
+              className="flex flex-wrap items-center gap-3 sm:gap-6 pt-4 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)]"
             >
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="h-4 w-4 text-emerald-500" />
@@ -366,12 +367,12 @@ export default function HomePage() {
             </motion.div>
           </div>
 
-          {/* Right Column: Interactive 4-in-1 Showcase Card */}
+          {/* Right Column: Interactive 4-in-1 Showcase Card — Hidden on mobile for clean layout */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-xl relative overflow-hidden backdrop-blur-xl"
+            className="hidden lg:block rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-xl relative overflow-hidden backdrop-blur-xl"
           >
             {/* Interactive Tab Selectors */}
             <div className="flex flex-wrap gap-1.5 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-1.5 mb-6">
@@ -521,13 +522,13 @@ export default function HomePage() {
       {/* ==================================================================== */}
       {/* FINAL INVITATION CALL TO ACTION */}
       {/* ==================================================================== */}
-      <section className="relative z-20 mx-auto max-w-5xl px-4 py-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-violet-500/30 bg-gradient-to-r from-violet-600/10 via-indigo-600/10 to-rose-600/10 p-8 sm:p-14 text-center backdrop-blur-xl shadow-xl">
+      <section className="relative z-20 mx-auto max-w-5xl px-4 py-12 sm:py-20 sm:px-6">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-violet-500/30 bg-gradient-to-r from-violet-600/10 via-indigo-600/10 to-rose-600/10 p-6 sm:p-14 text-center backdrop-blur-xl shadow-xl">
           <div className="space-y-4 max-w-2xl mx-auto">
             <span className="rounded-full bg-violet-600 text-white px-3.5 py-1 text-xs font-bold uppercase tracking-wider">
               Start Free Today
             </span>
-            <h2 className="text-3xl font-black text-[var(--text-primary)] sm:text-4xl">
+            <h2 className="text-2xl font-black text-[var(--text-primary)] sm:text-4xl">
               Ready to elevate your daily routine together?
             </h2>
             <p className="text-sm sm:text-base text-[var(--text-secondary)] leading-relaxed">

@@ -198,11 +198,11 @@ export function AppShell({
       {/* ============================================================ */}
       {/* DESKTOP & TABLET SIDEBAR (>= lg)                             */}
       {/* ============================================================ */}
-      <aside className="hidden lg:flex flex-col w-[270px] shrink-0 border-r border-[var(--glass-border)] bg-[var(--bg-card)] sticky top-0 h-screen z-30 transition-colors duration-200">
+      <aside className="hidden lg:flex flex-col w-[245px] shrink-0 border-r border-[var(--glass-border)] bg-[var(--bg-card)] sticky top-0 h-screen z-30 transition-colors duration-200">
         {/* Brand Header */}
-        <div className="p-5 pb-4 border-b border-[var(--glass-border)] flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-500 to-purple-600 text-white font-black text-lg shadow-lg glow-accent group-hover:scale-105 transition-transform">
+        <div className="p-4 pb-3 border-b border-[var(--glass-border)] flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-500 to-purple-600 text-white font-black text-base shadow-md glow-accent group-hover:scale-105 transition-transform">
               U
             </div>
             <div>
@@ -301,16 +301,16 @@ export function AppShell({
                 key={item.id}
                 href={item.href}
                 className={cn(
-                  "group flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
+                  "group flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200",
                   isActive
-                    ? "bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/20 font-semibold"
+                    ? "bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/20"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                 )}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <Icon
                     className={cn(
-                      "h-4 w-4 transition-all group-hover:scale-110",
+                      "h-4 w-4 transition-all group-hover:scale-105",
                       isActive ? "text-violet-500 stroke-[2.2]" : "text-[var(--text-tertiary)]"
                     )}
                   />
@@ -320,7 +320,7 @@ export function AppShell({
                 {item.badge !== undefined && (
                   <span
                     className={cn(
-                      "flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold",
+                      "flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1.5 text-[9px] font-bold",
                       isActive
                         ? "bg-violet-500/20 text-violet-600 dark:text-violet-300"
                         : "bg-rose-500/20 text-rose-500"
@@ -335,22 +335,22 @@ export function AppShell({
         </nav>
 
         {/* Quick Add Action */}
-        <div className="p-3 border-t border-[var(--glass-border)] space-y-2">
+        <div className="p-3 border-t border-[var(--glass-border)] space-y-1.5">
           <button
             type="button"
             onClick={() => setIsQuickAddOpen(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-violet-500/15 hover:shadow-violet-500/25 press-effect transition-all"
+            className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-3 py-2 text-xs font-bold text-white shadow-md shadow-violet-500/15 hover:shadow-violet-500/25 press-effect transition-all"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             <span>Add New Routine</span>
           </button>
 
           <button
             type="button"
             onClick={() => setIsLibraryOpen(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-all"
+            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-all"
           >
-            <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+            <Sparkles className="h-3 w-3 text-violet-500" />
             <span>Browse Library</span>
           </button>
         </div>
@@ -546,22 +546,22 @@ export function AppShell({
       {/* ============================================================ */}
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         {/* Desktop Sticky Header Bar */}
-        <header className="hidden lg:flex sticky top-0 z-20 items-center justify-between border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-8 py-4 backdrop-blur-xl transition-colors duration-200">
+        <header className="hidden lg:flex sticky top-0 z-20 items-center justify-between border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-6 py-3 backdrop-blur-xl transition-colors duration-200">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+            <h1 className="text-lg font-extrabold tracking-tight text-[var(--text-primary)]">
               {headerTitle || "Dashboard"}
             </h1>
-            <p className="text-xs font-medium text-[var(--text-secondary)] mt-0.5">
+            <p className="text-[11px] font-medium text-[var(--text-secondary)] mt-0.5">
               {headerSubtitle || todayFormatted}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <ThemeToggle />
 
             {/* Streak Pill */}
-            <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3.5 py-1.5 text-xs font-bold text-amber-500">
-              <Flame className="h-4 w-4 text-amber-500 fill-amber-500 animate-fire" />
+            <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-bold text-amber-500">
+              <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500 animate-fire" />
               <span>{streakDays} Day Streak</span>
             </div>
 
@@ -571,7 +571,7 @@ export function AppShell({
                 type="button"
                 onClick={handleSendNudge}
                 disabled={nudgeSent}
-                className="flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3.5 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-500/15 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs font-bold text-rose-500 hover:bg-rose-500/15 active:scale-95 transition-all"
               >
                 {nudgeSent ? (
                   <>
@@ -594,7 +594,7 @@ export function AppShell({
               <button
                 type="button"
                 onClick={() => setIsQuickAddOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-violet-500/15 hover:shadow-violet-500/25 active:scale-95 transition-all"
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-violet-500/15 hover:shadow-violet-500/25 active:scale-95 transition-all"
               >
                 <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                 <span>New Routine</span>
@@ -604,7 +604,7 @@ export function AppShell({
         </header>
 
         {/* Page Content Container */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 lg:pb-12">
+        <main className="flex-1 p-3.5 sm:p-5 lg:p-6 max-w-6xl w-full mx-auto pb-20 lg:pb-10">
           {children}
         </main>
       </div>

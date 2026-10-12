@@ -4,6 +4,7 @@ import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         {children}
         <PwaUpdatePrompt />
+        <PwaInstallPrompt />
       </QueryClientProvider>
     </ThemeProvider>
   );

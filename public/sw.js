@@ -1,20 +1,29 @@
 // Service Worker for UHC Care PWA
-const CACHE_NAME = 'uhc-care-v1';
-const OFFLINE_URL = '/dashboard';
+const CACHE_NAME = 'uhc-care-v2';
+const OFFLINE_URL = '/';
 
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
   '/icon.svg',
-  '/favicon.ico',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      // Cache assets safely without failing the whole installation if one fails
+      return Promise.allSettled(
+        ASSETS_TO_CACHE.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('[SW] Failed to cache:', url, err);
+          })
+        )
+      );
     })
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('message', (event) => {
@@ -37,6 +46,16 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only intercept GET requests
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Do not cache API requests or auth routes
+  if (url.pathname.startsWith('/api') || url.pathname.includes('/auth/')) {
+    return;
+  }
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -48,10 +67,7 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => {
-        // Fallback for failed network requests
-        return null;
-      });
+      return response || fetch(event.request).catch(() => null);
     })
   );
 });

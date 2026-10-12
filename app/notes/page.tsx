@@ -20,8 +20,6 @@ import {
 import { api, getApiBaseUrl } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
-const apiUrl = getApiBaseUrl();
-
 type Reaction = {
   id: number;
   emoji: string;
@@ -181,6 +179,7 @@ export default function NotesPage() {
       formData.append("audio", recordedAudioBlob, "voicenote.webm");
       formData.append("audio_duration", String(Math.max(1, recordingSeconds)));
 
+      const apiUrl = getApiBaseUrl();
       const response = await fetch(`${apiUrl}/couple/notes`, {
         method: "POST",
         headers: {

@@ -76,9 +76,9 @@ export default function SignupPage() {
     "w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-hover)] px-4 py-3.5 text-[var(--text-primary)] text-sm placeholder:text-[var(--text-muted)] outline-none transition-all duration-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20";
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-[var(--bg-primary)] px-4 py-12 overflow-hidden">
+    <main className="relative flex min-h-screen items-center justify-center bg-[var(--bg-primary)] px-3.5 py-6 sm:px-4 sm:py-12 overflow-hidden">
       {/* Top right theme toggle */}
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
         <ThemeToggle />
       </div>
 
@@ -93,7 +93,7 @@ export default function SignupPage() {
         initial={{ opacity: 0, y: 20, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
-        className="relative z-10 w-full max-w-xl rounded-3xl glass-card p-8 sm:p-12 shadow-2xl"
+        className="relative z-10 w-full max-w-xl rounded-3xl glass-card p-5 sm:p-8 md:p-12 shadow-2xl"
       >
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-20 w-40 bg-violet-500/20 blur-3xl rounded-full pointer-events-none" />
 

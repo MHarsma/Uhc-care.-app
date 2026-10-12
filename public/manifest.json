@@ -1,24 +1,45 @@
 {
+  "id": "/",
   "name": "UHC Care - Couple Routine & Accountability",
   "short_name": "UHC Care",
   "description": "Modern couple accountability, daily routine, and habit tracking web app.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#FEF7FF",
-  "theme_color": "#6750A4",
+  "background_color": "#0a0a0f",
+  "theme_color": "#7c5cfc",
   "orientation": "portrait",
+  "categories": ["health", "lifestyle", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "type": "image/svg+xml"
     }
   ]
 }

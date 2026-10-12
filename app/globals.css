@@ -184,16 +184,16 @@ h1, h2, h3, h4, h5, h6 {
   color: #fff;
 }
 
-/* Root typography scaling — enhanced visibility across the whole app */
+/* Root typography scaling — refined, compact, professional SaaS scale */
 html {
-  font-size: 16.5px;
+  font-size: 15px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 0.9375rem;
+  line-height: 1.55;
 }
 
 /* Micro-animations & Interactive Lift */
