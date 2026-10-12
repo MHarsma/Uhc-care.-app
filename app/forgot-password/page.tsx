@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
 
       setMessage(
         result.message ||
-          "If an account matches that email, a password reset link has been sent.",
+          "We have emailed your password reset link.",
       );
       setEmail("");
     } catch (submissionError) {
