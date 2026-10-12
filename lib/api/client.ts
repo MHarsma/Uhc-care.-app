@@ -4,26 +4,26 @@ export function getApiBaseUrl(): string {
   const envUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim();
 
   if (typeof window !== "undefined") {
-    const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
-    if (!isLocalhost) {
-      if (!envUrl || envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
-        return TUNNEL_URL;
-      }
+    // If running on production domain (uhc-ap.me) or any external/mobile browser
+    if (!isLocalhost || hostname.endsWith("uhc-ap.me")) {
+      return TUNNEL_URL;
     }
   }
 
-  const resolved = envUrl || TUNNEL_URL;
-  return resolved.replace(/[\r\n]+/g, "").replace(/\/+$/, "");
+  // Fallback for local development or SSR
+  if (envUrl && !envUrl.includes("trycloudflare.com")) {
+    return envUrl.replace(/[\r\n]+/g, "").replace(/\/+$/, "");
+  }
+
+  return TUNNEL_URL;
 }
 
 export function getBackendBaseUrl(): string {
   return getApiBaseUrl().replace(/\/api\/?$/, "");
 }
-
-export const API_BASE_URL = getApiBaseUrl();
 
 /** Read a cookie value by name from document.cookie */
 function getCookie(name: string): string | undefined {
@@ -92,7 +92,7 @@ export async function apiClient<T = any>(
     let xsrfToken = getCookie("XSRF-TOKEN");
     if (!xsrfToken && typeof window !== "undefined") {
       try {
-        const backendBase = API_BASE_URL.replace(/\/api\/?$/, "");
+        const backendBase = getBackendBaseUrl();
         await fetch(`${backendBase}/sanctum/csrf-cookie`, {
           credentials: "include",
         });

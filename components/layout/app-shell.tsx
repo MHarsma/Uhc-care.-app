@@ -624,6 +624,7 @@ export function AppShell({
               icon: HeartHandshake,
               badge: pendingLeaves > 0 ? pendingLeaves : undefined,
             },
+            { id: "fitness", label: "Fitness", href: "/fitness", icon: Dumbbell },
             { id: "notes", label: "Notes", href: "/notes", icon: FileText },
             { id: "settings", label: "Settings", href: "/settings", icon: Settings },
           ].map((item) => {
