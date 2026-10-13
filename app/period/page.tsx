@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { CycleDietSection } from "@/components/period/cycle-diet-section";
 
 // ============================================================================
 // FLO-INSPIRED CYCLE PHASE DEFINITIONS & METADATA
@@ -710,235 +711,168 @@ export default function PeriodTrackingPage() {
             </div>
 
             {/* ============================================================ */}
-            {/* 3. FLO MODERN CALENDAR WITH DATES & DAYS OF WEEK             */}
+            {/* 3. COMPACT CYCLE CALENDAR                                     */}
             {/* ============================================================ */}
-            <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-sm glass-card space-y-6">
+            <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 sm:p-6 shadow-sm glass-card space-y-4">
               {/* Calendar Header & Month Switcher */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--glass-border)]">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-rose-500" />
-                    <h2 className="text-xl font-black text-[var(--text-primary)]">
-                      {monthName} {year}
-                    </h2>
-                  </div>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
-                    Interactive cycle predictions, phase tracking & symptom markers
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setCurrentCalendarDate(new Date(year, month - 1, 1));
-                    }}
-                    className="p-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
-                    title="Previous Month"
+                    onClick={() => setCurrentCalendarDate(new Date(year, month - 1, 1))}
+                    className="p-1.5 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
-
+                  <h2 className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] min-w-[140px] text-center">
+                    {monthName} {year}
+                  </h2>
                   <button
                     type="button"
-                    onClick={() => {
-                      setCurrentCalendarDate(new Date());
-                      setSelectedDayDate(todayStr);
-                    }}
-                    className="px-3.5 py-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
-                  >
-                    Today
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCurrentCalendarDate(new Date(year, month + 1, 1));
-                    }}
-                    className="p-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
-                    title="Next Month"
+                    onClick={() => setCurrentCalendarDate(new Date(year, month + 1, 1))}
+                    className="p-1.5 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentCalendarDate(new Date());
+                    setSelectedDayDate(todayStr);
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 transition-all"
+                >
+                  Today
+                </button>
               </div>
 
-              {/* Color Code Legend */}
-              <div className="flex flex-wrap items-center gap-3 text-[11px] font-medium text-[var(--text-secondary)]">
-                <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full bg-rose-500" />
-                  <span>Period (Logged)</span>
+              {/* Color Code Legend — Exact 4-Phase Match */}
+              <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-xs font-semibold text-[var(--text-secondary)]">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500 text-white font-bold shadow-xs">
+                  <span className="h-2 w-2 rounded-full bg-white" />
+                  <span>Period (Days 1–5)</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full border-2 border-rose-400 border-dashed bg-rose-500/20" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-dashed border-rose-400 bg-rose-500/15 text-rose-600 dark:text-rose-300 font-bold">
+                  <span className="h-2 w-2 rounded-full border border-rose-400 border-dashed" />
                   <span>Predicted Period</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full bg-amber-400" />
-                  <span>Ovulation (Peak Fertility)</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-700 dark:text-violet-300 font-bold">
+                  <span className="h-2 w-2 rounded-full bg-violet-500" />
+                  <span>Follicular (Days 6–13)</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full bg-amber-400/30 border border-amber-400/60" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-400/20 border border-amber-400/50 text-amber-800 dark:text-amber-200 font-bold">
+                  <span className="h-2 w-2 rounded-full bg-amber-400" />
                   <span>Fertile Window</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full bg-violet-500/40" />
-                  <span>Follicular</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-600 text-white font-bold shadow-xs">
+                  <span className="h-2 w-2 rounded-full bg-white" />
+                  <span>Ovulation (Day 14)</span>
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-3 w-3 rounded-full bg-cyan-500/40" />
-                  <span>Luteal</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 font-bold">
+                  <span className="h-2 w-2 rounded-full bg-cyan-500" />
+                  <span>Luteal (Days 18–28)</span>
                 </span>
               </div>
 
-              {/* Weekday Column Headers (Mon, Tue, Wed, Thu, Fri, Sat, Sun) */}
-              <div className="grid grid-cols-7 gap-2 text-center">
+              {/* Weekday Column Headers */}
+              <div className="grid grid-cols-7 gap-1">
                 {WEEKDAY_NAMES.map((dayName) => (
                   <div
                     key={dayName}
-                    className="py-2 text-xs font-extrabold uppercase tracking-wider text-[var(--text-tertiary)] bg-[var(--glass-bg)] rounded-xl border border-[var(--glass-border)]"
+                    className="py-1 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)]"
                   >
-                    {dayName}
+                    {dayName.charAt(0)}{dayName.charAt(1)}
                   </div>
                 ))}
               </div>
 
-              {/* Calendar Days Grid with Day Name + Date Number */}
-              <div className="grid grid-cols-7 gap-2">
-                {/* Empty padding cells for start of month */}
+              {/* Calendar Days Grid — Enhanced Flo-Style Cells */}
+              <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+                {/* Empty padding cells */}
                 {Array.from({ length: startDayOfWeek }).map((_, idx) => (
-                  <div
-                    key={`empty-${idx}`}
-                    className="h-20 sm:h-24 rounded-2xl bg-transparent opacity-10 border border-transparent"
-                  />
+                  <div key={`empty-${idx}`} className="h-12 sm:h-16" />
                 ))}
 
-                {/* Actual day cells */}
+                {/* Day cells */}
                 {calendarCells.map((cell) => {
+                  // Determine background & border matching 4-phase color system exactly
+                  const cellBg = cell.isPeriodDay
+                    ? "bg-rose-500 text-white shadow-md shadow-rose-500/30 ring-1 ring-rose-300/40"
+                    : cell.isPredictedPeriod
+                    ? "bg-rose-500/15 border-2 border-dashed border-rose-400 text-rose-600 dark:text-rose-300 font-bold"
+                    : cell.isOvulationDay
+                    ? "bg-gradient-to-tr from-amber-500 to-amber-600 text-white font-black shadow-md shadow-amber-500/35 ring-1 ring-amber-300"
+                    : cell.isFertileWindow
+                    ? "bg-amber-400/20 border border-amber-400/40 text-amber-800 dark:text-amber-200 font-semibold"
+                    : cell.phase.type === "follicular"
+                    ? "bg-violet-500/15 border border-violet-500/30 text-violet-700 dark:text-violet-300 font-semibold"
+                    : cell.phase.type === "luteal"
+                    ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 font-semibold"
+                    : cell.phase.type === "menstrual"
+                    ? "bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 font-semibold"
+                    : "bg-[var(--glass-bg)] text-[var(--text-primary)]";
+
                   return (
                     <button
                       key={cell.dateStr}
                       type="button"
                       onClick={() => setSelectedDayDate(cell.dateStr)}
                       className={cn(
-                        "group relative flex flex-col justify-between p-2 sm:p-2.5 h-20 sm:h-24 rounded-2xl border transition-all text-left focus:outline-none",
-                        // Phase-based cell coloring — ALL 4 phases get distinct colors
-                        cell.isPeriodDay
-                          ? "bg-rose-500 text-white shadow-md shadow-rose-500/25 border-rose-400"
-                          : cell.isPredictedPeriod
-                          ? "border-dashed border-rose-400 bg-rose-500/15 text-rose-600 dark:text-rose-300"
-                          : cell.isOvulationDay
-                          ? "bg-amber-400/25 border-amber-400 text-amber-800 dark:text-amber-200 shadow-sm shadow-amber-400/15"
-                          : cell.isFertileWindow
-                          ? "bg-orange-500/15 border-orange-400/40 text-orange-700 dark:text-orange-300"
-                          : cell.phase.type === "follicular"
-                          ? "bg-violet-500/15 border-violet-500/30 text-violet-700 dark:text-violet-300 hover:border-violet-500/50"
-                          : cell.phase.type === "luteal"
-                          ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:border-cyan-500/50"
-                          : cell.phase.type === "menstrual"
-                          ? "bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400 hover:border-rose-500/50"
-                          : "bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-primary)] hover:border-violet-500/30",
-                        // Selected Day Ring
-                        cell.isSelected && "ring-2 ring-violet-500 ring-offset-2 ring-offset-[var(--bg-primary)] scale-[1.02] z-10",
-                        // Today outline
-                        cell.isToday && !cell.isPeriodDay && "border-2 border-violet-500 font-black"
+                        "relative flex flex-col items-center justify-center h-12 sm:h-16 rounded-2xl transition-all focus:outline-none select-none",
+                        cellBg,
+                        cell.isSelected && "ring-2 ring-violet-500 ring-offset-2 ring-offset-[var(--bg-card)] scale-105 z-10 shadow-lg",
+                        cell.isToday && !cell.isPeriodDay && !cell.isOvulationDay && "ring-2 ring-violet-500/70"
                       )}
                     >
-                      {/* Top: Day Name & Date Number */}
-                      <div className="flex items-center justify-between w-full">
-                        <span
-                          className={cn(
-                            "text-[10px] sm:text-[11px] font-bold uppercase",
-                            cell.isPeriodDay
-                              ? "text-rose-100"
-                              : cell.phase.type === "follicular"
-                              ? "text-violet-500 dark:text-violet-400"
-                              : cell.phase.type === "luteal"
-                              ? "text-cyan-500 dark:text-cyan-400"
-                              : cell.isOvulationDay || cell.isFertileWindow
-                              ? "text-amber-600 dark:text-amber-400"
-                              : "text-[var(--text-tertiary)]"
-                          )}
-                        >
-                          {cell.dayName}
+                      {/* Date number */}
+                      <span className={cn(
+                        "text-xs sm:text-base font-black leading-none",
+                        cell.isPeriodDay || cell.isOvulationDay ? "text-white" : ""
+                      )}>
+                        {cell.dayNumber}
+                      </span>
+
+                      {/* Small cycle day label */}
+                      {cell.cycleDayNumber && (
+                        <span className={cn(
+                          "text-[8px] sm:text-[10px] font-bold leading-none mt-1",
+                          cell.isPeriodDay
+                            ? "text-rose-100"
+                            : cell.isOvulationDay
+                            ? "text-amber-100"
+                            : "text-[var(--text-muted)]"
+                        )}>
+                          D{cell.cycleDayNumber}
                         </span>
+                      )}
 
-                        <span
-                          className={cn(
-                            "flex h-6 w-6 items-center justify-center rounded-full text-xs font-black",
-                            cell.isPeriodDay
-                              ? "bg-white text-rose-700"
-                              : cell.isToday
-                              ? "bg-violet-600 text-white"
-                              : cell.isOvulationDay
-                              ? "bg-amber-400/30 text-amber-800 dark:text-amber-200"
-                              : cell.phase.type === "follicular"
-                              ? "text-violet-700 dark:text-violet-300"
-                              : cell.phase.type === "luteal"
-                              ? "text-cyan-700 dark:text-cyan-300"
-                              : "text-[var(--text-primary)]"
-                          )}
-                        >
-                          {cell.dayNumber}
+                      {/* Period droplet icon */}
+                      {cell.isPeriodDay && (
+                        <Droplet className="absolute top-1 right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 fill-white text-white drop-shadow-xs" />
+                      )}
+
+                      {/* Ovulation flower/star icon */}
+                      {cell.isOvulationDay && (
+                        <Sparkles className="absolute top-1 right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 text-white fill-white drop-shadow-xs" />
+                      )}
+
+                      {/* Symptom logged indicator dot */}
+                      {cell.hasLoggedSymptoms && (
+                        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-violet-400 ring-1 ring-white" />
+                      )}
+
+                      {/* Today badge */}
+                      {cell.isToday && (
+                        <span className={cn(
+                          "absolute -top-1.5 left-1/2 -translate-x-1/2 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-full shadow-xs",
+                          cell.isPeriodDay || cell.isOvulationDay
+                            ? "bg-white text-slate-900"
+                            : "bg-violet-600 text-white"
+                        )}>
+                          Today
                         </span>
-                      </div>
-
-                      {/* Middle: Phase Badge + Cycle Day */}
-                      <div className="my-auto space-y-0.5">
-                        {cell.isPeriodDay ? (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-white">
-                            <Droplet className="h-3 w-3 fill-white" />
-                            <span className="hidden sm:inline">Period</span>
-                          </div>
-                        ) : cell.isOvulationDay ? (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300">
-                            <span>🌸</span>
-                            <span className="hidden sm:inline">Ovulation</span>
-                          </div>
-                        ) : cell.isFertileWindow ? (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-orange-600 dark:text-orange-300">
-                            <span>✨</span>
-                            <span className="hidden sm:inline">Fertile</span>
-                          </div>
-                        ) : cell.phase.type === "follicular" ? (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-violet-600 dark:text-violet-300">
-                            <span>🌱</span>
-                            <span className="hidden sm:inline">Follicular</span>
-                          </div>
-                        ) : cell.phase.type === "luteal" ? (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-cyan-600 dark:text-cyan-300">
-                            <span>🌙</span>
-                            <span className="hidden sm:inline">Luteal</span>
-                          </div>
-                        ) : cell.phase.type === "menstrual" ? (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                            <span>🩸</span>
-                            <span className="hidden sm:inline">Predicted</span>
-                          </div>
-                        ) : null}
-                        {/* Cycle Day Number below badge */}
-                        {cell.cycleDayNumber && (
-                          <span className={cn(
-                            "block text-[9px] font-semibold",
-                            cell.isPeriodDay ? "text-rose-200" : "text-[var(--text-muted)]"
-                          )}>
-                            Day {cell.cycleDayNumber}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Bottom: Logged Symptom Dot */}
-                      <div className="flex items-center justify-between w-full text-[10px]">
-                        {cell.hasLoggedSymptoms ? (
-                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400" title="Symptoms logged" />
-                        ) : <span />}
-
-                        {cell.isToday && (
-                          <span className={cn("text-[9px] font-bold uppercase tracking-wider", cell.isPeriodDay ? "text-rose-200" : "text-violet-500")}>
-                            Today
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </button>
                   );
                 })}
@@ -1081,6 +1015,11 @@ export default function PeriodTrackingPage() {
                 ) : null}
               </motion.div>
             )}
+
+            {/* ============================================================ */}
+            {/* 4. REBUILT HORMONAL NUTRITION & DIET SANCTUARY               */}
+            {/* ============================================================ */}
+            <CycleDietSection currentPhaseKey={currentPhase.type} />
 
             {/* ============================================================ */}
             {/* 5. CYCLE HISTORY & MANAGEMENT                                */}

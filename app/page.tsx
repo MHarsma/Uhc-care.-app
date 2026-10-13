@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { api } from "@/lib/api/client";
 import {
   Heart,
   Flame,
@@ -236,7 +238,31 @@ const PREVIEWS = {
 // ============================================================================
 
 export default function HomePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = React.useState<PreviewTab>("couple");
+
+  // Automatically redirect authenticated users to their dashboard
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("uhc_logged_in") === "true") {
+      router.replace("/dashboard");
+      return;
+    }
+
+    // Background silent check for active session cookie
+    api
+      .get("/auth/user")
+      .then((res) => {
+        if (res?.user || res?.id) {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("uhc_logged_in", "true");
+          }
+          router.replace("/dashboard");
+        }
+      })
+      .catch(() => {
+        // Guest user, stay on landing page
+      });
+  }, [router]);
 
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden relative transition-colors duration-300">

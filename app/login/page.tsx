@@ -5,11 +5,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { motion } from "framer-motion";
-import { Mail, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, ArrowRight, Sparkles, Fingerprint } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { csrfHeaders } from "@/lib/csrf";
 import { getApiBaseUrl, getBackendBaseUrl } from "@/lib/api/client";
+import {
+  isBiometricsSupported,
+  getBiometricStatus,
+  verifyBiometrics,
+} from "@/lib/auth/biometrics";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,6 +22,35 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [biometricsAvailable, setBiometricsAvailable] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+
+  useState(() => {
+    if (typeof window !== "undefined") {
+      isBiometricsSupported().then((supported) => {
+        const status = getBiometricStatus();
+        setBiometricsAvailable(supported && status.isEnrolled);
+      });
+    }
+  });
+
+  async function handleBiometricLogin() {
+    setBiometricLoading(true);
+    setError("");
+    try {
+      const res = await verifyBiometrics();
+      if (res.success) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("uhc_logged_in", "true");
+        }
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Biometric authentication failed");
+    } finally {
+      setBiometricLoading(false);
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -43,6 +77,9 @@ export default function LoginPage() {
         throw new Error(message);
       }
 
+      if (typeof window !== "undefined") {
+        localStorage.setItem("uhc_logged_in", "true");
+      }
       router.push("/dashboard");
     } catch (submissionError) {
       setError(
@@ -156,6 +193,20 @@ export default function LoginPage() {
               </span>
             )}
           </button>
+
+          {biometricsAvailable && (
+            <button
+              type="button"
+              onClick={handleBiometricLogin}
+              disabled={biometricLoading}
+              className="w-full rounded-2xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 px-5 py-3.5 text-sm font-bold text-violet-700 dark:text-violet-300 transition-all flex items-center justify-center gap-2.5 press-effect"
+            >
+              <Fingerprint className="h-5 w-5 text-violet-500" />
+              <span>
+                {biometricLoading ? "Verifying Fingerprint..." : "Unlock with Fingerprint ID"}
+              </span>
+            </button>
+          )}
         </form>
 
         <div className="mt-5 text-right text-sm">

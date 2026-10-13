@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { ExerciseVideoModal } from "@/components/fitness/exercise-video-modal";
 
 // ============================================================================
 // DATA MODELS & INTERFACES
@@ -1326,157 +1327,14 @@ export default function MovementAndVitalityPage() {
         </div>
 
         {/* ==================================================================== */}
-        {/* COMPREHENSIVE EXERCISE FORM & ANGLE TUTORIAL MODAL */}
+        {/* DEDICATED EXERCISE POSTURE VIDEO & BIOMECHANICS MODAL */}
         {/* ==================================================================== */}
-        <AnimatePresence>
-          {tutorialExercise && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 sm:p-6"
-            >
-              <motion.div
-                initial={{ scale: 0.95, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.95, y: 20 }}
-                className="relative w-full max-w-2xl rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-2xl max-h-[92vh] overflow-y-auto space-y-6"
-              >
-                {/* Modal Header */}
-                <div className="flex items-center justify-between border-b border-[var(--glass-border)] pb-4">
-                  <div>
-                    <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wider">
-                      Interactive Form & Angle Tutorial
-                    </span>
-                    <h3 className="text-xl font-extrabold text-[var(--text-primary)] mt-1">
-                      {tutorialExercise.name}
-                    </h3>
-                  </div>
-
-                  <button
-                    onClick={() => setTutorialExercise(null)}
-                    className="rounded-full p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-
-                {/* Video / Visual Angle Demo Box */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-                      Camera Perspective:
-                    </span>
-                    <div className="flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-1">
-                      <button
-                        onClick={() => setTutorialAngle("front")}
-                        className={cn(
-                          "rounded-lg px-2.5 py-1 text-xs font-bold transition-all",
-                          tutorialAngle === "front"
-                            ? "bg-violet-600 text-white shadow-xs"
-                            : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                        )}
-                      >
-                        Front Angle
-                      </button>
-                      <button
-                        onClick={() => setTutorialAngle("side")}
-                        className={cn(
-                          "rounded-lg px-2.5 py-1 text-xs font-bold transition-all",
-                          tutorialAngle === "side"
-                            ? "bg-violet-600 text-white shadow-xs"
-                            : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                        )}
-                      >
-                        Side Profile Angle
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Graphic Illustration */}
-                  <ExerciseIllustration
-                    type={tutorialExercise.svgType}
-                    angle={tutorialAngle}
-                    className="h-44 w-full"
-                  />
-
-                  {/* Angle Specific Coaching Cue */}
-                  <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 text-xs text-violet-700 dark:text-violet-300 flex items-start gap-2">
-                    <Info className="h-4 w-4 shrink-0 mt-0.5 text-violet-600 dark:text-violet-400" />
-                    <p>
-                      <strong>{tutorialAngle === "front" ? "Front Angle Alignment:" : "Side Profile Alignment:"}</strong>{" "}
-                      {tutorialAngle === "front" ? tutorialExercise.frontAngleCue : tutorialExercise.sideAngleCue}
-                    </p>
-                  </div>
-                </div>
-
-                {/* How to Perform - Step by Step */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-                    Step-by-Step Execution Guide
-                  </h4>
-                  <div className="space-y-2">
-                    {tutorialExercise.howTo.map((step, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start gap-3 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-3"
-                      >
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-600 text-[11px] font-bold text-white">
-                          {idx + 1}
-                        </span>
-                        <p className="text-xs text-[var(--text-primary)] leading-relaxed">{step}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Benefits & Physiology */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 space-y-2">
-                    <h5 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5" /> Key Physical & Hormonal Benefits
-                    </h5>
-                    <ul className="space-y-1.5 text-xs text-[var(--text-secondary)]">
-                      {tutorialExercise.benefits.map((b, i) => (
-                        <li key={i} className="flex items-start gap-1.5">
-                          <span className="text-emerald-500 font-bold">•</span>
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 space-y-2">
-                    <h5 className="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
-                      <Activity className="h-3.5 w-3.5" /> Breathing Cadence & Cues
-                    </h5>
-                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                      {tutorialExercise.breathing}
-                    </p>
-                    <div className="mt-2 pt-2 border-t border-[var(--glass-border)]">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
-                        What to Avoid:
-                      </span>
-                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                        {tutorialExercise.commonMistakes}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Close Button */}
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={() => setTutorialExercise(null)}
-                    className="rounded-xl bg-violet-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-violet-500 shadow-sm transition-colors"
-                  >
-                    Got It & Close Form Guide
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {tutorialExercise && (
+          <ExerciseVideoModal
+            exerciseId={tutorialExercise.id}
+            onClose={() => setTutorialExercise(null)}
+          />
+        )}
 
         {/* ==================================================================== */}
         {/* INTERACTIVE WORKOUT SESSION PLAYER */}

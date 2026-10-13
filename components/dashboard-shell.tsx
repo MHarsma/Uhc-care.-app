@@ -515,8 +515,25 @@ export function DashboardShell() {
               ))}
             </div>
           ) : dashboardError ? (
-            <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-6 text-center text-sm text-rose-500 font-medium">
-              Could not load routines. Please sign in again.
+            <div className="rounded-2xl border border-rose-500/25 bg-rose-500/5 p-6 text-center space-y-3">
+              <p className="text-sm text-rose-500 font-semibold">
+                Could not load routines. Your session may have timed out or connection was interrupted.
+              </p>
+              <div className="flex items-center justify-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleRefetch}
+                  className="rounded-xl bg-violet-600 hover:bg-violet-700 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
+                >
+                  Retry Connection
+                </button>
+                <Link
+                  href="/login"
+                  className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] px-4 py-2 text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all"
+                >
+                  Sign In Again
+                </Link>
+              </div>
             </div>
           ) : filteredTasks.length === 0 ? (
             <motion.div
@@ -845,6 +862,50 @@ export function DashboardShell() {
   );
 }
 
+// Helper to format and resolve time for routines and prayers
+function resolveTaskTime(task: {
+  title: string;
+  time_of_day?: string | null;
+  is_prayer?: boolean;
+}): { timeString: string; isPrayer: boolean } | null {
+  const titleLower = task.title.toLowerCase();
+  const isPrayer =
+    Boolean(task.is_prayer) ||
+    titleLower.includes("fajr") ||
+    titleLower.includes("dhuhr") ||
+    titleLower.includes("asr") ||
+    titleLower.includes("maghrib") ||
+    titleLower.includes("isha");
+
+  let raw = task.time_of_day;
+
+  // Fallback to recognized prayer times or title timestamps
+  if (!raw || raw.trim() === "") {
+    if (titleLower.includes("fajr")) raw = "05:15";
+    else if (titleLower.includes("dhuhr")) raw = "13:00";
+    else if (titleLower.includes("asr")) raw = "16:30";
+    else if (titleLower.includes("maghrib")) raw = "18:25";
+    else if (titleLower.includes("isha")) raw = "20:00";
+    else {
+      const match = task.title.match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i);
+      if (match) return { timeString: match[1].trim(), isPrayer: false };
+      return null;
+    }
+  }
+
+  try {
+    const parts = raw.split(":");
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1] ? parts[1].slice(0, 2) : "00";
+    if (isNaN(hours)) return { timeString: raw, isPrayer };
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return { timeString: `${hours}:${minutes} ${ampm}`, isPrayer };
+  } catch {
+    return { timeString: raw, isPrayer };
+  }
+}
+
 /**
  * Modern Task Card — Bigger, Presentable, Adaptive Dark/Light Mode
  */
@@ -888,10 +949,7 @@ function ModernTaskCard({
     }
   };
 
-  const formattedTime = React.useMemo(() => {
-    if (!task.time_of_day) return null;
-    return task.time_of_day.slice(0, 5);
-  }, [task.time_of_day]);
+  const timeInfo = React.useMemo(() => resolveTaskTime(task), [task]);
 
   if (task.is_paused) {
     return (
@@ -917,10 +975,10 @@ function ModernTaskCard({
               <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2.5 py-0.5 rounded-md">
                 Paused for Cycle
               </span>
-              {formattedTime && (
+              {timeInfo && (
                 <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
                   <Clock className="h-3.5 w-3.5" />
-                  <span>{formattedTime}</span>
+                  <span>{timeInfo.timeString}</span>
                 </span>
               )}
             </div>
@@ -993,10 +1051,17 @@ function ModernTaskCard({
               </span>
             )}
 
-            {formattedTime && (
-              <span className="flex items-center gap-1 text-[11px] font-medium text-[var(--text-tertiary)]">
+            {timeInfo && (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border",
+                  timeInfo.isPrayer
+                    ? "bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-300"
+                    : "bg-violet-500/10 border-violet-500/20 text-violet-700 dark:text-violet-300"
+                )}
+              >
                 <Clock className="h-3 w-3" />
-                <span>{formattedTime}</span>
+                <span>{timeInfo.timeString}</span>
               </span>
             )}
 

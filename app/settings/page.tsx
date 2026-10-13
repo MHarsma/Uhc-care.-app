@@ -15,7 +15,7 @@ import {
   NotificationSettings,
   PrayerTimeItem,
 } from "@/lib/api/settings";
-import { getApiBaseUrl } from "@/lib/api/client";
+import { api, getApiBaseUrl } from "@/lib/api/client";
 import {
   User,
   MapPin,
@@ -39,8 +39,15 @@ import {
   CheckCircle2,
   X,
   Save,
+  Fingerprint,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  isBiometricsSupported,
+  getBiometricStatus,
+  enrollBiometrics,
+  removeBiometrics,
+} from "@/lib/auth/biometrics";
 
 const PAKISTAN_CITIES = [
   "Talagang",
@@ -132,9 +139,24 @@ export default function SettingsPage() {
   const [unpairingLoading, setUnpairingLoading] = React.useState(false);
   const [unpairMessage, setUnpairMessage] = React.useState<string | null>(null);
 
+  // Biometrics state
+  const [biometricSupported, setBiometricSupported] = React.useState(false);
+  const [biometricEnrolled, setBiometricEnrolled] = React.useState(false);
+  const [biometricEnrolling, setBiometricEnrolling] = React.useState(false);
+  const [biometricMsg, setBiometricMsg] = React.useState<{ type: "success" | "error"; text: string } | null>(null);
+
   const loadData = React.useCallback(async () => {
     try {
       setLoading(true);
+
+      if (typeof window !== "undefined") {
+        isBiometricsSupported().then((sup) => {
+          setBiometricSupported(sup);
+          const st = getBiometricStatus();
+          setBiometricEnrolled(st.isEnrolled);
+        });
+      }
+
       const [profRes, notifRes, periodRes, prayerRes] = await Promise.allSettled([
         settingsApi.getProfile(),
         settingsApi.getNotificationSettings(),
@@ -828,6 +850,121 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Biometric & Fingerprint Security Section */}
+      <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 sm:p-5 shadow-xs glass-card space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-600 dark:text-violet-400">
+              <Fingerprint className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                Fingerprint & Biometric Quick ID
+              </h3>
+              <p className="text-[11px] text-[var(--text-tertiary)]">
+                {biometricEnrolled
+                  ? "Device biometric authentication active (Fingerprint / Touch ID)"
+                  : biometricSupported
+                  ? "Supported by your device. Enable for fast 1-tap unlock."
+                  : "WebAuthn platform authenticator detected on modern browsers."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {biometricEnrolled ? (
+              <button
+                type="button"
+                onClick={() => {
+                  removeBiometrics();
+                  setBiometricEnrolled(false);
+                  setBiometricMsg({ type: "success", text: "Fingerprint ID disabled for this device." });
+                }}
+                className="rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 active:scale-95 transition-all"
+              >
+                Disable Biometrics
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={biometricEnrolling}
+                onClick={async () => {
+                  if (!profile?.email) return;
+                  setBiometricEnrolling(true);
+                  setBiometricMsg(null);
+                  try {
+                    await enrollBiometrics(profile.email, profile.name);
+                    setBiometricEnrolled(true);
+                    setBiometricMsg({
+                      type: "success",
+                      text: "Fingerprint enrolled! You can now unlock the app with 1 tap.",
+                    });
+                  } catch (err: any) {
+                    setBiometricMsg({
+                      type: "error",
+                      text: err?.message || "Failed to register fingerprint scanner.",
+                    });
+                  } finally {
+                    setBiometricEnrolling(false);
+                  }
+                }}
+                className="rounded-xl bg-violet-600 hover:bg-violet-700 dark:bg-violet-600 dark:hover:bg-violet-500 px-4 py-2 text-xs font-bold text-white shadow-xs active:scale-95 transition-all"
+              >
+                {biometricEnrolling ? "Scanning..." : "Enroll Fingerprint"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {biometricMsg && (
+          <p
+            className={cn(
+              "text-xs px-3 py-2 rounded-xl border font-semibold",
+              biometricMsg.type === "success"
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                : "bg-rose-500/10 border-rose-500/20 text-rose-500"
+            )}
+          >
+            {biometricMsg.text}
+          </p>
+        )}
+      </div>
+
+      {/* Sign Out Section */}
+      <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 sm:p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/15 text-rose-500">
+              <LogOut className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[var(--text-primary)]">Sign Out</h3>
+              <p className="text-[11px] text-[var(--text-tertiary)]">Sign out of your account on this device</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                if (typeof window !== "undefined") {
+                  localStorage.removeItem("uhc_logged_in");
+                }
+                await api.post("/auth/logout");
+                router.push("/login");
+              } catch {
+                if (typeof window !== "undefined") {
+                  localStorage.removeItem("uhc_logged_in");
+                }
+                router.push("/login");
+              }
+            }}
+            className="rounded-xl bg-rose-500/10 border border-rose-500/30 px-4 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all"
+          >
+            Sign Out
+          </button>
+        </div>
       </div>
 
       {/* Prayer Time Edit Modal */}

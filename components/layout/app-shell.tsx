@@ -617,6 +617,8 @@ export function AppShell({
           {[
             { id: "today", label: "Today", href: "/dashboard", icon: CalendarCheck },
             { id: "tasks", label: "Routines", href: "/tasks", icon: ListOrdered },
+            { id: "fitness", label: "Fitness", href: "/fitness", icon: Dumbbell },
+            { id: "health", label: "Health", href: "/period", icon: CalendarHeart },
             {
               id: "partner",
               label: "Partner",
@@ -624,8 +626,6 @@ export function AppShell({
               icon: HeartHandshake,
               badge: pendingLeaves > 0 ? pendingLeaves : undefined,
             },
-            { id: "fitness", label: "Fitness", href: "/fitness", icon: Dumbbell },
-            { id: "notes", label: "Notes", href: "/notes", icon: FileText },
             { id: "settings", label: "Settings", href: "/settings", icon: Settings },
           ].map((item) => {
             const Icon = item.icon;
