@@ -3,17 +3,6 @@ const TUNNEL_URL = "https://api.uhc-ap.me/api";
 export function getApiBaseUrl(): string {
   const envUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim();
 
-  if (typeof window !== "undefined") {
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
-
-    // If running on production domain (uhc-ap.me) or any external/mobile browser
-    if (!isLocalhost || hostname.endsWith("uhc-ap.me")) {
-      return TUNNEL_URL;
-    }
-  }
-
-  // Fallback for local development or SSR
   if (envUrl && !envUrl.includes("trycloudflare.com")) {
     return envUrl.replace(/[\r\n]+/g, "").replace(/\/+$/, "");
   }
@@ -86,6 +75,14 @@ export async function apiClient<T = any>(
     defaultHeaders["Content-Type"] = "application/json";
   }
 
+  // Attach Sanctum Bearer token for cross-domain / mobile authentication
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("uhc_auth_token");
+    if (token) {
+      defaultHeaders["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
   // Attach XSRF-TOKEN for mutating requests (POST, PATCH, PUT, DELETE)
   const method = (options.method || "GET").toUpperCase();
   if (method !== "GET" && method !== "HEAD") {
@@ -118,7 +115,17 @@ export async function apiClient<T = any>(
     ...(customConfig.credentials ? {} : { credentials: "include" as RequestCredentials }),
   };
 
-  const response = await fetch(url, config);
+  let response: Response;
+  try {
+    response = await fetch(url, config);
+  } catch (networkError) {
+    // Network-level failure: server offline, tunnel down, DNS unreachable, CORS blocked
+    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+    const friendlyMessage = isOffline
+      ? "You appear to be offline. Please check your internet connection and try again."
+      : "Could not connect to the server. Please check your connection or try again in a moment.";
+    throw new ApiError(friendlyMessage, 0, { originalError: String(networkError) });
+  }
 
   if (response.status === 204) {
     return {} as T;

@@ -37,6 +37,7 @@ import {
   Coffee,
   BedDouble,
   Dumbbell,
+  RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -531,8 +532,28 @@ export default function PeriodTrackingPage() {
             <div className="h-96 w-full rounded-3xl shimmer" />
           </div>
         ) : error ? (
-          <div className="rounded-3xl border border-rose-500/20 bg-rose-500/10 p-8 text-center text-sm font-semibold text-rose-500 glass-card">
-            {error}
+          <div className="max-w-md mx-auto rounded-3xl border border-rose-500/25 bg-rose-500/5 p-8 text-center space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500">
+              <AlertCircle className="h-7 w-7" />
+            </div>
+            <h2 className="text-lg font-bold text-rose-600 dark:text-rose-400">
+              {error.includes("female") ? "Access Restricted" : "Unable to load cycle data"}
+            </h2>
+            <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">
+              {error}
+            </p>
+            {!error.includes("female") && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => void loadData()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95 transition-opacity"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Retry Connection</span>
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <>

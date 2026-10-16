@@ -21,9 +21,9 @@ import {
   Check,
   Timer,
   Search,
-  Filter,
   History,
   MoreVertical,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getApiBaseUrl } from "@/lib/api/client";
@@ -68,22 +68,33 @@ export default function TasksPage() {
   const [historyLogs, setHistoryLogs] = useState<TaskLog[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function loadTasks(): Promise<void> {
+    setLoading(true);
+    setLoadError(null);
     try {
       const response = await fetch(`${apiUrl}/tasks`, {
         headers: { Accept: "application/json" },
         credentials: "include",
       });
-      if (response.ok) {
-        const result: { tasks: Task[] } = await response.json();
-        setTasks(result.tasks);
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return;
       }
-    } catch (err) {
+      if (!response.ok) {
+        throw new Error(`Failed to load routines (HTTP ${response.status})`);
+      }
+      const result: { tasks: Task[] } = await response.json();
+      setTasks(result.tasks || []);
+    } catch (err: any) {
       console.error("Failed to load tasks:", err);
+      setLoadError(
+        err?.message || "Could not connect to server. Please check your connection."
+      );
     } finally {
       setLoading(false);
     }
@@ -327,6 +338,28 @@ export default function TasksPage() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-40 rounded-2xl shimmer" />
             ))}
+          </div>
+        ) : loadError ? (
+          <div className="rounded-2xl border border-rose-500/25 bg-rose-500/5 p-8 text-center space-y-4 max-w-md mx-auto">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">
+              Unable to load routines
+            </h3>
+            <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">
+              {loadError}
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => void loadTasks()}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 px-4 py-2 text-xs font-bold text-white shadow-md hover:opacity-95 transition-opacity"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Retry Connection</span>
+              </button>
+            </div>
           </div>
         ) : filteredTasks.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[var(--glass-border)] glass-card p-12 text-center">

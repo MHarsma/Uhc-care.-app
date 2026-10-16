@@ -145,8 +145,25 @@ function PairingContent() {
       )}
 
       {error && (
-        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-semibold text-rose-500 shadow-xs animate-fade-scale">
-          {error}
+        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 shadow-xs animate-fade-scale">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-500/20 text-rose-500">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-rose-600 dark:text-rose-400">Connection Error</p>
+              <p className="mt-0.5 text-[11px] text-rose-500/80 leading-relaxed">{error}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setError(""); createInvite(); }}
+              className="shrink-0 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 px-3 py-1.5 text-[10px] font-bold text-rose-600 dark:text-rose-400 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       )}
 

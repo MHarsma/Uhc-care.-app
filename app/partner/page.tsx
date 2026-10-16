@@ -17,6 +17,8 @@ import {
   Send,
   MessageCircleHeart,
   ShieldCheck,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -59,16 +61,24 @@ function formatCompletedAt(completedAt: string | null | undefined): string | nul
 export default function PartnerPage() {
   const [data, setData] = React.useState<PartnerData | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [nudgeSent, setNudgeSent] = React.useState(false);
   const [customNudge, setCustomNudge] = React.useState("");
   const [actionLoading, setActionLoading] = React.useState<number | null>(null);
 
   const loadPartnerData = React.useCallback(async () => {
+    setLoadError(null);
+    setLoading(true);
     try {
       const result = await api.get<PartnerData>("/partner");
       setData(result);
-    } catch {
+    } catch (err) {
       setData(null);
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load partner data. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -139,6 +149,28 @@ export default function PartnerPage() {
         <div className="space-y-6 max-w-4xl">
           <div className="h-44 w-full rounded-3xl shimmer" />
           <div className="h-32 w-full rounded-3xl shimmer" />
+        </div>
+      ) : loadError ? (
+        /* Error State Card */
+        <div className="max-w-2xl mx-auto rounded-3xl border border-rose-500/25 bg-rose-500/5 p-8 text-center space-y-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500">
+            <AlertTriangle className="h-7 w-7" />
+          </div>
+          <h2 className="text-lg font-bold text-rose-600 dark:text-rose-400">
+            Unable to load partner data
+          </h2>
+          <p className="text-xs text-[var(--text-tertiary)] max-w-md mx-auto leading-relaxed">
+            {loadError}
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={() => loadPartnerData()}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95 transition-opacity"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>Retry Connection</span>
+            </button>
+          </div>
         </div>
       ) : !partner ? (
         /* Not Paired Card */

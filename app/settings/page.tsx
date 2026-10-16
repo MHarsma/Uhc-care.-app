@@ -94,6 +94,7 @@ export default function SettingsPage() {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [profile, setProfile] = React.useState<UserProfile | null>(null);
   const [partner, setPartner] = React.useState<PartnerSummary | null>(null);
   const [couple, setCouple] = React.useState<CoupleSummary | null>(null);
@@ -112,7 +113,10 @@ export default function SettingsPage() {
   const [customCityMode, setCustomCityMode] = React.useState(false);
   const [timezone, setTimezone] = React.useState("Asia/Karachi");
   const [profileSaving, setProfileSaving] = React.useState(false);
-  const [profileMessage, setProfileMessage] = React.useState<string | null>(null);
+  const [profileMessage, setProfileMessage] = React.useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Password state
   const [currentPassword, setCurrentPassword] = React.useState("");
@@ -133,6 +137,7 @@ export default function SettingsPage() {
   const [editingPrayer, setEditingPrayer] = React.useState<PrayerTimeItem | null>(null);
   const [customPrayerTime, setCustomPrayerTime] = React.useState("");
   const [savingPrayerOverride, setSavingPrayerOverride] = React.useState(false);
+  const [prayerOverrideError, setPrayerOverrideError] = React.useState<string | null>(null);
 
   // Unpair dialog state
   const [showUnpairModal, setShowUnpairModal] = React.useState(false);
@@ -148,6 +153,7 @@ export default function SettingsPage() {
   const loadData = React.useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(null);
 
       if (typeof window !== "undefined") {
         isBiometricsSupported().then((sup) => {
@@ -175,6 +181,13 @@ export default function SettingsPage() {
         setTimezone(profRes.value.user.timezone || "Asia/Karachi");
         setPartner(profRes.value.partner);
         setCouple(profRes.value.couple);
+      } else {
+        const reason: any = profRes.reason;
+        if (reason?.status === 401) {
+          router.push("/login");
+          return;
+        }
+        setLoadError(reason?.message || "Failed to load user profile and settings.");
       }
 
       if (notifRes.status === "fulfilled") {
@@ -188,12 +201,13 @@ export default function SettingsPage() {
       if (prayerRes.status === "fulfilled") {
         setPrayers(prayerRes.value.prayer_times);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load settings:", err);
+      setLoadError(err?.message || "An unexpected error occurred while loading settings.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   React.useEffect(() => {
     void loadData();
@@ -207,13 +221,16 @@ export default function SettingsPage() {
     try {
       const res = await settingsApi.updateProfile({ name, city, timezone });
       setProfile(res.user);
-      setProfileMessage("Profile updated successfully ✨");
+      setProfileMessage({ type: "success", text: "Profile updated successfully ✨" });
       setTimeout(() => setProfileMessage(null), 3000);
 
       const updatedPrayers = await settingsApi.getPrayerTimes();
       setPrayers(updatedPrayers.prayer_times);
     } catch (err: any) {
-      setProfileMessage(err?.message || "Failed to update profile.");
+      setProfileMessage({
+        type: "error",
+        text: err?.message || "Failed to update profile.",
+      });
     } finally {
       setProfileSaving(false);
     }
@@ -293,6 +310,7 @@ export default function SettingsPage() {
 
   const handleOpenPrayerEdit = (prayer: PrayerTimeItem) => {
     setEditingPrayer(prayer);
+    setPrayerOverrideError(null);
     setCustomPrayerTime(prayer.custom_time ? prayer.custom_time.slice(0, 5) : "");
   };
 
@@ -301,6 +319,7 @@ export default function SettingsPage() {
     if (!editingPrayer) return;
 
     setSavingPrayerOverride(true);
+    setPrayerOverrideError(null);
     try {
       await settingsApi.overridePrayerTime(
         editingPrayer.prayer_name,
@@ -310,7 +329,7 @@ export default function SettingsPage() {
       const updatedPrayers = await settingsApi.getPrayerTimes();
       setPrayers(updatedPrayers.prayer_times);
     } catch (err: any) {
-      alert(err?.message || "Failed to update prayer time.");
+      setPrayerOverrideError(err?.message || "Failed to update prayer time.");
     } finally {
       setSavingPrayerOverride(false);
     }
@@ -352,6 +371,28 @@ export default function SettingsPage() {
           <div className="space-y-4 animate-pulse">
             <div className="h-44 rounded-3xl shimmer" />
             <div className="h-44 rounded-3xl shimmer" />
+          </div>
+        ) : loadError && !profile ? (
+          <div className="rounded-3xl border border-rose-500/25 bg-rose-500/5 p-8 text-center space-y-4 max-w-xl mx-auto">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500">
+              <AlertTriangle className="h-7 w-7" />
+            </div>
+            <h2 className="text-lg font-bold text-rose-600 dark:text-rose-400">
+              Unable to load settings
+            </h2>
+            <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">
+              {loadError}
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => void loadData()}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95 transition-opacity"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Retry Connection</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
@@ -437,9 +478,20 @@ export default function SettingsPage() {
                 </div>
 
                 {profileMessage && (
-                  <div className="mb-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>{profileMessage}</span>
+                  <div
+                    className={cn(
+                      "mb-4 rounded-xl border p-3 text-xs font-bold flex items-center gap-2",
+                      profileMessage.type === "success"
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                        : "bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-300"
+                    )}
+                  >
+                    {profileMessage.type === "success" ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                    )}
+                    <span>{profileMessage.text}</span>
                   </div>
                 )}
 
@@ -950,12 +1002,14 @@ export default function SettingsPage() {
               try {
                 if (typeof window !== "undefined") {
                   localStorage.removeItem("uhc_logged_in");
+                  localStorage.removeItem("uhc_auth_token");
                 }
                 await api.post("/auth/logout");
                 router.push("/login");
               } catch {
                 if (typeof window !== "undefined") {
                   localStorage.removeItem("uhc_logged_in");
+                  localStorage.removeItem("uhc_auth_token");
                 }
                 router.push("/login");
               }
@@ -999,6 +1053,13 @@ export default function SettingsPage() {
                   Leave empty to restore automated calculation.
                 </p>
               </div>
+
+              {prayerOverrideError && (
+                <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500" />
+                  <span>{prayerOverrideError}</span>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button

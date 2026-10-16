@@ -79,6 +79,9 @@ export default function LoginPage() {
 
       if (typeof window !== "undefined") {
         localStorage.setItem("uhc_logged_in", "true");
+        if (body?.token) {
+          localStorage.setItem("uhc_auth_token", body.token);
+        }
       }
       router.push("/dashboard");
     } catch (submissionError) {

@@ -16,6 +16,8 @@ import {
   CheckCircle2,
   Smile,
   Paperclip,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { api, getApiBaseUrl } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -48,6 +50,7 @@ export default function NotesPage() {
   const [draft, setDraft] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [loadError, setLoadError] = React.useState<string | null>(null);
 
   // Voice note recording state
   const [isRecording, setIsRecording] = React.useState(false);
@@ -59,11 +62,14 @@ export default function NotesPage() {
   const timerIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const loadNotes = React.useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
       const result = await api.get<{ notes: Note[] }>("/couple/notes");
       setNotes(result.notes ?? []);
-    } catch {
+    } catch (err: any) {
       setNotes([]);
+      setLoadError(err?.message || "Unable to load notes. Please check connection.");
     } finally {
       setLoading(false);
     }
@@ -372,6 +378,28 @@ export default function NotesPage() {
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-40 rounded-3xl shimmer" />
             ))}
+          </div>
+        ) : loadError ? (
+          <div className="rounded-3xl border border-rose-500/25 bg-rose-500/5 p-8 text-center space-y-4 max-w-md mx-auto">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">
+              Unable to load notes
+            </h3>
+            <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">
+              {loadError}
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => void loadNotes()}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-500 px-4 py-2 text-xs font-bold text-white shadow-md hover:opacity-95 transition-opacity"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Retry Connection</span>
+              </button>
+            </div>
           </div>
         ) : notes.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-[var(--glass-border)] glass-card p-12 text-center shadow-sm">

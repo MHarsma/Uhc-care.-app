@@ -78,6 +78,7 @@ export function DashboardShell() {
     data: dashboard,
     isLoading: isDashboardLoading,
     error: dashboardError,
+    refetch: refetchDashboard,
   } = useQuery({
     queryKey: ["dashboard"],
     queryFn: dashboardApi.getDashboard,
@@ -516,8 +517,17 @@ export function DashboardShell() {
             </div>
           ) : dashboardError ? (
             <div className="rounded-2xl border border-rose-500/25 bg-rose-500/5 p-6 text-center space-y-3">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500 mb-2">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
               <p className="text-sm text-rose-500 font-semibold">
-                Could not load routines. Your session may have timed out or connection was interrupted.
+                {(dashboardError as any)?.status === 0
+                  ? "Unable to reach the server"
+                  : "Could not load routines"}
+              </p>
+              <p className="text-xs text-[var(--text-tertiary)] max-w-sm mx-auto leading-relaxed">
+                {(dashboardError as any)?.message ||
+                  "Your session may have timed out or connection was interrupted. Try reconnecting or signing in again."}
               </p>
               <div className="flex items-center justify-center gap-3 pt-1">
                 <button
