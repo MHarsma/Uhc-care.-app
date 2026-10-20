@@ -24,6 +24,10 @@ export interface ActiveCycleSummary {
 export interface PeriodsResponse {
   periods: PeriodEntry[];
   active_summary: ActiveCycleSummary;
+  is_female?: boolean;
+  is_partner_view?: boolean;
+  target_name?: string;
+  period_tracking_enabled?: boolean;
 }
 
 export const periodApi = {

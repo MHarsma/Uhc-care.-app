@@ -202,6 +202,9 @@ export default function PeriodTrackingPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [actionLoading, setActionLoading] = React.useState(false);
+  const [isFemale, setIsFemale] = React.useState<boolean>(true);
+  const [isPartnerView, setIsPartnerView] = React.useState<boolean>(false);
+  const [targetName, setTargetName] = React.useState<string>("");
 
   // Calendar View State
   const [currentCalendarDate, setCurrentCalendarDate] = React.useState(new Date());
@@ -258,6 +261,11 @@ export default function PeriodTrackingPage() {
       const res = await periodApi.getPeriods();
       setPeriods(res.periods || []);
       setActiveSummary(res.active_summary || null);
+      if (typeof res.is_female === "boolean") {
+        setIsFemale(res.is_female);
+      }
+      setIsPartnerView(Boolean(res.is_partner_view));
+      setTargetName(res.target_name || "");
     } catch (err: any) {
       if (err?.status === 403) {
         setError("Cycle & Period tracking is exclusively available for female accounts.");
@@ -345,6 +353,15 @@ export default function PeriodTrackingPage() {
     setModalIsOngoing(true);
     setModalError(null);
     setIsPeriodModalOpen(true);
+  };
+
+  const handleEditActiveStartDate = () => {
+    const activePeriod = periods.find((p) => p.id === activeSummary?.active_period_id) || latestPeriod;
+    if (activePeriod) {
+      openEditModal(activePeriod);
+    } else {
+      openCreateModal();
+    }
   };
 
   const openEditModal = (entry: PeriodEntry) => {
@@ -515,14 +532,16 @@ export default function PeriodTrackingPage() {
       headerTitle="Cycle & Wellness"
       headerSubtitle="Flo-inspired cycle phases, intelligent calendar & habit protection"
       headerAction={
-        <button
-          type="button"
-          onClick={openCreateModal}
-          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 px-4 py-2 text-xs font-bold text-white transition-all shadow-lg shadow-rose-500/20 active:scale-95 press-effect"
-        >
-          <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-          <span>Log Period</span>
-        </button>
+        isFemale ? (
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 px-4 py-2 text-xs font-bold text-white transition-all shadow-lg shadow-rose-500/20 active:scale-95 press-effect"
+          >
+            <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+            <span>Log Period</span>
+          </button>
+        ) : null
       }
     >
       <div className="space-y-8 max-w-6xl pb-12">
@@ -555,6 +574,28 @@ export default function PeriodTrackingPage() {
               </div>
             )}
           </div>
+        ) : !isFemale && !isPartnerView ? (
+          <div className="max-w-lg mx-auto rounded-3xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-8 text-center space-y-4 shadow-xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500 text-3xl">
+              🌸
+            </div>
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">
+              Cycle & Period Care
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+              Cycle tracking and period management are customized for female accounts.
+              If your partner is female, pair with her in the Partner Space to view her cycle phases, daily care insights, and helpful suggestions on how to support her.
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/partner"
+                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-lg hover:opacity-95 transition-all"
+              >
+                <Heart className="h-4 w-4" />
+                <span>Go to Partner Space</span>
+              </Link>
+            </div>
+          </div>
         ) : (
           <>
             {/* ============================================================ */}
@@ -583,6 +624,13 @@ export default function PeriodTrackingPage() {
                       <ShieldCheck className="h-3.5 w-3.5" />
                       <span>Salah: {currentPhase.salahStatus}</span>
                     </span>
+
+                    {isPartnerView && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/30 border border-amber-300/30 px-3 py-1 text-xs font-bold text-amber-100">
+                        <Heart className="h-3 w-3 fill-amber-200" />
+                        <span>Supporting {targetName || "Partner"}</span>
+                      </span>
+                    )}
                   </div>
 
                   <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none">
@@ -597,39 +645,78 @@ export default function PeriodTrackingPage() {
                     {currentPhase.description}
                   </p>
 
-                  {/* 1-Tap Quick Action Buttons */}
-                  <div className="mt-6 flex flex-wrap items-center gap-3">
-                    {activeSummary?.is_active ? (
-                      <button
-                        type="button"
-                        onClick={handleEndToday}
-                        disabled={actionLoading}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-white text-rose-700 px-6 py-3 text-xs font-extrabold shadow-lg hover:bg-rose-50 active:scale-95 transition-all press-effect"
-                      >
-                        <Check className="h-4 w-4 stroke-[3]" />
-                        <span>End Period Today</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleStartToday}
-                        disabled={actionLoading}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-white text-rose-700 px-6 py-3 text-xs font-extrabold shadow-lg hover:bg-rose-50 active:scale-95 transition-all press-effect"
-                      >
-                        <Droplet className="h-4 w-4 fill-rose-600 text-rose-600" />
-                        <span>Start Period Today</span>
-                      </button>
-                    )}
+                  {/* Partner Guidance Tip if viewing as partner */}
+                  {isPartnerView && (
+                    <div className="mt-4 rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur-md max-w-xl">
+                      <p className="text-[11px] font-bold text-rose-200 uppercase tracking-wider">
+                        How to support {targetName || "her"} today:
+                      </p>
+                      <p className="text-sm font-semibold text-white mt-1">
+                        {currentPhase.partnerTip}
+                      </p>
+                    </div>
+                  )}
 
-                    <button
-                      type="button"
-                      onClick={() => setIsSymptomDrawerOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/20 px-5 py-3 text-xs font-bold text-white backdrop-blur-md transition-all active:scale-95"
-                    >
-                      <Smile className="h-4 w-4" />
-                      <span>Log Daily Symptoms</span>
-                    </button>
-                  </div>
+                  {/* Action Buttons: Only for Female Users */}
+                  {isFemale && (
+                    <div className="mt-6 flex flex-wrap items-center gap-3">
+                      {activeSummary?.is_active ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleEndToday}
+                            disabled={actionLoading}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-white text-rose-700 px-5 py-3 text-xs font-extrabold shadow-lg hover:bg-rose-50 active:scale-95 transition-all press-effect"
+                          >
+                            <Check className="h-4 w-4 stroke-[3]" />
+                            <span>End Period Today</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleEditActiveStartDate}
+                            disabled={actionLoading}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-white/20 hover:bg-white/30 border border-white/25 text-white px-4 py-3 text-xs font-bold backdrop-blur-md active:scale-95 transition-all"
+                            title="Edit Period Start Date"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            <span>Edit Start Date</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleStartToday}
+                            disabled={actionLoading}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-white text-rose-700 px-5 py-3 text-xs font-extrabold shadow-lg hover:bg-rose-50 active:scale-95 transition-all press-effect"
+                          >
+                            <Droplet className="h-4 w-4 fill-rose-600 text-rose-600" />
+                            <span>Start Period Today</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={openCreateModal}
+                            disabled={actionLoading}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-white/20 hover:bg-white/30 border border-white/25 text-white px-4 py-3 text-xs font-bold backdrop-blur-md active:scale-95 transition-all"
+                          >
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span>Choose Start Date...</span>
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setIsSymptomDrawerOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/20 px-5 py-3 text-xs font-bold text-white backdrop-blur-md transition-all active:scale-95"
+                      >
+                        <Smile className="h-4 w-4" />
+                        <span>Log Daily Symptoms</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right: Circular Phase Progress Dial */}
@@ -1086,24 +1173,26 @@ export default function PeriodTrackingPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(entry)}
-                          className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(entry.id)}
-                          className="p-2 text-[var(--text-tertiary)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                      {isFemale && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(entry)}
+                            className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
+                            title="Edit Period Dates"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(entry.id)}
+                            className="p-2 text-[var(--text-tertiary)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1121,7 +1210,7 @@ export default function PeriodTrackingPage() {
           <div className="w-full max-w-md rounded-3xl glass-card p-6 shadow-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] animate-fade-scale">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--glass-border)]">
               <h3 className="text-base font-bold text-[var(--text-primary)]">
-                {editingPeriodId ? "Edit Cycle Entry" : "Log Period Dates"}
+                {editingPeriodId ? "Edit Period Dates" : "Log Period Start Date"}
               </h3>
               <button
                 type="button"
@@ -1150,6 +1239,9 @@ export default function PeriodTrackingPage() {
                   className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] focus:border-rose-500 focus:bg-rose-500/5 focus:outline-none transition-all"
                   required
                 />
+                <p className="mt-1 text-[11px] text-[var(--text-tertiary)]">
+                  Select the exact date your flow began (today or any past date).
+                </p>
               </div>
 
               <div className="flex items-center gap-2">

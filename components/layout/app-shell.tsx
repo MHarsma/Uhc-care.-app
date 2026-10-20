@@ -614,20 +614,36 @@ export function AppShell({
       {/* ============================================================ */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl px-2 py-1.5 transition-colors duration-200">
         <div className="flex items-center justify-around max-w-md mx-auto">
-          {[
-            { id: "today", label: "Today", href: "/dashboard", icon: CalendarCheck },
-            { id: "tasks", label: "Routines", href: "/tasks", icon: ListOrdered },
-            { id: "fitness", label: "Fitness", href: "/fitness", icon: Dumbbell },
-            { id: "health", label: "Health", href: "/period", icon: CalendarHeart },
-            {
+          {(() => {
+            const items: {
+              id: string;
+              label: string;
+              href: string;
+              icon: any;
+              badge?: number | string | undefined;
+            }[] = [
+              { id: "today", label: "Today", href: "/dashboard", icon: CalendarCheck },
+              { id: "tasks", label: "Routines", href: "/tasks", icon: ListOrdered },
+            ];
+
+            if (user?.is_female) {
+              items.push({ id: "cycle", label: "Cycle", href: "/period", icon: CalendarHeart });
+            } else if (dashboard?.cycle_status?.is_active) {
+              items.push({ id: "care", label: "Care", href: "/period", icon: CalendarHeart });
+            }
+
+            items.push({ id: "fitness", label: "Fitness", href: "/fitness", icon: Dumbbell });
+            items.push({
               id: "partner",
               label: "Partner",
               href: "/partner",
               icon: HeartHandshake,
               badge: pendingLeaves > 0 ? pendingLeaves : undefined,
-            },
-            { id: "settings", label: "Settings", href: "/settings", icon: Settings },
-          ].map((item) => {
+            });
+            items.push({ id: "settings", label: "Settings", href: "/settings", icon: Settings });
+
+            return items;
+          })().map((item) => {
             const Icon = item.icon;
             const isActive =
               pathname === item.href ||
