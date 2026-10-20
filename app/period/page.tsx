@@ -196,6 +196,26 @@ function getPhaseForCycleDay(cycleDay: number, cycleLength = 28): PhaseInfo {
   return CYCLE_PHASES.luteal;
 }
 
+// Timezone-safe UTC date difference calculation to prevent timezone offset shifts
+function parseUtcDate(dateStr: string): number {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return Date.UTC(y, m - 1, d);
+}
+
+function diffDaysUtc(fromStr: string, toStr: string): number {
+  const t1 = parseUtcDate(fromStr);
+  const t2 = parseUtcDate(toStr);
+  return Math.round((t2 - t1) / 86400000);
+}
+
+function getLocalTodayStr(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function PeriodTrackingPage() {
   const [periods, setPeriods] = React.useState<PeriodEntry[]>([]);
   const [activeSummary, setActiveSummary] = React.useState<ActiveCycleSummary | null>(null);
@@ -208,9 +228,7 @@ export default function PeriodTrackingPage() {
 
   // Calendar View State
   const [currentCalendarDate, setCurrentCalendarDate] = React.useState(new Date());
-  const [selectedDayDate, setSelectedDayDate] = React.useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDayDate, setSelectedDayDate] = React.useState<string>(getLocalTodayStr());
 
   // Log / Edit Period Modal
   const [isPeriodModalOpen, setIsPeriodModalOpen] = React.useState(false);
@@ -230,7 +248,7 @@ export default function PeriodTrackingPage() {
   }>>({});
 
   const todayStr = React.useMemo(() => {
-    return new Date().toISOString().split("T")[0];
+    return getLocalTodayStr();
   }, []);
 
   // Load saved symptom logs from localStorage
@@ -293,20 +311,30 @@ export default function PeriodTrackingPage() {
   // Calculate current cycle day relative to latest period start date
   const currentCycleDay = React.useMemo(() => {
     if (!latestPeriod) return null;
-    const start = new Date(latestPeriod.start_date);
-    const now = new Date(todayStr);
-    const diffTime = now.getTime() - start.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const diffDays = diffDaysUtc(latestPeriod.start_date, todayStr) + 1;
     if (diffDays < 1) return 1;
     return diffDays;
   }, [latestPeriod, todayStr]);
 
+  // Robust period active status check
+  const isPeriodActive = React.useMemo(() => {
+    if (activeSummary?.has_active_period || activeSummary?.is_active) return true;
+    if (latestPeriod && (!latestPeriod.end_date || latestPeriod.is_ongoing)) {
+      // If ongoing and started today or in the past
+      return diffDaysUtc(latestPeriod.start_date, todayStr) >= 0;
+    }
+    return false;
+  }, [activeSummary, latestPeriod, todayStr]);
+
   const currentPhase = React.useMemo(() => {
     if (!currentCycleDay) {
-      return activeSummary?.is_active ? CYCLE_PHASES.menstrual : CYCLE_PHASES.follicular;
+      return isPeriodActive ? CYCLE_PHASES.menstrual : CYCLE_PHASES.follicular;
+    }
+    if (isPeriodActive) {
+      return CYCLE_PHASES.menstrual;
     }
     return getPhaseForCycleDay(currentCycleDay, cycleLength);
-  }, [currentCycleDay, activeSummary]);
+  }, [currentCycleDay, isPeriodActive, cycleLength]);
 
   const nextPeriodInDays = React.useMemo(() => {
     if (!currentCycleDay) return null;
@@ -454,33 +482,38 @@ export default function PeriodTrackingPage() {
       hasLoggedSymptoms: boolean;
     }> = [];
 
-    // Pre-calculate logged period date ranges
+    // Pre-calculate logged period date ranges using UTC math
     const periodDates = new Set<string>();
     periods.forEach((p) => {
-      const s = new Date(p.start_date);
-      const e = p.end_date ? new Date(p.end_date) : new Date(todayStr);
-      for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
-        periodDates.add(d.toISOString().split("T")[0]);
+      const sStr = p.start_date;
+      const eStr = p.end_date || todayStr;
+      const totalSpan = diffDaysUtc(sStr, eStr);
+      const startMs = parseUtcDate(sStr);
+      for (let offset = 0; offset <= Math.max(0, totalSpan); offset++) {
+        const dObj = new Date(startMs + offset * 86400000);
+        const yStr = dObj.getUTCFullYear();
+        const mStr = String(dObj.getUTCMonth() + 1).padStart(2, "0");
+        const dayStr = String(dObj.getUTCDate()).padStart(2, "0");
+        periodDates.add(`${yStr}-${mStr}-${dayStr}`);
       }
     });
 
     // Days in current month
     for (let day = 1; day <= daysInMonth; day++) {
-      const d = new Date(year, month, day);
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const d = new Date(year, month, day);
       const dayName = WEEKDAY_NAMES[(d.getDay() + 6) % 7];
       const isToday = dateStr === todayStr;
       const isSelected = dateStr === selectedDayDate;
       const isPeriodDay = periodDates.has(dateStr);
 
-      // Cycle day calculation for this cell
-      // Use latest period start as anchor, or fallback to 1st of current month
+      // Cycle day calculation for this cell using UTC date difference
       let cellCycleDay: number | null = null;
-      const anchorDate = latestPeriod
-        ? new Date(latestPeriod.start_date)
-        : new Date(year, month, 1);
-      const diffTime = d.getTime() - anchorDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const anchorDateStr = latestPeriod
+        ? latestPeriod.start_date
+        : `${year}-${String(month + 1).padStart(2, "0")}-01`;
+
+      const diffDays = diffDaysUtc(anchorDateStr, dateStr) + 1;
       if (diffDays >= 1) {
         cellCycleDay = ((diffDays - 1) % cycleLength) + 1;
       } else {
@@ -660,7 +693,7 @@ export default function PeriodTrackingPage() {
                   {/* Action Buttons: Only for Female Users */}
                   {isFemale && (
                     <div className="mt-6 flex flex-wrap items-center gap-3">
-                      {activeSummary?.is_active ? (
+                      {isPeriodActive ? (
                         <>
                           <button
                             type="button"

@@ -751,12 +751,21 @@ export default function MovementAndVitalityPage() {
   const [isWorkoutActive, setIsWorkoutActive] = React.useState(false);
   const [completedExerciseIndexes, setCompletedExerciseIndexes] = React.useState<Set<number>>(new Set());
 
+  const [isFemale, setIsFemale] = React.useState<boolean>(true);
+  const [isPartnerView, setIsPartnerView] = React.useState<boolean>(false);
+  const [targetName, setTargetName] = React.useState<string>("");
+
   // Load Cycle Information
   React.useEffect(() => {
     async function loadCycle() {
       try {
         setIsLoadingCycle(true);
         const res = await periodApi.getPeriods();
+        if (typeof res?.is_female === "boolean") {
+          setIsFemale(res.is_female);
+        }
+        setIsPartnerView(Boolean(res?.is_partner_view));
+        setTargetName(res?.target_name || "");
         const summary = res?.active_summary;
         const day = summary?.cycle_day ?? summary?.current_cycle_day ?? 8;
         setCycleDay(day);
@@ -870,40 +879,44 @@ export default function MovementAndVitalityPage() {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
                 <Sparkles className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
-                Adaptive Hormonal Movement & Recovery
+                {isPartnerView ? `Supporting ${targetName || "Partner"}'s Wellness & Activity` : "Adaptive Movement, Vitality & Recovery"}
               </div>
 
               <h1 className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-3xl">
-                Daily Movement, Energy & Symptom Care 🌸
+                {isPartnerView ? `Movement, Wellness & Care for ${targetName || "Partner"} 🌸` : "Daily Movement, Energy & Vitality Care 🌸"}
               </h1>
 
               <p className="max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-                Personalized daily movement, energy pacing, hydration, and soothing relief tailored to your 28-day hormonal rhythm.
+                {isPartnerView
+                  ? `Keep track of ${targetName || "her"} hormonal phase, energy levels, hydration, and instant recovery protocols so you can support her effortlessly.`
+                  : "Personalized daily movement, energy pacing, hydration, and soothing relief tailored to your daily rhythm."}
               </p>
             </div>
 
             {/* Daily Energy & Readiness Dial Card */}
-            <div className="flex items-center gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 shadow-sm">
-              <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-rose-500 text-white shadow-md shadow-violet-500/20">
-                <div className="flex flex-col items-center leading-none">
-                  <span className="text-xl font-black">{dailyReadiness.score}%</span>
-                  <span className="text-[9px] uppercase font-bold opacity-90 tracking-wider">Readiness</span>
+            {(isFemale || isPartnerView) && (
+              <div className="flex items-center gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 shadow-sm">
+                <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-rose-500 text-white shadow-md shadow-violet-500/20">
+                  <div className="flex flex-col items-center leading-none">
+                    <span className="text-xl font-black">{dailyReadiness.score}%</span>
+                    <span className="text-[9px] uppercase font-bold opacity-90 tracking-wider">Readiness</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", dailyReadiness.badgeBg)}>
-                    {dailyReadiness.phaseTitle}
-                  </span>
-                  <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                    Day {cycleDay} of 28
-                  </span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", dailyReadiness.badgeBg)}>
+                      {dailyReadiness.phaseTitle}
+                    </span>
+                    <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
+                      Day {cycleDay} of 28
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-[var(--text-primary)]">{dailyReadiness.title}</h4>
+                  <p className="text-xs text-[var(--text-secondary)] line-clamp-1">{dailyReadiness.advice}</p>
                 </div>
-                <h4 className="text-sm font-bold text-[var(--text-primary)]">{dailyReadiness.title}</h4>
-                <p className="text-xs text-[var(--text-secondary)] line-clamp-1">{dailyReadiness.advice}</p>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -1098,7 +1111,9 @@ export default function MovementAndVitalityPage() {
                 Instant Symptom Relief Protocols 💡
               </h2>
               <p className="text-xs text-[var(--text-secondary)]">
-                Tap whatever she is experiencing right now for rapid 3-minute guided recovery steps.
+                {isPartnerView
+                  ? `Tap whatever ${targetName || "she"} is experiencing right now for rapid 3-minute guided recovery steps.`
+                  : "Tap whatever you are experiencing right now for rapid 3-minute guided recovery steps."}
               </p>
             </div>
           </div>

@@ -152,11 +152,11 @@ export function AppShell({
     },
     {
       id: "period",
-      label: "Cycle & Care",
-      shortLabel: "Cycle",
+      label: user?.is_female ? "Cycle & Period" : "Cycle & Care",
+      shortLabel: user?.is_female ? "Cycle" : "Care",
       href: "/period",
       icon: CalendarHeart,
-      show: user?.is_female || dashboard?.cycle_status?.is_active,
+      show: user?.is_female || Boolean(dashboard?.cycle_status) || Boolean(partner),
       badge: dashboard?.cycle_status?.is_active ? "Active" : undefined,
     },
     {
@@ -628,8 +628,14 @@ export function AppShell({
 
             if (user?.is_female) {
               items.push({ id: "cycle", label: "Cycle", href: "/period", icon: CalendarHeart });
-            } else if (dashboard?.cycle_status?.is_active) {
-              items.push({ id: "care", label: "Care", href: "/period", icon: CalendarHeart });
+            } else if (Boolean(dashboard?.cycle_status) || Boolean(partner)) {
+              items.push({
+                id: "care",
+                label: "Care",
+                href: "/period",
+                icon: CalendarHeart,
+                badge: dashboard?.cycle_status?.is_active ? "Active" : undefined,
+              });
             }
 
             items.push({ id: "fitness", label: "Fitness", href: "/fitness", icon: Dumbbell });
