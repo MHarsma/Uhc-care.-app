@@ -63,5 +63,7 @@ export type PartnerData = {
 
 export const dashboardApi = {
   getDashboard: () => api.get<DashboardData>("/dashboard"),
+  getDashboardForDate: (date: string) =>
+    api.get<DashboardData>(`/dashboard?date=${encodeURIComponent(date)}`),
   getPartnerSummary: () => api.get<PartnerData>("/partner"),
 };

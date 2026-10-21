@@ -52,11 +52,14 @@ export async function enrollBiometrics(userEmail: string, userName: string): Pro
 
   const userIdBuffer = new TextEncoder().encode(userEmail);
 
+  const hostname = window.location.hostname;
+  const isIpAddress = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+
   const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
     challenge: randomChallenge,
     rp: {
       name: "UHC Care Couple OS",
-      id: window.location.hostname,
+      ...(hostname && !isIpAddress ? { id: hostname } : {}),
     },
     user: {
       id: userIdBuffer,
@@ -109,10 +112,13 @@ export async function verifyBiometrics(): Promise<{ success: boolean; userEmail:
   const randomChallenge = new Uint8Array(32);
   window.crypto.getRandomValues(randomChallenge);
 
+  const hostname = window.location.hostname;
+  const isIpAddress = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+
   // Convert stored base64 credential ID to Uint8Array if needed, or pass allowCredentials
   const publicKeyCredentialRequestOptions: PublicKeyCredentialRequestOptions = {
     challenge: randomChallenge,
-    rpId: window.location.hostname,
+    ...(hostname && !isIpAddress ? { rpId: hostname } : {}),
     userVerification: "required",
     timeout: 60000,
   };

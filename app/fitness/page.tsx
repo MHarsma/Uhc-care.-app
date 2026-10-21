@@ -927,9 +927,12 @@ export default function MovementAndVitalityPage() {
           {/* Tile 1: Movement Calories */}
           <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                Move & Burn
-              </span>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                  Active Calories Burned
+                </span>
+                <p className="text-[10px] text-[var(--text-tertiary)]">Daily Energy Output</p>
+              </div>
               <div className="rounded-xl bg-rose-500/10 p-2 text-rose-500">
                 <Flame className="h-4 w-4" />
               </div>
@@ -954,9 +957,12 @@ export default function MovementAndVitalityPage() {
           {/* Tile 2: Exercise Minutes */}
           <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                Active Movement
-              </span>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Workout & Exercise Time
+                </span>
+                <p className="text-[10px] text-[var(--text-tertiary)]">Daily Fitness Duration</p>
+              </div>
               <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-500">
                 <Activity className="h-4 w-4" />
               </div>
@@ -981,9 +987,12 @@ export default function MovementAndVitalityPage() {
           {/* Tile 3: Mindfulness & Stretches */}
           <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
-                Mindful Rest
-              </span>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
+                  Mindful Breathing & Stretching
+                </span>
+                <p className="text-[10px] text-[var(--text-tertiary)]">Restorative Relaxation</p>
+              </div>
               <div className="rounded-xl bg-cyan-500/10 p-2 text-cyan-500">
                 <Heart className="h-4 w-4" />
               </div>
@@ -1008,9 +1017,12 @@ export default function MovementAndVitalityPage() {
           {/* Tile 4: Water Hydration Tracker */}
           <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                Hydration Tracker
-              </span>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                  Daily Water Intake
+                </span>
+                <p className="text-[10px] text-[var(--text-tertiary)]">Hydration & Electrolytes</p>
+              </div>
               <div className="rounded-xl bg-blue-500/10 p-2 text-blue-500">
                 <Droplets className="h-4 w-4" />
               </div>
@@ -1153,13 +1165,15 @@ export default function MovementAndVitalityPage() {
           </div>
 
           {/* Expanded Symptom Drawer */}
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {activeSymptom && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden rounded-3xl border border-violet-500/30 bg-[var(--bg-card)] p-6 sm:p-8 shadow-lg transition-colors"
+                key={activeSymptom.id}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="rounded-3xl border-2 border-violet-500/40 bg-[var(--bg-card)] p-6 sm:p-8 shadow-xl transition-colors"
               >
                 <div className="flex items-center justify-between border-b border-[var(--glass-border)] pb-4">
                   <div className="flex items-center gap-3">

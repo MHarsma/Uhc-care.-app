@@ -26,6 +26,7 @@ import {
   X,
   CalendarHeart,
   Dumbbell,
+  History,
 } from "lucide-react";
 import { QuickAddTaskDialog } from "@/components/routine-library/quick-add-task-dialog";
 import { RoutineLibraryModal } from "@/components/routine-library/routine-library-modal";
@@ -136,6 +137,13 @@ export function AppShell({
       icon: ListOrdered,
     },
     {
+      id: "history",
+      label: "Routine History",
+      shortLabel: "History",
+      href: "/routine-history",
+      icon: History,
+    },
+    {
       id: "partner",
       label: "Partner Space",
       shortLabel: "Partner",
@@ -156,7 +164,6 @@ export function AppShell({
       shortLabel: user?.is_female ? "Cycle" : "Care",
       href: "/period",
       icon: CalendarHeart,
-      show: user?.is_female || Boolean(dashboard?.cycle_status) || Boolean(partner),
       badge: dashboard?.cycle_status?.is_active ? "Active" : undefined,
     },
     {
@@ -182,7 +189,7 @@ export function AppShell({
     },
   ];
 
-  const visibleNavItems = navItems.filter((item) => item.show !== false);
+  const visibleNavItems = navItems;
 
   // Today formatted string
   const todayFormatted = React.useMemo(() => {
@@ -628,7 +635,7 @@ export function AppShell({
 
             if (user?.is_female) {
               items.push({ id: "cycle", label: "Cycle", href: "/period", icon: CalendarHeart });
-            } else if (Boolean(dashboard?.cycle_status) || Boolean(partner)) {
+            } else {
               items.push({
                 id: "care",
                 label: "Care",

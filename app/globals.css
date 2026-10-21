@@ -132,6 +132,29 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Prevent unwanted native text selection and dictionary popups when tapping interactive elements */
+button,
+a,
+nav,
+[role="button"],
+.select-none,
+.glass-card,
+.card,
+header,
+.badge,
+svg {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+.selectable-text {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;

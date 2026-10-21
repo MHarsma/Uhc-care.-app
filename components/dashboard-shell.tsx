@@ -214,11 +214,6 @@ export function DashboardShell() {
       headerTitle="Today's Overview"
       headerSubtitle={`${greeting}, ${user?.name?.split(" ")[0] || "there"} 👋`}
     >
-      {/* Replan Review Banner for Unfinished Tasks */}
-      <div className="mb-4">
-        <ReplanUnfinishedDialog />
-      </div>
-
       {/* MOBILE COUPLE SYNC HEADER (< lg) */}
       {partner ? (
         <div className="lg:hidden rounded-2xl glass-card p-3.5 border border-rose-500/25 bg-rose-500/5 mb-4 shadow-xs">

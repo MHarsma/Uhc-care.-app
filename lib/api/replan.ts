@@ -22,6 +22,12 @@ export const replanApi = {
     return api.get<UnfinishedYesterdayResponse>("/tasks/unfinished-yesterday");
   },
 
+  getUnfinishedForDate: async (date: string): Promise<UnfinishedYesterdayResponse> => {
+    return api.get<UnfinishedYesterdayResponse>(
+      `/tasks/unfinished-yesterday?date=${encodeURIComponent(date)}`
+    );
+  },
+
   replanTask: async (
     taskId: number,
     payload: {

@@ -34,6 +34,31 @@ interface ExerciseVideoModalProps {
   onClose: () => void;
 }
 
+function playCompletionChime() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.35);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.6);
+
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate([200, 100, 200]);
+    }
+  } catch {}
+}
+
 export function ExerciseVideoModal({
   exerciseId,
   onClose,
@@ -46,6 +71,8 @@ export function ExerciseVideoModal({
   const [activeCheckpoint, setActiveCheckpoint] = React.useState<number>(0);
   const [timerSeconds, setTimerSeconds] = React.useState(0);
   const [isTimerRunning, setIsTimerRunning] = React.useState(false);
+  const [timerCompleted, setTimerCompleted] = React.useState(false);
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
 
   const videoData: DetailedExerciseVideo | null = React.useMemo(() => {
     if (!exerciseId) return null;
@@ -66,11 +93,13 @@ export function ExerciseVideoModal({
       setSelectedAngle("side");
       setTimerSeconds(videoData.durationSec || 60);
       setIsTimerRunning(false);
+      setTimerCompleted(false);
       setActiveCheckpoint(0);
+      setIsSlowMo(false);
     }
   }, [videoData]);
 
-  // Countdown timer logic
+  // Countdown timer logic with notification chime & vibration
   React.useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (isTimerRunning && timerSeconds > 0) {
@@ -78,6 +107,8 @@ export function ExerciseVideoModal({
         setTimerSeconds((prev) => {
           if (prev <= 1) {
             setIsTimerRunning(false);
+            setTimerCompleted(true);
+            playCompletionChime();
             return 0;
           }
           return prev - 1;
@@ -88,6 +119,23 @@ export function ExerciseVideoModal({
       if (interval) clearInterval(interval);
     };
   }, [isTimerRunning, timerSeconds]);
+
+  const togglePlaybackSpeed = () => {
+    const nextSlow = !isSlowMo;
+    setIsSlowMo(nextSlow);
+    try {
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({
+            event: "command",
+            func: "setPlaybackRate",
+            args: [nextSlow ? 0.5 : 1],
+          }),
+          "*"
+        );
+      }
+    } catch {}
+  };
 
   if (!videoData) return null;
 
@@ -111,18 +159,23 @@ export function ExerciseVideoModal({
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="relative w-full max-w-3xl rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] shadow-2xl max-h-[94vh] flex flex-col overflow-hidden"
         >
-          {/* Modal Header */}
-          <div className="flex items-center justify-between border-b border-[var(--glass-border)] px-5 py-4 bg-[var(--bg-secondary)] shrink-0">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
+          {/* Modal Header — Cleaned up hierarchy & spacing */}
+          <div className="flex items-start justify-between border-b border-[var(--glass-border)] px-5 py-4 bg-[var(--bg-secondary)] shrink-0 gap-3">
+            <div className="space-y-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-violet-500/15 border border-violet-500/25 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400">
                   {videoData.category}
                 </span>
+                {videoData.subtitle && (
+                  <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
+                    {videoData.subtitle}
+                  </span>
+                )}
                 <span className="text-[11px] font-bold text-[var(--text-tertiary)]">
                   • {videoData.reps || `${videoData.durationSec}s hold`}
                 </span>
               </div>
-              <h3 className="text-base sm:text-xl font-black text-[var(--text-primary)] leading-tight">
+              <h3 className="text-base sm:text-xl font-black text-[var(--text-primary)] leading-snug">
                 {videoData.name}
               </h3>
             </div>
@@ -130,7 +183,7 @@ export function ExerciseVideoModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+              className="rounded-full p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors shrink-0"
               aria-label="Close tutorial"
             >
               <X className="h-5 w-5" />
@@ -172,30 +225,35 @@ export function ExerciseVideoModal({
                 </div>
 
                 {/* Slow-mo & Timer Controls */}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsSlowMo(!isSlowMo)}
+                    onClick={togglePlaybackSpeed}
                     className={cn(
-                      "px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 active:scale-95",
                       isSlowMo
-                        ? "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                        ? "bg-amber-500/20 border-amber-500/40 text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/30"
                         : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     )}
-                    title="Toggle slow motion posture inspection"
+                    title="Toggle slow-motion 0.5x playback for granular biomechanics examination"
                   >
-                    {isSlowMo ? "0.5x Slow-Mo ON" : "Normal Speed"}
+                    <span>⚡</span>
+                    <span>{isSlowMo ? "0.5x Slow-Mo (Active)" : "Normal Speed (1.0x)"}</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setIsTimerRunning(!isTimerRunning)}
+                    onClick={() => {
+                      setTimerCompleted(false);
+                      setIsTimerRunning(!isTimerRunning);
+                    }}
                     className={cn(
-                      "px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all",
+                      "px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all active:scale-95",
                       isTimerRunning
-                        ? "bg-emerald-500 text-white border-emerald-600"
-                        : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                        ? "bg-emerald-500 text-white border-emerald-600 shadow-sm animate-pulse"
+                        : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:border-violet-500/40"
                     )}
+                    title="Pacing Timer: Measures isometric posture hold & deep breathing interval"
                   >
                     {isTimerRunning ? (
                       <>
@@ -205,19 +263,37 @@ export function ExerciseVideoModal({
                     ) : (
                       <>
                         <Play className="h-3.5 w-3.5" />
-                        <span>Start {videoData.durationSec}s Timer</span>
+                        <span>Start {videoData.durationSec}s Hold Timer</span>
                       </>
                     )}
                   </button>
                 </div>
               </div>
 
+              {/* Timer Completion Feedback Banner */}
+              {timerCompleted && (
+                <div className="flex items-center justify-between rounded-2xl bg-emerald-500/15 border border-emerald-500/35 p-3 text-xs font-bold text-emerald-700 dark:text-emerald-300 animate-in fade-in slide-in-from-top-1">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <span>🎉 Interval Complete! Great job holding proper posture.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTimerCompleted(false)}
+                    className="p-1 rounded-lg hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+
               {/* High Definition Video Embed Player */}
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black border border-[var(--glass-border)] shadow-inner">
                 {currentVideoId ? (
                   <iframe
+                    ref={iframeRef}
                     key={`${currentVideoId}-${selectedAngle}`}
-                    src={`https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1&mute=1&loop=1&playlist=${currentVideoId}&controls=1&modestbranding=1&rel=0&playsinline=1`}
+                    src={`https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1&mute=1&loop=1&playlist=${currentVideoId}&controls=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
                     title={`${videoData.name} Form Video`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -230,10 +306,22 @@ export function ExerciseVideoModal({
                   </div>
                 )}
 
-                {/* Angle Overlay Badge */}
+                {/* Angle Overlay Badge & External Link */}
                 <div className="absolute top-3 left-3 pointer-events-none rounded-full bg-black/60 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white border border-white/20">
                   {selectedAngle === "front" ? "Front Perspective" : "Side Alignment Perspective"}
                 </div>
+
+                {currentVideoId && (
+                  <a
+                    href={`https://www.youtube.com/watch?v=${currentVideoId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-3 right-3 rounded-full bg-black/70 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white/90 hover:text-white border border-white/20 flex items-center gap-1.5 transition-all hover:bg-black/90"
+                  >
+                    <span>Watch on YouTube</span>
+                    <Maximize2 className="h-3 w-3" />
+                  </a>
+                )}
               </div>
 
               {/* Angle Form Coaching Cue */}

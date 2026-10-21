@@ -144,6 +144,10 @@ export default function SettingsPage() {
   const [unpairingLoading, setUnpairingLoading] = React.useState(false);
   const [unpairMessage, setUnpairMessage] = React.useState<string | null>(null);
 
+  // Sign out confirmation modal state
+  const [showSignoutModal, setShowSignoutModal] = React.useState(false);
+  const [signoutLoading, setSignoutLoading] = React.useState(false);
+
   // Biometrics state
   const [biometricSupported, setBiometricSupported] = React.useState(false);
   const [biometricEnrolled, setBiometricEnrolled] = React.useState(false);
@@ -939,11 +943,18 @@ export default function SettingsPage() {
                         type="button"
                         disabled={biometricEnrolling}
                         onClick={async () => {
-                          if (!profile?.email) return;
+                          const targetEmail = profile?.email || (typeof window !== "undefined" ? localStorage.getItem("uhc_biometric_user") || localStorage.getItem("uhc_user_email") : null);
+                          if (!targetEmail) {
+                            setBiometricMsg({
+                              type: "error",
+                              text: "Profile email is still loading. Please wait a moment or tap Retry.",
+                            });
+                            return;
+                          }
                           setBiometricEnrolling(true);
                           setBiometricMsg(null);
                           try {
-                            await enrollBiometrics(profile.email, profile.name);
+                            await enrollBiometrics(targetEmail, profile?.name || targetEmail.split("@")[0]);
                             setBiometricEnrolled(true);
                             setBiometricMsg({
                               type: "success",
@@ -952,7 +963,7 @@ export default function SettingsPage() {
                           } catch (err: any) {
                             setBiometricMsg({
                               type: "error",
-                              text: err?.message || "Failed to register fingerprint scanner.",
+                              text: err?.message || "Failed to register fingerprint scanner. Ensure your browser has permission.",
                             });
                           } finally {
                             setBiometricEnrolling(false);
@@ -994,22 +1005,7 @@ export default function SettingsPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={async () => {
-                      try {
-                        if (typeof window !== "undefined") {
-                          localStorage.removeItem("uhc_logged_in");
-                          localStorage.removeItem("uhc_auth_token");
-                        }
-                        await api.post("/auth/logout");
-                        router.push("/login");
-                      } catch {
-                        if (typeof window !== "undefined") {
-                          localStorage.removeItem("uhc_logged_in");
-                          localStorage.removeItem("uhc_auth_token");
-                        }
-                        router.push("/login");
-                      }
-                    }}
+                    onClick={() => setShowSignoutModal(true)}
                     className="rounded-xl bg-rose-500/10 border border-rose-500/30 px-4 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all"
                   >
                     Sign Out
@@ -1111,6 +1107,62 @@ export default function SettingsPage() {
                 className="rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-bold text-white shadow-sm"
               >
                 {unpairingLoading ? "Unpairing..." : "Confirm Unpair"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-card)] p-6 shadow-2xl border border-[var(--glass-border)] text-center animate-in zoom-in-95 duration-150 space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-500">
+              <LogOut className="h-7 w-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                Sign Out of UHC Care?
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">
+                You will need your password or fingerprint to sign back into your account on this device.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowSignoutModal(false)}
+                disabled={signoutLoading}
+                className="rounded-xl border border-[var(--glass-border)] py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={signoutLoading}
+                onClick={async () => {
+                  setSignoutLoading(true);
+                  try {
+                    if (typeof window !== "undefined") {
+                      localStorage.removeItem("uhc_logged_in");
+                      localStorage.removeItem("uhc_auth_token");
+                    }
+                    await api.post("/auth/logout");
+                    router.push("/login");
+                  } catch {
+                    if (typeof window !== "undefined") {
+                      localStorage.removeItem("uhc_logged_in");
+                      localStorage.removeItem("uhc_auth_token");
+                    }
+                    router.push("/login");
+                  } finally {
+                    setSignoutLoading(false);
+                  }
+                }}
+                className="rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 py-2.5 text-xs font-bold text-white shadow-md active:scale-95 transition-all"
+              >
+                {signoutLoading ? "Signing out..." : "Yes, Sign Out"}
               </button>
             </div>
           </div>

@@ -222,9 +222,14 @@ export default function PeriodTrackingPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [actionLoading, setActionLoading] = React.useState(false);
-  const [isFemale, setIsFemale] = React.useState<boolean>(true);
+  const [isFemale, setIsFemale] = React.useState<boolean>(false);
   const [isPartnerView, setIsPartnerView] = React.useState<boolean>(false);
   const [targetName, setTargetName] = React.useState<string>("");
+
+  // Period management (start/end/edit dates) is strictly reserved for the female user
+  const canManagePeriods = React.useMemo(() => {
+    return Boolean(isFemale && !isPartnerView);
+  }, [isFemale, isPartnerView]);
 
   // Calendar View State
   const [currentCalendarDate, setCurrentCalendarDate] = React.useState(new Date());
@@ -565,7 +570,7 @@ export default function PeriodTrackingPage() {
       headerTitle="Cycle & Wellness"
       headerSubtitle="Flo-inspired cycle phases, intelligent calendar & habit protection"
       headerAction={
-        isFemale ? (
+        canManagePeriods ? (
           <button
             type="button"
             onClick={openCreateModal}
@@ -690,8 +695,8 @@ export default function PeriodTrackingPage() {
                     </div>
                   )}
 
-                  {/* Action Buttons: Only for Female Users */}
-                  {isFemale && (
+                  {/* Action Buttons: Only for the female user herself (not partner view) */}
+                  {canManagePeriods && (
                     <div className="mt-6 flex flex-wrap items-center gap-3">
                       {isPeriodActive ? (
                         <>
@@ -784,7 +789,9 @@ export default function PeriodTrackingPage() {
 
                   <div className="mt-3">
                     <p className="text-xs font-bold text-amber-200">
-                      {nextPeriodInDays !== null ? `Period in ~${nextPeriodInDays} days` : "Regular 28-day model"}
+                      {isPeriodActive
+                       ? `Period Active • Day ${activeSummary?.current_cycle_day || currentCycleDay || 1}`
+                       : nextPeriodInDays !== null ? `Period in ~${nextPeriodInDays} days` : "Regular 28-day model"}
                     </p>
                     <p className="text-[10px] text-white/70 mt-0.5">
                       Pregnancy chance: <strong className="text-white">{currentPhase.pregnancyRisk}</strong>
@@ -1206,7 +1213,7 @@ export default function PeriodTrackingPage() {
                         </div>
                       </div>
 
-                      {isFemale && (
+                      {canManagePeriods && (
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
