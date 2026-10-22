@@ -225,6 +225,7 @@ export default function PeriodTrackingPage() {
   const [isFemale, setIsFemale] = React.useState<boolean>(false);
   const [isPartnerView, setIsPartnerView] = React.useState<boolean>(false);
   const [targetName, setTargetName] = React.useState<string>("");
+  const [periodTrackingEnabled, setPeriodTrackingEnabled] = React.useState<boolean>(true);
 
   // Period management (start/end/edit dates) is strictly reserved for the female user
   const canManagePeriods = React.useMemo(() => {
@@ -289,6 +290,9 @@ export default function PeriodTrackingPage() {
       }
       setIsPartnerView(Boolean(res.is_partner_view));
       setTargetName(res.target_name || "");
+      if (typeof res.period_tracking_enabled === "boolean") {
+        setPeriodTrackingEnabled(res.period_tracking_enabled);
+      }
     } catch (err: any) {
       if (err?.status === 403) {
         setError("Cycle & Period tracking is exclusively available for female accounts.");
@@ -633,6 +637,43 @@ export default function PeriodTrackingPage() {
                 <span>Go to Partner Space</span>
               </Link>
             </div>
+          </div>
+        ) : isPartnerView && !periodTrackingEnabled ? (
+          /* Partner hasn't enabled period sharing yet */
+          <div className="max-w-lg mx-auto rounded-3xl border border-amber-500/25 bg-amber-500/5 p-8 text-center space-y-4 shadow-xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 text-3xl">
+              🔒
+            </div>
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">
+              Period Details Not Shared Yet
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+              <strong className="text-[var(--text-primary)]">{targetName || "Your partner"}</strong> hasn’t enabled period sharing with you yet.
+              Once she turns on <em>"Share my period details with partner"</em> in her <strong>Settings → Period Tracking</strong>, her cycle phases,
+              daily symptoms, and care tips will automatically appear here.
+            </p>
+            <div className="mt-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 text-left">
+              <p className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider mb-2">
+                What you’ll see once she shares:
+              </p>
+              <ul className="space-y-1.5 text-xs text-[var(--text-secondary)]">
+                <li className="flex items-center gap-2">
+                  <span className="text-rose-400">•</span> Current cycle phase & day
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-rose-400">•</span> How she’s feeling (symptoms, mood, energy)
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-rose-400">•</span> Partner care tips for what she needs today
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-rose-400">•</span> Nutrition & exercise guidance per phase
+                </li>
+              </ul>
+            </div>
+            <p className="text-xs text-[var(--text-tertiary)] italic">
+              Tip: Gently ask her to enable period sharing — it helps you support her better ❤️
+            </p>
           </div>
         ) : (
           <>

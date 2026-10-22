@@ -54,6 +54,8 @@ export default function RoutineHistoryPage() {
   const [activeTaskForLeave, setActiveTaskForLeave] = React.useState<UnfinishedTask | null>(null);
   const [leaveReason, setLeaveReason] = React.useState("");
 
+  const todayStr = React.useMemo(() => getIsoDate(new Date()), []);
+
   // Quick preset dates
   const presets = React.useMemo(() => {
     const today = new Date();
@@ -71,8 +73,15 @@ export default function RoutineHistoryPage() {
     threeDaysAgo.setDate(today.getDate() - 3);
     list.push({ label: "3 Days Ago", date: getIsoDate(threeDaysAgo) });
 
+    const oneWeekAgo = new Date(today);
+    oneWeekAgo.setDate(today.getDate() - 7);
+    list.push({ label: "1 Week Ago", date: getIsoDate(oneWeekAgo) });
+
     return list;
   }, []);
+
+  const isFutureDate = React.useMemo(() => selectedDate > todayStr, [selectedDate, todayStr]);
+  const isTodaySelected = React.useMemo(() => selectedDate === todayStr, [selectedDate, todayStr]);
 
   // Fetch Dashboard / Tasks for selected date
   const {
@@ -128,7 +137,10 @@ export default function RoutineHistoryPage() {
     const [y, m, d] = selectedDate.split("-").map(Number);
     const date = new Date(y, m - 1, d);
     date.setDate(date.getDate() + offset);
-    setSelectedDate(getIsoDate(date));
+    const newDate = getIsoDate(date);
+    // Don't allow navigating past today
+    if (newDate > todayStr) return;
+    setSelectedDate(newDate);
   };
 
   return (
@@ -162,8 +174,14 @@ export default function RoutineHistoryPage() {
               <button
                 type="button"
                 onClick={() => navigateDay(1)}
-                className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
-                title="Next Day"
+                disabled={isTodaySelected || isFutureDate}
+                className={cn(
+                  "rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2 transition-colors",
+                  isTodaySelected || isFutureDate
+                    ? "opacity-40 cursor-not-allowed text-[var(--text-tertiary)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                )}
+                title={isTodaySelected ? "Already at today" : "Next Day"}
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
@@ -179,6 +197,7 @@ export default function RoutineHistoryPage() {
                 id="history-date-picker"
                 type="date"
                 value={selectedDate}
+                max={todayStr}
                 onChange={(e) => {
                   if (e.target.value) setSelectedDate(e.target.value);
                 }}
@@ -208,6 +227,16 @@ export default function RoutineHistoryPage() {
               </button>
             ))}
           </div>
+
+          {/* Future date warning */}
+          {isFutureDate && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 p-3 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                This date hasn't happened yet — no routine data is available for future dates.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Day Stats Summary */}

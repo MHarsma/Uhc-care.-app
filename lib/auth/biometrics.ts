@@ -47,6 +47,22 @@ export async function enrollBiometrics(userEmail: string, userName: string): Pro
     throw new Error("Biometric authentication is not supported by your browser or device hardware.");
   }
 
+  // WebAuthn requires a secure context (HTTPS or localhost)
+  if (!window.isSecureContext) {
+    throw new Error(
+      "Fingerprint enrolment requires a secure connection (HTTPS). " +
+      "If you are running locally, open the app via localhost instead of an IP address."
+    );
+  }
+
+  const isSupported = await isBiometricsSupported();
+  if (!isSupported) {
+    throw new Error(
+      "Your device does not have a compatible fingerprint sensor or biometric hardware. " +
+      "Please ensure your device supports Windows Hello, Touch ID, or a fingerprint scanner."
+    );
+  }
+
   const randomChallenge = new Uint8Array(32);
   window.crypto.getRandomValues(randomChallenge);
 
