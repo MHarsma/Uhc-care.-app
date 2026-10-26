@@ -14,6 +14,7 @@ import {
   Clock,
   CheckCircle2,
   CalendarOff,
+  CalendarHeart,
   Send,
   MessageCircleHeart,
   ShieldCheck,
@@ -21,6 +22,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { api } from "@/lib/api/client";
+import { periodApi, PeriodsResponse } from "@/lib/api/period";
 import { cn } from "@/lib/utils";
 
 type PartnerTask = {
@@ -66,12 +68,26 @@ export default function PartnerPage() {
   const [customNudge, setCustomNudge] = React.useState("");
   const [actionLoading, setActionLoading] = React.useState<number | null>(null);
 
+  const [partnerPeriod, setPartnerPeriod] = React.useState<PeriodsResponse | null>(null);
+
   const loadPartnerData = React.useCallback(async () => {
     setLoadError(null);
     setLoading(true);
     try {
-      const result = await api.get<PartnerData>("/partner");
-      setData(result);
+      const [partnerRes, periodRes] = await Promise.allSettled([
+        api.get<PartnerData>("/partner"),
+        periodApi.getPeriods(),
+      ]);
+
+      if (partnerRes.status === "fulfilled") {
+        setData(partnerRes.value);
+      } else {
+        throw partnerRes.reason;
+      }
+
+      if (periodRes.status === "fulfilled") {
+        setPartnerPeriod(periodRes.value);
+      }
     } catch (err) {
       setData(null);
       setLoadError(
@@ -262,6 +278,79 @@ export default function PartnerPage() {
                 />
               </div>
             </div>
+
+            {/* Partner Cycle & Care Widget */}
+            {partnerPeriod?.is_partner_view && (
+              <div className="rounded-3xl border border-rose-500/25 bg-gradient-to-br from-rose-500/10 via-purple-500/5 to-transparent p-5 sm:p-6 shadow-sm glass-card space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/15 text-rose-500">
+                      <CalendarHeart className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                        {partner.name}&apos;s Cycle & Wellness Care
+                      </h3>
+                      <p className="text-[11px] text-[var(--text-tertiary)]">
+                        {partnerPeriod.period_tracking_enabled
+                          ? "Real-time cycle sync & support guidance"
+                          : "Period sharing is currently disabled"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/period"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-rose-500 hover:text-rose-400 transition-colors"
+                  >
+                    <span>Full Calendar</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+
+                {partnerPeriod.period_tracking_enabled ? (
+                  partnerPeriod.periods.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 border border-rose-500/30 px-3 py-1 text-xs font-bold text-rose-600 dark:text-rose-300">
+                          <span>🌸</span>
+                          <span>
+                            {partnerPeriod.active_summary?.has_active_period
+                              ? `Active Period • Day ${partnerPeriod.active_summary.current_cycle_day || 1}`
+                              : partnerPeriod.active_summary?.current_cycle_day
+                              ? `Cycle Day ${partnerPeriod.active_summary.current_cycle_day}`
+                              : "Cycle Active"}
+                          </span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 border border-violet-500/20 px-3 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
+                          <Heart className="h-3 w-3 fill-violet-400 text-violet-400" />
+                          <span>Supporting Her</span>
+                        </span>
+                      </div>
+
+                      <div className="rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] p-3.5">
+                        <p className="text-[11px] font-bold text-rose-500 uppercase tracking-wider mb-1">
+                          Care suggestion for today:
+                        </p>
+                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                          {partnerPeriod.active_summary?.has_active_period
+                            ? `Be extra caring today. Offer a warm drink, help with evening chores, and give ${partner.name} space to rest.`
+                            : `Check in with ${partner.name} today and share an encouraging note or compliment on her daily consistency!`}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] p-3.5 text-xs text-[var(--text-tertiary)]">
+                      {partner.name} has enabled period sharing. Once she logs her period start date in Cycle Care, her real-time cycle phase and support tips will appear here.
+                    </div>
+                  )
+                ) : (
+                  <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-3.5 text-xs text-amber-700 dark:text-amber-300">
+                    {partner.name} hasn&apos;t turned on Period Sharing yet. Gently ask her to enable it in <strong>Settings → Cycle & Period Care Sharing</strong> if she would like you to see her cycle updates.
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Pending Leave Passes Section */}
             {pendingRequests.length > 0 && (

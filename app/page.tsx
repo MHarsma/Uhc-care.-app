@@ -240,15 +240,10 @@ const PREVIEWS = {
 export default function HomePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState<PreviewTab>("couple");
+  const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
 
-  // Automatically redirect authenticated users to their dashboard
+  // Automatically check active session and redirect authenticated users to dashboard
   React.useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("uhc_logged_in") === "true") {
-      router.replace("/dashboard");
-      return;
-    }
-
-    // Background silent check for active session cookie
     api
       .get("/auth/user")
       .then((res) => {
@@ -257,12 +252,33 @@ export default function HomePage() {
             localStorage.setItem("uhc_logged_in", "true");
           }
           router.replace("/dashboard");
+        } else {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("uhc_logged_in");
+          }
+          setIsCheckingAuth(false);
         }
       })
       .catch(() => {
-        // Guest user, stay on landing page
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("uhc_logged_in");
+        }
+        setIsCheckingAuth(false);
       });
   }, [router]);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 to-rose-500 text-white font-black text-xl shadow-lg shadow-violet-500/25 animate-pulse">
+            U
+          </div>
+          <p className="text-xs font-semibold text-[var(--text-tertiary)]">Loading UHC Care...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden relative transition-colors duration-300">

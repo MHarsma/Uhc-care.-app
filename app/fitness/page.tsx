@@ -3,6 +3,7 @@
 import * as React from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { periodApi, ActiveCycleSummary } from "@/lib/api/period";
+import { fitnessApi, FitnessGoals, FitnessLogEntry } from "@/lib/api/fitness";
 import {
   Dumbbell,
   Sparkles,
@@ -722,19 +723,27 @@ export default function MovementAndVitalityPage() {
   const [isLoadingCycle, setIsLoadingCycle] = React.useState(true);
   const [cycleDay, setCycleDay] = React.useState<number>(8);
 
-  // Activity Ring Metric States
-  const [activeCalories, setActiveCalories] = React.useState(185);
-  const targetCalories = 300;
-  const [exerciseMinutes, setExerciseMinutes] = React.useState(18);
-  const targetExercise = 30;
-  const [mindfulMinutes, setMindfulMinutes] = React.useState(12);
-  const targetMindful = 15;
-  const [waterGlasses, setWaterGlasses] = React.useState(5);
-  const targetWaterGlasses = 8;
+  // Activity Ring Metric States — fetched from API
+  const [activeCalories, setActiveCalories] = React.useState(0);
+  const [exerciseMinutes, setExerciseMinutes] = React.useState(0);
+  const [mindfulMinutes, setMindfulMinutes] = React.useState(0);
+  const [waterGlasses, setWaterGlasses] = React.useState(0);
+
+  // Customizable Fitness Goals — fetched from API
+  const [targetCalories, setTargetCalories] = React.useState(300);
+  const [targetExercise, setTargetExercise] = React.useState(30);
+  const [targetMindful, setTargetMindful] = React.useState(15);
+  const [targetWaterGlasses, setTargetWaterGlasses] = React.useState(8);
+
+  // Goals Modal State
+  const [isGoalsModalOpen, setIsGoalsModalOpen] = React.useState(false);
+  const [draftGoals, setDraftGoals] = React.useState({ target_calories: 300, target_exercise_minutes: 30, target_mindful_minutes: 15, target_water_glasses: 8 });
+  const [isSavingGoals, setIsSavingGoals] = React.useState(false);
 
   // Morning Supplement Safety Checklist
   const [tookSupplementWithFood, setTookSupplementWithFood] = React.useState(false);
   const [eveningMagnesiumEnabled, setEveningMagnesiumEnabled] = React.useState(true);
+  const [supplementToast, setSupplementToast] = React.useState<string | null>(null);
 
   // Symptom Protocol State
   const [activeSymptom, setActiveSymptom] = React.useState<SymptomProtocol | null>(null);
@@ -778,6 +787,78 @@ export default function MovementAndVitalityPage() {
     }
     loadCycle();
   }, []);
+
+  // Load Fitness Goals & Today's Log from API
+  React.useEffect(() => {
+    async function loadFitness() {
+      try {
+        const res = await fitnessApi.getData();
+        if (res.goals) {
+          setTargetCalories(res.goals.target_calories);
+          setTargetExercise(res.goals.target_exercise_minutes);
+          setTargetMindful(res.goals.target_mindful_minutes);
+          setTargetWaterGlasses(res.goals.target_water_glasses);
+          setDraftGoals({
+            target_calories: res.goals.target_calories,
+            target_exercise_minutes: res.goals.target_exercise_minutes,
+            target_mindful_minutes: res.goals.target_mindful_minutes,
+            target_water_glasses: res.goals.target_water_glasses,
+          });
+        }
+        if (res.log) {
+          setActiveCalories(res.log.active_calories);
+          setExerciseMinutes(res.log.exercise_minutes);
+          setMindfulMinutes(res.log.mindful_minutes);
+          setWaterGlasses(res.log.water_glasses);
+        }
+      } catch (err) {
+        console.error("Failed to load fitness data:", err);
+      }
+    }
+    loadFitness();
+  }, []);
+
+  // Load supplement checklist from localStorage
+  React.useEffect(() => {
+    try {
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const savedTook = localStorage.getItem(`uhc_supp_taken_${todayKey}`);
+      if (savedTook !== null) {
+        setTookSupplementWithFood(savedTook === "true");
+      }
+      const savedMag = localStorage.getItem("uhc_magnesium_enabled");
+      if (savedMag !== null) {
+        setEveningMagnesiumEnabled(savedMag === "true");
+      }
+    } catch {}
+  }, []);
+
+  const handleToggleTookWithFood = () => {
+    const next = !tookSupplementWithFood;
+    setTookSupplementWithFood(next);
+    try {
+      const todayKey = new Date().toISOString().slice(0, 10);
+      localStorage.setItem(`uhc_supp_taken_${todayKey}`, String(next));
+    } catch {}
+    if (next) {
+      setSupplementToast("Logged! Morning stomach protected with breakfast 🍳");
+      setTimeout(() => setSupplementToast(null), 3500);
+    }
+  };
+
+  const handleToggleMagnesium = () => {
+    const next = !eveningMagnesiumEnabled;
+    setEveningMagnesiumEnabled(next);
+    try {
+      localStorage.setItem("uhc_magnesium_enabled", String(next));
+    } catch {}
+    setSupplementToast(
+      next
+        ? "Evening Magnesium reminder active for 8:00 PM 🌙"
+        : "Evening Magnesium reminder disabled"
+    );
+    setTimeout(() => setSupplementToast(null), 3500);
+  };
 
   // Compute Hormonal Phase
   const currentPhase: CyclePhase = React.useMemo(() => {
@@ -839,9 +920,22 @@ export default function MovementAndVitalityPage() {
     return WORKOUT_DATABASE.filter((w) => w.category === workoutCategoryFilter);
   }, [workoutCategoryFilter]);
 
-  // Water Increment
+  // Persist log to API (debounced helper)
+  const persistLog = React.useCallback(async (patch: Record<string, number>) => {
+    try {
+      await fitnessApi.updateLog(patch);
+    } catch (err) {
+      console.error("Failed to persist fitness log:", err);
+    }
+  }, []);
+
+  // Water Increment — persisted
   const handleAddWater = () => {
-    setWaterGlasses((prev) => Math.min(prev + 1, 12));
+    setWaterGlasses((prev) => {
+      const next = Math.min(prev + 1, 50);
+      persistLog({ water_glasses: next });
+      return next;
+    });
   };
 
   // Toggle Exercise Completion
@@ -854,15 +948,37 @@ export default function MovementAndVitalityPage() {
     });
   };
 
-  // Complete Workout Session
+  // Complete Workout Session — persisted
   const handleFinishWorkout = () => {
     if (selectedWorkout) {
-      setActiveCalories((prev) => prev + selectedWorkout.calories);
-      setExerciseMinutes((prev) => prev + selectedWorkout.durationMinutes);
+      const newCal = activeCalories + selectedWorkout.calories;
+      const newMin = exerciseMinutes + selectedWorkout.durationMinutes;
+      setActiveCalories(newCal);
+      setExerciseMinutes(newMin);
+      persistLog({ active_calories: newCal, exercise_minutes: newMin });
     }
     setIsWorkoutActive(false);
     setSelectedWorkout(null);
     setCompletedExerciseIndexes(new Set());
+  };
+
+  // Save Goals from Modal
+  const handleSaveGoals = async () => {
+    setIsSavingGoals(true);
+    try {
+      const res = await fitnessApi.updateGoals(draftGoals);
+      if (res.goals) {
+        setTargetCalories(res.goals.target_calories);
+        setTargetExercise(res.goals.target_exercise_minutes);
+        setTargetMindful(res.goals.target_mindful_minutes);
+        setTargetWaterGlasses(res.goals.target_water_glasses);
+      }
+      setIsGoalsModalOpen(false);
+    } catch (err) {
+      console.error("Failed to save fitness goals:", err);
+    } finally {
+      setIsSavingGoals(false);
+    }
   };
 
   return (
@@ -1055,55 +1171,94 @@ export default function MovementAndVitalityPage() {
           </div>
         </div>
 
+        {/* Customize Goals Button */}
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-[var(--text-secondary)]">
+            Targets are personalized to your goals. Adjust anytime.
+          </p>
+          <button
+            onClick={() => {
+              setDraftGoals({
+                target_calories: targetCalories,
+                target_exercise_minutes: targetExercise,
+                target_mindful_minutes: targetMindful,
+                target_water_glasses: targetWaterGlasses,
+              });
+              setIsGoalsModalOpen(true);
+            }}
+            className="flex items-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-xs font-bold text-violet-700 dark:text-violet-300 hover:bg-violet-500/20 transition-colors"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Customize My Goals
+          </button>
+        </div>
+
         {/* ==================================================================== */}
         {/* POLISHED MORNING MINERAL SUPPLEMENT SAFETY ALERT */}
         {/* ==================================================================== */}
-        <div className="relative overflow-hidden rounded-3xl border border-amber-300/80 dark:border-amber-500/30 bg-amber-50/70 dark:bg-amber-950/20 p-6 sm:p-7 shadow-xs">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative overflow-hidden rounded-3xl border border-amber-500/25 bg-gradient-to-br from-amber-50/90 via-white to-amber-100/50 dark:from-[#0f172a] dark:via-[#1e1b2e] dark:to-[#17132a] p-6 sm:p-7 shadow-xl backdrop-blur-xl transition-all">
+          {/* Ambient Lighting Accents */}
+          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-amber-500/10 dark:bg-amber-400/[0.08] blur-3xl" />
+          <div className="pointer-events-none absolute -left-16 -bottom-16 h-56 w-56 rounded-full bg-violet-500/10 dark:bg-violet-500/[0.08] blur-3xl" />
+
+          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4 flex-1 min-w-0">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-400/40 bg-amber-100 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-300">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-inner">
                 <AlertTriangle className="h-6 w-6" />
               </div>
-              <div className="space-y-1.5 flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-amber-200/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:bg-amber-500/20 dark:text-amber-300">
+              <div className="space-y-2 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300">
                     Morning Supplement Protocol
                   </span>
-                  <span className="text-xs font-semibold text-amber-800/80 dark:text-amber-400/80">
+                  <span className="text-xs font-semibold text-amber-700/80 dark:text-amber-400/80">
                     Headache & Nausea Prevention
                   </span>
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
                   Take Morning Minerals With Food — Never on an Empty Stomach 🍳
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                   Taking minerals (such as Zinc, Iron, or Vitamin C) first thing in the morning without food irritates the gastric lining, causing stomach distress and rebound morning tension headaches.
-                  <strong className="font-semibold text-amber-900 dark:text-amber-200"> Recommendation:</strong> Take morning minerals with eggs, toast, or avocado. Shift <strong className="font-semibold text-violet-700 dark:text-violet-300">Magnesium Glycinate to 8:00 PM</strong> to naturally relax muscles, relieve tension headaches, and deepen sleep!
+                  <strong className="font-semibold text-amber-800 dark:text-amber-300"> Recommendation:</strong> Take morning minerals with eggs, toast, or avocado. Shift <strong className="font-semibold text-violet-600 dark:text-violet-400">Magnesium Glycinate to 8:00 PM</strong> to naturally relax muscles, relieve tension headaches, and deepen sleep!
                 </p>
+
+                {supplementToast && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    <span>{supplementToast}</span>
+                  </motion.div>
+                )}
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center gap-3 shrink-0">
               <button
-                onClick={() => setTookSupplementWithFood(!tookSupplementWithFood)}
+                type="button"
+                onClick={handleToggleTookWithFood}
                 className={cn(
                   "w-full sm:w-[220px] flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all border shadow-xs select-none",
                   tookSupplementWithFood
-                    ? "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40"
-                    : "bg-white text-slate-800 border-amber-300 hover:bg-amber-100/60 dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-500/30"
+                    ? "bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/50 shadow-emerald-500/10"
+                    : "bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-500/30 dark:border-amber-500/40"
                 )}
               >
-                {tookSupplementWithFood ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
+                {tookSupplementWithFood ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" /> : <Plus className="h-4 w-4 shrink-0" />}
                 <span className="truncate">{tookSupplementWithFood ? "Logged: With Food" : "Log: Taken With Food"}</span>
               </button>
 
               <button
-                onClick={() => setEveningMagnesiumEnabled(!eveningMagnesiumEnabled)}
+                type="button"
+                onClick={handleToggleMagnesium}
                 className={cn(
                   "w-full sm:w-[230px] flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all border shadow-xs select-none",
                   eveningMagnesiumEnabled
-                    ? "bg-violet-600 text-white border-violet-600 dark:bg-violet-500/20 dark:text-violet-300 dark:border-violet-500/40"
-                    : "bg-white text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-violet-500/40 shadow-md shadow-violet-500/20 hover:opacity-95"
+                    : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700"
                 )}
               >
                 <Moon className="h-4 w-4 shrink-0" />
@@ -1493,6 +1648,133 @@ export default function MovementAndVitalityPage() {
                   >
                     <Award className="h-4 w-4" />
                     Complete & Log Session
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ==================================================================== */}
+        {/* FITNESS GOALS CUSTOMIZATION MODAL */}
+        {/* ==================================================================== */}
+        <AnimatePresence>
+          {isGoalsModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              onClick={() => setIsGoalsModalOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-extrabold text-[var(--text-primary)]">Customize Daily Goals 🎯</h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">Set targets that work for your lifestyle</p>
+                  </div>
+                  <button
+                    onClick={() => setIsGoalsModalOpen(false)}
+                    className="rounded-full p-2 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <X className="h-4 w-4 text-[var(--text-secondary)]" />
+                  </button>
+                </div>
+
+                <div className="space-y-5">
+                  {/* Calories Goal */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400">
+                      <Flame className="h-3.5 w-3.5" />
+                      Active Calories Target (kcal)
+                    </label>
+                    <input
+                      type="number"
+                      min={50}
+                      max={5000}
+                      step={50}
+                      value={draftGoals.target_calories}
+                      onChange={(e) => setDraftGoals((p) => ({ ...p, target_calories: Number(e.target.value) }))}
+                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                    />
+                  </div>
+
+                  {/* Exercise Minutes Goal */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      <Activity className="h-3.5 w-3.5" />
+                      Exercise Time Target (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      min={5}
+                      max={300}
+                      step={5}
+                      value={draftGoals.target_exercise_minutes}
+                      onChange={(e) => setDraftGoals((p) => ({ ...p, target_exercise_minutes: Number(e.target.value) }))}
+                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                    />
+                  </div>
+
+                  {/* Mindful Minutes Goal */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-cyan-600 dark:text-cyan-400">
+                      <Heart className="h-3.5 w-3.5" />
+                      Mindful Breathing & Stretching Target (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={120}
+                      step={5}
+                      value={draftGoals.target_mindful_minutes}
+                      onChange={(e) => setDraftGoals((p) => ({ ...p, target_mindful_minutes: Number(e.target.value) }))}
+                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                    />
+                  </div>
+
+                  {/* Water Goal */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
+                      <Droplets className="h-3.5 w-3.5" />
+                      Daily Water Intake Target (glasses × 250ml)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      step={1}
+                      value={draftGoals.target_water_glasses}
+                      onChange={(e) => setDraftGoals((p) => ({ ...p, target_water_glasses: Number(e.target.value) }))}
+                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6 flex items-center gap-3">
+                  <button
+                    onClick={() => setIsGoalsModalOpen(false)}
+                    className="flex-1 rounded-xl border border-[var(--glass-border)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveGoals}
+                    disabled={isSavingGoals}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-violet-600/30 hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {isSavingGoals ? (
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    ) : (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
+                    {isSavingGoals ? "Saving..." : "Save Goals"}
                   </button>
                 </div>
               </motion.div>

@@ -91,6 +91,9 @@ export function DashboardShell() {
 
   React.useEffect(() => {
     if ((dashboardError as any)?.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("uhc_logged_in");
+      }
       window.location.href = "/login";
     }
   }, [dashboardError]);
@@ -208,6 +211,27 @@ export function DashboardShell() {
     });
     return Array.from(cats);
   }, [tasks]);
+
+  if (isDashboardLoading) {
+    return (
+      <AppShell headerTitle="Today's Overview" headerSubtitle="Loading your habits...">
+        <div className="space-y-6 max-w-6xl">
+          <div className="h-44 w-full rounded-3xl shimmer" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-8 space-y-4">
+              <div className="h-28 w-full rounded-2xl shimmer" />
+              <div className="h-28 w-full rounded-2xl shimmer" />
+              <div className="h-28 w-full rounded-2xl shimmer" />
+            </div>
+            <div className="lg:col-span-4 space-y-4">
+              <div className="h-56 w-full rounded-2xl shimmer" />
+              <div className="h-40 w-full rounded-2xl shimmer" />
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell

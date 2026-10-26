@@ -78,9 +78,13 @@ export function AppShell({
 
   React.useEffect(() => {
     if (isAuthError) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("uhc_logged_in");
+      }
+      queryClient.clear();
       router.push("/login");
     }
-  }, [isAuthError, router]);
+  }, [isAuthError, router, queryClient]);
 
   const { data: partnerData } = useQuery({
     queryKey: ["partnerSummary"],
@@ -109,8 +113,16 @@ export function AppShell({
   const handleLogout = async () => {
     try {
       await api.post("/auth/logout");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("uhc_logged_in");
+      }
+      queryClient.clear();
       router.push("/login");
     } catch {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("uhc_logged_in");
+      }
+      queryClient.clear();
       router.push("/login");
     }
   };

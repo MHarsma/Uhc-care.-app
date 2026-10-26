@@ -26,6 +26,7 @@ export interface PeriodsResponse {
   active_summary: ActiveCycleSummary;
   is_female?: boolean;
   is_partner_view?: boolean;
+  is_paired?: boolean;
   target_name?: string;
   period_tracking_enabled?: boolean;
 }

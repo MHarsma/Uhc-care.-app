@@ -139,6 +139,11 @@ export async function apiClient<T = any>(
   }
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("uhc_logged_in");
+      } catch {}
+    }
     const errorMessage =
       data?.message ||
       data?.error ||

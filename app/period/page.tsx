@@ -8,6 +8,7 @@ import {
   PeriodEntry,
   ActiveCycleSummary,
 } from "@/lib/api/period";
+import { symptomApi } from "@/lib/api/symptoms";
 import {
   CalendarHeart,
   Sparkles,
@@ -224,6 +225,7 @@ export default function PeriodTrackingPage() {
   const [actionLoading, setActionLoading] = React.useState(false);
   const [isFemale, setIsFemale] = React.useState<boolean>(false);
   const [isPartnerView, setIsPartnerView] = React.useState<boolean>(false);
+  const [isPaired, setIsPaired] = React.useState<boolean>(false);
   const [targetName, setTargetName] = React.useState<string>("");
   const [periodTrackingEnabled, setPeriodTrackingEnabled] = React.useState<boolean>(true);
 
@@ -257,7 +259,7 @@ export default function PeriodTrackingPage() {
     return getLocalTodayStr();
   }, []);
 
-  // Load saved symptom logs from localStorage
+  // Load saved symptom logs from localStorage on mount
   React.useEffect(() => {
     try {
       const saved = localStorage.getItem("uhc_period_symptoms_v2");
@@ -267,7 +269,41 @@ export default function PeriodTrackingPage() {
     } catch {}
   }, []);
 
-  const saveSymptomLog = (dateStr: string, logData: { flow?: string; mood?: string; symptoms?: string[]; notes?: string }) => {
+  // Fetch symptom log for selected day from server (supports both female user and partner view)
+  React.useEffect(() => {
+    let isCancelled = false;
+    async function fetchSymptom() {
+      try {
+        const res = await symptomApi.getToday(selectedDayDate);
+        if (res?.symptom && !isCancelled) {
+          const s = res.symptom;
+          setDailySymptomsMap((prev) => ({
+            ...prev,
+            [selectedDayDate]: {
+              flow: s.flow_level ? s.flow_level.charAt(0).toUpperCase() + s.flow_level.slice(1) : undefined,
+              mood: s.mood ? s.mood.charAt(0).toUpperCase() + s.mood.slice(1) : undefined,
+              symptoms: s.symptoms || [],
+              notes: s.notes || undefined,
+            },
+          }));
+        }
+      } catch (err) {
+        // quiet fallback
+      }
+    }
+    if (selectedDayDate) {
+      fetchSymptom();
+    }
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedDayDate]);
+
+  const saveSymptomLog = async (
+    dateStr: string,
+    logData: { flow?: string; mood?: string; symptoms?: string[]; notes?: string }
+  ) => {
+    // 1. Optimistic update to local state & cache
     setDailySymptomsMap((prev) => {
       const next = { ...prev, [dateStr]: logData };
       try {
@@ -276,6 +312,20 @@ export default function PeriodTrackingPage() {
       return next;
     });
     setIsSymptomDrawerOpen(false);
+
+    // 2. Persist to backend and dispatch real-time empathetic notification to partner
+    try {
+      await symptomApi.save({
+        date: dateStr,
+        flow_level: logData.flow?.toLowerCase(),
+        mood: logData.mood?.toLowerCase(),
+        symptoms: logData.symptoms,
+        cramps_severity: logData.symptoms?.some((s) => s.toLowerCase().includes("cramp")) ? "moderate" : "none",
+        notes: logData.notes,
+      });
+    } catch (err) {
+      console.error("Failed to persist symptoms to server:", err);
+    }
   };
 
   const loadData = React.useCallback(async () => {
@@ -289,6 +339,9 @@ export default function PeriodTrackingPage() {
         setIsFemale(res.is_female);
       }
       setIsPartnerView(Boolean(res.is_partner_view));
+      if (typeof res.is_paired === "boolean") {
+        setIsPaired(res.is_paired);
+      }
       setTargetName(res.target_name || "");
       if (typeof res.period_tracking_enabled === "boolean") {
         setPeriodTrackingEnabled(res.period_tracking_enabled);
@@ -624,19 +677,39 @@ export default function PeriodTrackingPage() {
             <h2 className="text-xl font-bold text-[var(--text-primary)]">
               Cycle & Period Care
             </h2>
-            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-              Cycle tracking and period management are customized for female accounts.
-              If your partner is female, pair with her in the Partner Space to view her cycle phases, daily care insights, and helpful suggestions on how to support her.
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/partner"
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-lg hover:opacity-95 transition-all"
-              >
-                <Heart className="h-4 w-4" />
-                <span>Go to Partner Space</span>
-              </Link>
-            </div>
+            {isPaired || targetName ? (
+              <>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                  You are paired with <strong className="text-[var(--text-primary)]">{targetName || "your partner"}</strong>.
+                  Cycle tracking is customized for female profiles. If your partner is female, she can set her gender to &ldquo;Female&rdquo; in <strong>Settings → Profile</strong> and ensure <strong>Period Sharing</strong> is turned on so her real-time cycle phases, ovulation predictions, and care tips display here for you.
+                </p>
+                <div className="pt-2 flex items-center justify-center gap-3">
+                  <Link
+                    href="/partner"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-lg hover:opacity-95 transition-all"
+                  >
+                    <Heart className="h-4 w-4" />
+                    <span>Go to Partner Hub</span>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                  Cycle tracking and period management are customized for female accounts.
+                  If your partner is female, pair with her in the Partner Space to view her cycle phases, daily care insights, and helpful suggestions on how to support her.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href="/pairing"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-lg hover:opacity-95 transition-all"
+                  >
+                    <Heart className="h-4 w-4" />
+                    <span>Pair with Partner</span>
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         ) : isPartnerView && !periodTrackingEnabled ? (
           /* Partner hasn't enabled period sharing yet */
@@ -1104,14 +1177,21 @@ export default function PeriodTrackingPage() {
                       <span>Start Today&apos;s Workout →</span>
                     </Link>
 
-                    <button
-                      type="button"
-                      onClick={() => setIsSymptomDrawerOpen(true)}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-violet-500/20 active:scale-95 transition-all"
-                    >
-                      <Smile className="h-3.5 w-3.5" />
-                      <span>{selectedDateLogged.mood ? "Edit Symptoms" : "Log Symptoms"}</span>
-                    </button>
+                    {!isPartnerView ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsSymptomDrawerOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-violet-500/20 active:scale-95 transition-all"
+                      >
+                        <Smile className="h-3.5 w-3.5" />
+                        <span>{selectedDateLogged.mood || selectedDateLogged.symptoms?.length ? "Edit Daily Log" : "Log Symptoms"}</span>
+                      </button>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300">
+                        <Heart className="h-3.5 w-3.5 fill-rose-500 text-rose-500" />
+                        <span>{targetName ? `${targetName}'s Daily Wellness` : "Partner's Daily Wellness"}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1170,18 +1250,26 @@ export default function PeriodTrackingPage() {
                 </div>
 
                 {/* Logged Symptoms on this day */}
-                {selectedDateLogged.mood || selectedDateLogged.symptoms?.length ? (
-                  <div className="p-4 rounded-2xl bg-violet-500/5 border border-violet-500/15 space-y-2">
-                    <h4 className="text-xs font-bold text-[var(--text-primary)]">
-                      Logged for this day:
-                    </h4>
+                {selectedDateLogged.mood || selectedDateLogged.symptoms?.length || selectedDateLogged.notes ? (
+                  <div className="p-4 rounded-2xl bg-violet-500/5 border border-violet-500/15 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+                        {isPartnerView ? `${targetName || "Partner"}'s Logged Symptoms:` : "Logged for this day:"}
+                      </h4>
+                      {isPartnerView && (
+                        <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 border border-rose-500/20 rounded-md px-2 py-0.5">
+                          Synced Real-Time
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-2 text-xs">
                       {selectedDateLogged.mood && (
                         <span className="inline-flex items-center gap-1 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] px-2.5 py-1 font-bold text-[var(--text-primary)]">
                           <span>Mood:</span> {selectedDateLogged.mood}
                         </span>
                       )}
-                      {selectedDateLogged.flow && (
+                      {selectedDateLogged.flow && selectedDateLogged.flow !== "None" && (
                         <span className="inline-flex items-center gap-1 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] px-2.5 py-1 font-bold text-[var(--text-primary)]">
                           <span>Flow:</span> {selectedDateLogged.flow}
                         </span>
@@ -1200,6 +1288,23 @@ export default function PeriodTrackingPage() {
                         &ldquo;{selectedDateLogged.notes}&rdquo;
                       </p>
                     )}
+
+                    {/* Empathetic Partner Advice when Partner is viewing */}
+                    {isPartnerView && (
+                      <div className="mt-2 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300">
+                        <strong className="block font-bold mb-1">💕 Gentle Support Suggestion for You:</strong>
+                        {selectedDateLogged.symptoms?.some((s) => s.toLowerCase().includes("cramp"))
+                          ? `She noted cramps today — preparing a warm herbal tea, bringing a heating pad, or offering a gentle back massage will bring her immense comfort.`
+                          : selectedDateLogged.mood?.toLowerCase().includes("exhaust") || selectedDateLogged.mood?.toLowerCase().includes("tired")
+                          ? `She is running low on energy today — taking over dinner or evening chores so she can rest will mean the world.`
+                          : `Stay attentive, offer caring words, and let her know you're there for whatever she needs today.`}
+                      </div>
+                    )}
+                  </div>
+                ) : isPartnerView ? (
+                  <div className="p-3.5 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-xs text-[var(--text-tertiary)] flex items-center gap-2">
+                    <Info className="h-4 w-4 text-[var(--text-secondary)]" />
+                    <span>No specific symptoms logged by {targetName || "your partner"} for this date.</span>
                   </div>
                 ) : null}
               </motion.div>
