@@ -61,22 +61,52 @@ export default function NotesPage() {
   const audioChunksRef = React.useRef<Blob[]>([]);
   const timerIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  const loadNotes = React.useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const loadNotes = React.useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setLoadError(null);
+    } else {
+      setIsRefreshing(true);
+    }
     try {
       const result = await api.get<{ notes: Note[] }>("/couple/notes");
       setNotes(result.notes ?? []);
     } catch (err: any) {
-      setNotes([]);
-      setLoadError(err?.message || "Unable to load notes. Please check connection.");
+      if (!silent) {
+        setNotes([]);
+        setLoadError(err?.message || "Unable to load notes. Please check connection.");
+      }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
+  // Initial fetch and focus / visibility handlers
   React.useEffect(() => {
-    void loadNotes();
+    void loadNotes(false);
+
+    // Live polling: check for new messages every 4 seconds when tab is visible
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        void loadNotes(true);
+      }
+    }, 4000);
+
+    const handleFocus = () => {
+      void loadNotes(true);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
   }, [loadNotes]);
 
   // Clean up audio URL on unmount
@@ -230,6 +260,18 @@ export default function NotesPage() {
     <AppShell
       headerTitle="Couple Notes & Moments"
       headerSubtitle="Leave love notes, reminders & audio moments"
+      headerAction={
+        <button
+          type="button"
+          onClick={() => void loadNotes(false)}
+          disabled={loading || isRefreshing}
+          className="flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all active:scale-95"
+          title="Refresh messages from partner"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", (loading || isRefreshing) && "animate-spin text-violet-500")} />
+          <span className="hidden sm:inline">Sync Live</span>
+        </button>
+      }
     >
       <div className="space-y-6 max-w-6xl">
         {/* Composition Box */}

@@ -1,5 +1,5 @@
-// Service Worker for UHC Care PWA
-const CACHE_NAME = 'uhc-care-v2';
+// Service Worker for UHC Care PWA (v3: Network-First for dynamic updates)
+const CACHE_NAME = 'uhc-care-v3';
 const OFFLINE_URL = '/';
 
 const ASSETS_TO_CACHE = [
@@ -13,7 +13,6 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Cache assets safely without failing the whole installation if one fails
       return Promise.allSettled(
         ASSETS_TO_CACHE.map((url) =>
           cache.add(url).catch((err) => {
@@ -38,7 +37,10 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => cacheName !== CACHE_NAME)
-          .map((cacheName) => caches.delete(cacheName))
+          .map((cacheName) => {
+            console.log('[SW] Purging old cache:', cacheName);
+            return caches.delete(cacheName);
+          })
       );
     })
   );
@@ -51,11 +53,12 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Do not cache API requests or auth routes
+  // Do not intercept or cache API requests, auth routes, or WebSocket
   if (url.pathname.startsWith('/api') || url.pathname.includes('/auth/')) {
     return;
   }
 
+  // Navigation requests: Network first, fall back to cached shell
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -65,9 +68,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Static assets & scripts: Network-first with cache fallback
+  // Ensures updates are picked up immediately on both partner devices
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => null);
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
   );
 });

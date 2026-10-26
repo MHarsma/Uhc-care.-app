@@ -14,6 +14,7 @@ import {
   Zap,
   Check,
   Plus,
+  Minus,
   Play,
   Pause,
   Clock,
@@ -929,13 +930,74 @@ export default function MovementAndVitalityPage() {
     }
   }, []);
 
-  // Water Increment — persisted
+  const [goalsSavedToast, setGoalsSavedToast] = React.useState<string | null>(null);
+
+  // Water Increment & Decrement — persisted
   const handleAddWater = () => {
     setWaterGlasses((prev) => {
       const next = Math.min(prev + 1, 50);
       persistLog({ water_glasses: next });
       return next;
     });
+  };
+
+  const handleRemoveWater = () => {
+    setWaterGlasses((prev) => {
+      const next = Math.max(0, prev - 1);
+      persistLog({ water_glasses: next });
+      return next;
+    });
+  };
+
+  // Direct Interactive Quick-Add for Calories, Exercise & Mindfulness
+  const handleAdjustCalories = (delta: number) => {
+    setActiveCalories((prev) => {
+      const next = Math.max(0, prev + delta);
+      persistLog({ active_calories: next });
+      return next;
+    });
+  };
+
+  const handleAdjustExercise = (deltaMinutes: number) => {
+    setExerciseMinutes((prev) => {
+      const next = Math.max(0, prev + deltaMinutes);
+      persistLog({ exercise_minutes: next });
+      return next;
+    });
+  };
+
+  const handleAdjustMindful = (deltaMinutes: number) => {
+    setMindfulMinutes((prev) => {
+      const next = Math.max(0, prev + deltaMinutes);
+      persistLog({ mindful_minutes: next });
+      return next;
+    });
+  };
+
+  // Quick Preset Selector for Goal Setting
+  const handleApplyPreset = (preset: "starter" | "balanced" | "athlete") => {
+    if (preset === "starter") {
+      setDraftGoals({
+        target_calories: 300,
+        target_exercise_minutes: 20,
+        target_mindful_minutes: 10,
+        target_water_glasses: 6,
+      });
+    } else if (preset === "balanced") {
+      setDraftGoals({
+        target_calories: 500,
+        target_exercise_minutes: 30,
+        target_mindful_minutes: 15,
+        target_water_glasses: 8,
+      });
+    } else {
+      setDraftGoals({
+        target_calories: 750,
+        target_exercise_minutes: 45,
+        target_mindful_minutes: 25,
+        target_water_glasses: 10,
+      });
+    }
   };
 
   // Toggle Exercise Completion
@@ -962,7 +1024,7 @@ export default function MovementAndVitalityPage() {
     setCompletedExerciseIndexes(new Set());
   };
 
-  // Save Goals from Modal
+  // Save Goals from Modal with Confirmation
   const handleSaveGoals = async () => {
     setIsSavingGoals(true);
     try {
@@ -974,6 +1036,8 @@ export default function MovementAndVitalityPage() {
         setTargetWaterGlasses(res.goals.target_water_glasses);
       }
       setIsGoalsModalOpen(false);
+      setGoalsSavedToast("Targets confirmed & locked in! 🎯");
+      setTimeout(() => setGoalsSavedToast(null), 4000);
     } catch (err) {
       console.error("Failed to save fitness goals:", err);
     } finally {
@@ -1037,145 +1101,293 @@ export default function MovementAndVitalityPage() {
         </div>
 
         {/* ==================================================================== */}
-        {/* POLISHED ACTIVITY RINGS & HYDRATION TILES */}
+        {/* POLISHED ACTIVITY RINGS & HYDRATION TILES (INTERACTIVE LOGGING) */}
         {/* ==================================================================== */}
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {/* Tile 1: Movement Calories */}
-          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                  Active Calories Burned
-                </span>
-                <p className="text-[10px] text-[var(--text-tertiary)]">Daily Energy Output</p>
+          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                    Active Calories Burned
+                  </span>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Daily Energy Output</p>
+                </div>
+                <div className="rounded-xl bg-rose-500/10 p-2 text-rose-500">
+                  <Flame className="h-4 w-4" />
+                </div>
               </div>
-              <div className="rounded-xl bg-rose-500/10 p-2 text-rose-500">
-                <Flame className="h-4 w-4" />
+              <div className="mt-4 flex items-baseline justify-between">
+                <div>
+                  <span className="text-2xl font-black text-[var(--text-primary)]">{activeCalories}</span>
+                  <span className="text-xs font-medium text-[var(--text-secondary)]"> / {targetCalories} kcal</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {activeCalories >= targetCalories && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                      <Check className="h-3 w-3" /> Met!
+                    </span>
+                  )}
+                  <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                    {Math.round((activeCalories / targetCalories) * 100)}%
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-500"
+                  style={{ width: `${Math.min(100, (activeCalories / targetCalories) * 100)}%` }}
+                />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline justify-between">
-              <div>
-                <span className="text-2xl font-black text-[var(--text-primary)]">{activeCalories}</span>
-                <span className="text-xs font-medium text-[var(--text-secondary)]"> / {targetCalories} kcal</span>
-              </div>
-              <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
-                {Math.round((activeCalories / targetCalories) * 100)}%
-              </span>
-            </div>
-            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-500"
-                style={{ width: `${Math.min(100, (activeCalories / targetCalories) * 100)}%` }}
-              />
+
+            {/* Quick Action Steppers */}
+            <div className="mt-4 flex items-center justify-end gap-1.5 pt-2 border-t border-[var(--glass-border)]/60">
+              <button
+                type="button"
+                onClick={() => handleAdjustCalories(-50)}
+                disabled={activeCalories <= 0}
+                className="flex items-center justify-center h-7 w-7 rounded-lg border border-[var(--glass-border)] text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-30 transition-all active:scale-95"
+                title="Subtract 50 kcal"
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAdjustCalories(50)}
+                className="flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 transition-all active:scale-95"
+                title="Quick add 50 kcal"
+              >
+                <Plus className="h-3 w-3" /> 50
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAdjustCalories(100)}
+                className="flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-xs hover:bg-rose-500 transition-all active:scale-95"
+                title="Quick add 100 kcal"
+              >
+                <Plus className="h-3 w-3" /> 100
+              </button>
             </div>
           </div>
 
           {/* Tile 2: Exercise Minutes */}
-          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                  Workout & Exercise Time
-                </span>
-                <p className="text-[10px] text-[var(--text-tertiary)]">Daily Fitness Duration</p>
+          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    Workout & Exercise Time
+                  </span>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Daily Fitness Duration</p>
+                </div>
+                <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-500">
+                  <Activity className="h-4 w-4" />
+                </div>
               </div>
-              <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-500">
-                <Activity className="h-4 w-4" />
+              <div className="mt-4 flex items-baseline justify-between">
+                <div>
+                  <span className="text-2xl font-black text-[var(--text-primary)]">{exerciseMinutes}</span>
+                  <span className="text-xs font-medium text-[var(--text-secondary)]"> / {targetExercise} mins</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {exerciseMinutes >= targetExercise && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                      <Check className="h-3 w-3" /> Met!
+                    </span>
+                  )}
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    {Math.round((exerciseMinutes / targetExercise) * 100)}%
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                  style={{ width: `${Math.min(100, (exerciseMinutes / targetExercise) * 100)}%` }}
+                />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline justify-between">
-              <div>
-                <span className="text-2xl font-black text-[var(--text-primary)]">{exerciseMinutes}</span>
-                <span className="text-xs font-medium text-[var(--text-secondary)]"> / {targetExercise} mins</span>
-              </div>
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                {Math.round((exerciseMinutes / targetExercise) * 100)}%
-              </span>
-            </div>
-            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
-                style={{ width: `${Math.min(100, (exerciseMinutes / targetExercise) * 100)}%` }}
-              />
+
+            {/* Quick Action Steppers */}
+            <div className="mt-4 flex items-center justify-end gap-1.5 pt-2 border-t border-[var(--glass-border)]/60">
+              <button
+                type="button"
+                onClick={() => handleAdjustExercise(-10)}
+                disabled={exerciseMinutes <= 0}
+                className="flex items-center justify-center h-7 w-7 rounded-lg border border-[var(--glass-border)] text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-30 transition-all active:scale-95"
+                title="Subtract 10 mins"
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAdjustExercise(10)}
+                className="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-all active:scale-95"
+                title="Quick add 10 mins"
+              >
+                <Plus className="h-3 w-3" /> 10m
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAdjustExercise(20)}
+                className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white shadow-xs hover:bg-emerald-500 transition-all active:scale-95"
+                title="Quick add 20 mins"
+              >
+                <Plus className="h-3 w-3" /> 20m
+              </button>
             </div>
           </div>
 
           {/* Tile 3: Mindfulness & Stretches */}
-          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
-                  Mindful Breathing & Stretching
-                </span>
-                <p className="text-[10px] text-[var(--text-tertiary)]">Restorative Relaxation</p>
+          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
+                    Mindful Breathing & Stretching
+                  </span>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Restorative Relaxation</p>
+                </div>
+                <div className="rounded-xl bg-cyan-500/10 p-2 text-cyan-500">
+                  <Heart className="h-4 w-4" />
+                </div>
               </div>
-              <div className="rounded-xl bg-cyan-500/10 p-2 text-cyan-500">
-                <Heart className="h-4 w-4" />
+              <div className="mt-4 flex items-baseline justify-between">
+                <div>
+                  <span className="text-2xl font-black text-[var(--text-primary)]">{mindfulMinutes}</span>
+                  <span className="text-xs font-medium text-[var(--text-secondary)]"> / {targetMindful} mins</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {mindfulMinutes >= targetMindful && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold text-cyan-600 dark:text-cyan-400">
+                      <Check className="h-3 w-3" /> Met!
+                    </span>
+                  )}
+                  <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">
+                    {Math.round((mindfulMinutes / targetMindful) * 100)}%
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500"
+                  style={{ width: `${Math.min(100, (mindfulMinutes / targetMindful) * 100)}%` }}
+                />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline justify-between">
-              <div>
-                <span className="text-2xl font-black text-[var(--text-primary)]">{mindfulMinutes}</span>
-                <span className="text-xs font-medium text-[var(--text-secondary)]"> / {targetMindful} mins</span>
-              </div>
-              <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">
-                {Math.round((mindfulMinutes / targetMindful) * 100)}%
-              </span>
-            </div>
-            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500"
-                style={{ width: `${Math.min(100, (mindfulMinutes / targetMindful) * 100)}%` }}
-              />
+
+            {/* Quick Action Steppers */}
+            <div className="mt-4 flex items-center justify-end gap-1.5 pt-2 border-t border-[var(--glass-border)]/60">
+              <button
+                type="button"
+                onClick={() => handleAdjustMindful(-5)}
+                disabled={mindfulMinutes <= 0}
+                className="flex items-center justify-center h-7 w-7 rounded-lg border border-[var(--glass-border)] text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-30 transition-all active:scale-95"
+                title="Subtract 5 mins"
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAdjustMindful(5)}
+                className="flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-bold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20 transition-all active:scale-95"
+                title="Quick add 5 mins"
+              >
+                <Plus className="h-3 w-3" /> 5m
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAdjustMindful(10)}
+                className="flex items-center gap-1 rounded-lg bg-cyan-600 px-2.5 py-1 text-xs font-bold text-white shadow-xs hover:bg-cyan-500 transition-all active:scale-95"
+                title="Quick add 10 mins"
+              >
+                <Plus className="h-3 w-3" /> 10m
+              </button>
             </div>
           </div>
 
           {/* Tile 4: Water Hydration Tracker */}
-          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                  Daily Water Intake
-                </span>
-                <p className="text-[10px] text-[var(--text-tertiary)]">Hydration & Electrolytes</p>
+          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition-colors flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                    Daily Water Intake
+                  </span>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Hydration & Electrolytes</p>
+                </div>
+                <div className="rounded-xl bg-blue-500/10 p-2 text-blue-500">
+                  <Droplets className="h-4 w-4" />
+                </div>
               </div>
-              <div className="rounded-xl bg-blue-500/10 p-2 text-blue-500">
-                <Droplets className="h-4 w-4" />
+              <div className="mt-4 flex items-center justify-between">
+                <div>
+                  <span className="text-2xl font-black text-[var(--text-primary)]">{waterGlasses * 250}</span>
+                  <span className="text-xs font-medium text-[var(--text-secondary)]"> / {targetWaterGlasses * 250} ml</span>
+                </div>
+                {waterGlasses >= targetWaterGlasses && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                    <Check className="h-3 w-3" /> Met!
+                  </span>
+                )}
+              </div>
+              <div className="mt-3 flex items-center gap-1">
+                {Array.from({ length: targetWaterGlasses }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "h-2 flex-1 rounded-full transition-all duration-300",
+                      i < waterGlasses
+                        ? "bg-blue-500 dark:bg-blue-400 shadow-xs shadow-blue-500/40"
+                        : "bg-slate-200/80 dark:bg-white/10"
+                    )}
+                  />
+                ))}
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between">
-              <div>
-                <span className="text-2xl font-black text-[var(--text-primary)]">{waterGlasses * 250}</span>
-                <span className="text-xs font-medium text-[var(--text-secondary)]"> / {targetWaterGlasses * 250} ml</span>
-              </div>
+
+            {/* Quick Action Steppers */}
+            <div className="mt-4 flex items-center justify-end gap-1.5 pt-2 border-t border-[var(--glass-border)]/60">
               <button
+                type="button"
+                onClick={handleRemoveWater}
+                disabled={waterGlasses <= 0}
+                className="flex items-center justify-center h-7 w-7 rounded-lg border border-[var(--glass-border)] text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-30 transition-all active:scale-95"
+                title="Subtract 1 glass (250ml)"
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
                 onClick={handleAddWater}
-                className="flex items-center gap-1 rounded-xl border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-xs font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-500/20 transition-colors"
+                className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-blue-500 transition-all active:scale-95"
+                title="Quick add 250ml"
               >
                 <Plus className="h-3.5 w-3.5" /> +250ml
               </button>
             </div>
-            <div className="mt-3 flex items-center gap-1">
-              {Array.from({ length: targetWaterGlasses }).map((_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "h-2 flex-1 rounded-full transition-all duration-300",
-                    i < waterGlasses
-                      ? "bg-blue-500 dark:bg-blue-400 shadow-xs shadow-blue-500/40"
-                      : "bg-slate-200/80 dark:bg-white/10"
-                  )}
-                />
-              ))}
-            </div>
           </div>
         </div>
 
-        {/* Customize Goals Button */}
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-[var(--text-secondary)]">
-            Targets are personalized to your goals. Adjust anytime.
-          </p>
+        {/* Customize Goals Button & Confirmation Toast */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-[var(--text-secondary)]">
+              Targets are personalized to your goals. Adjust anytime.
+            </p>
+            {goalsSavedToast && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 shadow-xs"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                {goalsSavedToast}
+              </motion.span>
+            )}
+          </div>
           <button
             onClick={() => {
               setDraftGoals({
@@ -1186,7 +1398,7 @@ export default function MovementAndVitalityPage() {
               });
               setIsGoalsModalOpen(true);
             }}
-            className="flex items-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-xs font-bold text-violet-700 dark:text-violet-300 hover:bg-violet-500/20 transition-colors"
+            className="flex items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-xs font-bold text-violet-700 dark:text-violet-300 hover:bg-violet-500/20 transition-all active:scale-95 shrink-0"
           >
             <Pencil className="h-3.5 w-3.5" />
             Customize My Goals
@@ -1672,12 +1884,12 @@ export default function MovementAndVitalityPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-md rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-2xl"
+                className="w-full max-w-lg rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-7 shadow-2xl max-h-[90vh] overflow-y-auto"
               >
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between pb-4 border-b border-[var(--glass-border)]">
                   <div>
-                    <h2 className="text-lg font-extrabold text-[var(--text-primary)]">Customize Daily Goals 🎯</h2>
-                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">Set targets that work for your lifestyle</p>
+                    <h2 className="text-lg font-extrabold text-[var(--text-primary)]">Goal Set, Check & Confirm 🎯</h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">Customize and lock in your 4 daily wellness targets</p>
                   </div>
                   <button
                     onClick={() => setIsGoalsModalOpen(false)}
@@ -1687,77 +1899,196 @@ export default function MovementAndVitalityPage() {
                   </button>
                 </div>
 
-                <div className="space-y-5">
-                  {/* Calories Goal */}
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400">
-                      <Flame className="h-3.5 w-3.5" />
-                      Active Calories Target (kcal)
-                    </label>
-                    <input
-                      type="number"
-                      min={50}
-                      max={5000}
-                      step={50}
-                      value={draftGoals.target_calories}
-                      onChange={(e) => setDraftGoals((p) => ({ ...p, target_calories: Number(e.target.value) }))}
-                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                    />
-                  </div>
-
-                  {/* Exercise Minutes Goal */}
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                      <Activity className="h-3.5 w-3.5" />
-                      Exercise Time Target (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      min={5}
-                      max={300}
-                      step={5}
-                      value={draftGoals.target_exercise_minutes}
-                      onChange={(e) => setDraftGoals((p) => ({ ...p, target_exercise_minutes: Number(e.target.value) }))}
-                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                    />
-                  </div>
-
-                  {/* Mindful Minutes Goal */}
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs font-bold text-cyan-600 dark:text-cyan-400">
-                      <Heart className="h-3.5 w-3.5" />
-                      Mindful Breathing & Stretching Target (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={120}
-                      step={5}
-                      value={draftGoals.target_mindful_minutes}
-                      onChange={(e) => setDraftGoals((p) => ({ ...p, target_mindful_minutes: Number(e.target.value) }))}
-                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                    />
-                  </div>
-
-                  {/* Water Goal */}
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
-                      <Droplets className="h-3.5 w-3.5" />
-                      Daily Water Intake Target (glasses × 250ml)
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={20}
-                      step={1}
-                      value={draftGoals.target_water_glasses}
-                      onChange={(e) => setDraftGoals((p) => ({ ...p, target_water_glasses: Number(e.target.value) }))}
-                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                    />
+                {/* Quick Presets Selection */}
+                <div className="mt-4 space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    Quick Preset Targets
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPreset("starter")}
+                      className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2.5 py-2 text-left hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all text-xs"
+                    >
+                      <span className="block font-bold text-emerald-600 dark:text-emerald-400">🌱 Starter</span>
+                      <span className="block text-[10px] text-[var(--text-tertiary)]">300kcal • 20m</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPreset("balanced")}
+                      className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2.5 py-2 text-left hover:border-violet-500/50 hover:bg-violet-500/5 transition-all text-xs"
+                    >
+                      <span className="block font-bold text-violet-600 dark:text-violet-400">⚡ Balanced</span>
+                      <span className="block text-[10px] text-[var(--text-tertiary)]">500kcal • 30m</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyPreset("athlete")}
+                      className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2.5 py-2 text-left hover:border-rose-500/50 hover:bg-rose-500/5 transition-all text-xs"
+                    >
+                      <span className="block font-bold text-rose-600 dark:text-rose-400">🔥 High Energy</span>
+                      <span className="block text-[10px] text-[var(--text-tertiary)]">750kcal • 45m</span>
+                    </button>
                   </div>
                 </div>
 
-                <div className="mt-6 flex items-center gap-3">
+                {/* The 4 Customize Options with Interactive Stepper, Check & Confirm */}
+                <div className="mt-5 space-y-4">
+                  {/* Option 1: Calories Goal */}
+                  <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400">
+                        <Flame className="h-4 w-4" />
+                        <span>1. Active Calories Target</span>
+                      </label>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                        <Check className="h-3 w-3" /> {draftGoals.target_calories} kcal
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDraftGoals((p) => ({ ...p, target_calories: Math.max(50, p.target_calories - 50) }))}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all active:scale-95"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <input
+                        type="number"
+                        min={50}
+                        max={5000}
+                        step={50}
+                        value={draftGoals.target_calories}
+                        onChange={(e) => setDraftGoals((p) => ({ ...p, target_calories: Number(e.target.value) }))}
+                        className="flex-1 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] px-3 py-2 text-center text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setDraftGoals((p) => ({ ...p, target_calories: Math.min(5000, p.target_calories + 50) }))}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all active:scale-95"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Option 2: Exercise Minutes Goal */}
+                  <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        <Activity className="h-4 w-4" />
+                        <span>2. Exercise Time Target</span>
+                      </label>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <Check className="h-3 w-3" /> {draftGoals.target_exercise_minutes} mins
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDraftGoals((p) => ({ ...p, target_exercise_minutes: Math.max(5, p.target_exercise_minutes - 5) }))}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all active:scale-95"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <input
+                        type="number"
+                        min={5}
+                        max={300}
+                        step={5}
+                        value={draftGoals.target_exercise_minutes}
+                        onChange={(e) => setDraftGoals((p) => ({ ...p, target_exercise_minutes: Number(e.target.value) }))}
+                        className="flex-1 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] px-3 py-2 text-center text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setDraftGoals((p) => ({ ...p, target_exercise_minutes: Math.min(300, p.target_exercise_minutes + 5) }))}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all active:scale-95"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Option 3: Mindful Minutes Goal */}
+                  <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-xs font-bold text-cyan-600 dark:text-cyan-400">
+                        <Heart className="h-4 w-4" />
+                        <span>3. Mindful Breathing & Stretching</span>
+                      </label>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold text-cyan-600 dark:text-cyan-400">
+                        <Check className="h-3 w-3" /> {draftGoals.target_mindful_minutes} mins
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDraftGoals((p) => ({ ...p, target_mindful_minutes: Math.max(1, p.target_mindful_minutes - 5) }))}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all active:scale-95"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={120}
+                        step={5}
+                        value={draftGoals.target_mindful_minutes}
+                        onChange={(e) => setDraftGoals((p) => ({ ...p, target_mindful_minutes: Number(e.target.value) }))}
+                        className="flex-1 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] px-3 py-2 text-center text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setDraftGoals((p) => ({ ...p, target_mindful_minutes: Math.min(120, p.target_mindful_minutes + 5) }))}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all active:scale-95"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Option 4: Water Goal */}
+                  <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
+                        <Droplets className="h-4 w-4" />
+                        <span>4. Daily Water Intake Target</span>
+                      </label>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                        <Check className="h-3 w-3" /> {draftGoals.target_water_glasses} glasses ({draftGoals.target_water_glasses * 250}ml)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDraftGoals((p) => ({ ...p, target_water_glasses: Math.max(1, p.target_water_glasses - 1) }))}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all active:scale-95"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        step={1}
+                        value={draftGoals.target_water_glasses}
+                        onChange={(e) => setDraftGoals((p) => ({ ...p, target_water_glasses: Number(e.target.value) }))}
+                        className="flex-1 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] px-3 py-2 text-center text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setDraftGoals((p) => ({ ...p, target_water_glasses: Math.min(30, p.target_water_glasses + 1) }))}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all active:scale-95"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interactive Check & Confirm Action Footer */}
+                <div className="mt-6 flex items-center gap-3 pt-4 border-t border-[var(--glass-border)]">
                   <button
                     onClick={() => setIsGoalsModalOpen(false)}
                     className="flex-1 rounded-xl border border-[var(--glass-border)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
@@ -1767,14 +2098,14 @@ export default function MovementAndVitalityPage() {
                   <button
                     onClick={handleSaveGoals}
                     disabled={isSavingGoals}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-violet-600/30 hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-violet-600/30 hover:opacity-95 transition-all disabled:opacity-50 active:scale-[0.99]"
                   >
                     {isSavingGoals ? (
                       <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     ) : (
-                      <Check className="h-3.5 w-3.5" />
+                      <CheckCircle2 className="h-4 w-4" />
                     )}
-                    {isSavingGoals ? "Saving..." : "Save Goals"}
+                    {isSavingGoals ? "Locking In..." : "Check & Confirm 4 Goals"}
                   </button>
                 </div>
               </motion.div>
