@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   ChevronRight,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,14 @@ export function CycleDietSection({ currentPhaseKey }: CycleDietSectionProps) {
 
   const [copiedGrocery, setCopiedGrocery] = React.useState(false);
   const [selectedMealIndex, setSelectedMealIndex] = React.useState(0);
+  const [isRecipeModalOpen, setIsRecipeModalOpen] = React.useState(false);
+  const [activeModalMeal, setActiveModalMeal] = React.useState<MealIdea | null>(null);
+
+  const handleOpenRecipe = (meal: MealIdea, idx: number) => {
+    setSelectedMealIndex(idx);
+    setActiveModalMeal(meal);
+    setIsRecipeModalOpen(true);
+  };
 
   // Sync if prop changes and user hasn't explicitly clicked away
   React.useEffect(() => {
@@ -351,12 +360,12 @@ export function CycleDietSection({ currentPhaseKey }: CycleDietSectionProps) {
               <button
                 key={meal.mealType}
                 type="button"
-                onClick={() => setSelectedMealIndex(idx)}
+                onClick={() => handleOpenRecipe(meal, idx)}
                 className={cn(
-                  "p-4 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-3",
+                  "p-4 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-3 group cursor-pointer active:scale-[0.99]",
                   isSelected
                     ? "border-emerald-500/50 bg-emerald-500/10 shadow-md ring-2 ring-emerald-500/20"
-                    : "border-[var(--glass-border)] bg-[var(--bg-secondary)] hover:border-violet-500/30"
+                    : "border-[var(--glass-border)] bg-[var(--bg-secondary)] hover:border-emerald-500/40 hover:bg-emerald-500/5"
                 )}
               >
                 <div>
@@ -367,14 +376,14 @@ export function CycleDietSection({ currentPhaseKey }: CycleDietSectionProps) {
                       {meal.prepTimeMinutes}m
                     </span>
                   </div>
-                  <h4 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] leading-snug">
+                  <h4 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                     {meal.title}
                   </h4>
                 </div>
 
                 <div className="pt-2 border-t border-[var(--glass-border)] flex items-center justify-between text-[11px] text-[var(--text-tertiary)]">
                   <span>~{meal.caloriesApprox} kcal</span>
-                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 group-hover:bg-emerald-500/25 transition-colors">
                     View Recipe →
                   </span>
                 </div>
@@ -446,6 +455,95 @@ export function CycleDietSection({ currentPhaseKey }: CycleDietSectionProps) {
             </div>
           </motion.div>
         )}
+
+        {/* Dedicated Interactive Recipe Popup Modal */}
+        <AnimatePresence>
+          {isRecipeModalOpen && activeModalMeal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              onClick={() => setIsRecipeModalOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.92, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-lg rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-7 shadow-2xl max-h-[88vh] overflow-y-auto space-y-5"
+              >
+                <div className="flex items-start justify-between gap-3 border-b border-[var(--glass-border)] pb-4">
+                  <div>
+                    <span className="inline-block rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                      {activeModalMeal.mealType} • {activeModalMeal.prepTimeMinutes} mins
+                    </span>
+                    <h3 className="text-lg sm:text-xl font-black text-[var(--text-primary)] mt-1.5 leading-snug">
+                      {activeModalMeal.title}
+                    </h3>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                      ~{activeModalMeal.caloriesApprox} kcal • Tailored for {nutritionData.phaseName}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsRecipeModalOpen(false)}
+                    className="rounded-full p-2 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors shrink-0"
+                  >
+                    <X className="h-4 w-4 text-[var(--text-secondary)]" />
+                  </button>
+                </div>
+
+                {/* Ingredients */}
+                <div className="space-y-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    Ingredients Checklist
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {activeModalMeal.ingredients.map((ing) => (
+                      <div
+                        key={ing}
+                        className="flex items-center gap-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--glass-border)] px-3 py-2 text-xs text-[var(--text-primary)]"
+                      >
+                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        <span>{ing}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cooking Instructions */}
+                <div className="space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    Step-by-Step Preparation
+                  </span>
+                  <div className="rounded-2xl bg-[var(--bg-secondary)] border border-[var(--glass-border)] p-4 text-xs text-[var(--text-primary)] leading-relaxed">
+                    {activeModalMeal.instructions}
+                  </div>
+                </div>
+
+                {/* Endocrine Benefit */}
+                <div className="rounded-2xl bg-gradient-to-r from-emerald-500/15 to-teal-500/10 border border-emerald-500/30 p-4 text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
+                  <span className="font-extrabold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 mb-1">
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+                    Hormone-Balancing Synergy:
+                  </span>
+                  {activeModalMeal.hormonalBenefit}
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsRecipeModalOpen(false)}
+                    className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95 transition-all"
+                  >
+                    Done & Close Recipe
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Partner Grocery Synchronization Card */}
