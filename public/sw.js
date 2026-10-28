@@ -1,5 +1,5 @@
-// Service Worker for UHC Care PWA (v3: Network-First for dynamic updates)
-const CACHE_NAME = 'uhc-care-v3';
+// Service Worker for UHC Care PWA (v4: Network-First for dynamic updates & refreshed brand icons)
+const CACHE_NAME = 'uhc-care-v4';
 const OFFLINE_URL = '/';
 
 const ASSETS_TO_CACHE = [

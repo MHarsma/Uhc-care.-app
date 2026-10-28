@@ -221,9 +221,11 @@ export function AppShell({
         {/* Brand Header */}
         <div className="p-4 pb-3 border-b border-[var(--glass-border)] flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-500 to-purple-600 text-white font-black text-base shadow-md glow-accent group-hover:scale-105 transition-transform">
-              U
-            </div>
+            <img
+              src="/icon-192.png"
+              alt="UHC Care"
+              className="h-9 w-9 shrink-0 rounded-xl shadow-md group-hover:scale-105 transition-transform object-contain"
+            />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-bold tracking-tight text-[var(--text-primary)]">
@@ -420,9 +422,11 @@ export function AppShell({
           </button>
 
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 text-white font-black text-sm shadow-sm">
-              U
-            </div>
+            <img
+              src="/icon-192.png"
+              alt="UHC Care"
+              className="h-8 w-8 shrink-0 rounded-lg shadow-sm object-contain"
+            />
             <span className="font-bold text-sm text-[var(--text-primary)]">UHC Care</span>
           </Link>
         </div>
@@ -484,9 +488,11 @@ export function AppShell({
               {/* Drawer Header */}
               <div className="p-5 border-b border-[var(--glass-border)] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white font-bold">
-                    U
-                  </div>
+                  <img
+                    src="/icon-192.png"
+                    alt="UHC Care"
+                    className="h-9 w-9 shrink-0 rounded-xl shadow-md object-contain"
+                  />
                   <div>
                     <h3 className="font-bold text-sm text-[var(--text-primary)]">UHC Care</h3>
                     <p className="text-[11px] text-[var(--text-tertiary)]">Couple Routine</p>
