@@ -246,6 +246,7 @@ export default function PeriodTrackingPage() {
   const [modalEndDate, setModalEndDate] = React.useState("");
   const [modalIsOngoing, setModalIsOngoing] = React.useState(true);
   const [modalError, setModalError] = React.useState<string | null>(null);
+  const [cycleLogsFilter, setCycleLogsFilter] = React.useState<"all" | "month">("all");
 
   // Symptoms & Mood Sheet (Flo Daily Log)
   const [isSymptomDrawerOpen, setIsSymptomDrawerOpen] = React.useState(false);
@@ -493,13 +494,31 @@ export default function PeriodTrackingPage() {
     }
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = (suggestedDate?: string, defaultDays?: number) => {
     setEditingPeriodId(null);
-    setModalStartDate(selectedDayDate || todayStr);
-    setModalEndDate("");
-    setModalIsOngoing(true);
+    const start = typeof suggestedDate === "string" ? suggestedDate : selectedDayDate || todayStr;
+    setModalStartDate(start);
+    if (defaultDays && defaultDays > 0) {
+      const startMs = parseUtcDate(start);
+      const endD = new Date(startMs + (defaultDays - 1) * 86400000);
+      const endStr = `${endD.getUTCFullYear()}-${String(endD.getUTCMonth() + 1).padStart(2, "0")}-${String(endD.getUTCDate()).padStart(2, "0")}`;
+      setModalEndDate(endStr);
+      setModalIsOngoing(false);
+    } else {
+      setModalEndDate("");
+      setModalIsOngoing(start === todayStr);
+    }
     setModalError(null);
     setIsPeriodModalOpen(true);
+  };
+
+  const applyPresetDuration = (days: number) => {
+    if (!modalStartDate) return;
+    const startMs = parseUtcDate(modalStartDate);
+    const endD = new Date(startMs + (days - 1) * 86400000);
+    const endStr = `${endD.getUTCFullYear()}-${String(endD.getUTCMonth() + 1).padStart(2, "0")}-${String(endD.getUTCDate()).padStart(2, "0")}`;
+    setModalEndDate(endStr);
+    setModalIsOngoing(false);
   };
 
   const handleEditActiveStartDate = () => {
@@ -583,6 +602,35 @@ export default function PeriodTrackingPage() {
 
   // Adjust so Monday = 0, Sunday = 6
   const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
+
+  // Find logged period covering the selected day (for past or present dates)
+  const periodCoveringSelectedDay = React.useMemo(() => {
+    if (!selectedDayDate) return null;
+    return (
+      periods.find((p) => {
+        const sStr = p.start_date;
+        const eStr = p.end_date || (p.is_ongoing ? todayStr : p.start_date);
+        return selectedDayDate >= sStr && selectedDayDate <= eStr;
+      }) || null
+    );
+  }, [periods, selectedDayDate, todayStr]);
+
+  // Filter periods belonging to or spanning across the viewed calendar month
+  const monthPeriodLogs = React.useMemo(() => {
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+    return periods.filter((p) => {
+      const sPrefix = p.start_date.slice(0, 7);
+      const ePrefix = p.end_date ? p.end_date.slice(0, 7) : monthPrefix;
+      return monthPrefix >= sPrefix && monthPrefix <= ePrefix;
+    });
+  }, [periods, year, month]);
+
+  const displayedPeriodLogs = React.useMemo(() => {
+    if (cycleLogsFilter === "month") {
+      return monthPeriodLogs;
+    }
+    return periods;
+  }, [cycleLogsFilter, monthPeriodLogs, periods]);
 
   const calendarCells = React.useMemo(() => {
     const cells: Array<{
@@ -687,7 +735,7 @@ export default function PeriodTrackingPage() {
         canManagePeriods ? (
           <button
             type="button"
-            onClick={openCreateModal}
+            onClick={() => openCreateModal()}
             className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 px-4 py-2 text-xs font-bold text-white transition-all shadow-lg shadow-rose-500/20 active:scale-95 press-effect"
           >
             <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
@@ -906,7 +954,7 @@ export default function PeriodTrackingPage() {
 
                           <button
                             type="button"
-                            onClick={openCreateModal}
+                            onClick={() => openCreateModal()}
                             disabled={actionLoading}
                             className="inline-flex items-center gap-2 rounded-2xl bg-white/20 hover:bg-white/30 border border-white/25 text-white px-4 py-3 text-xs font-bold backdrop-blur-md active:scale-95 transition-all"
                           >
@@ -1317,12 +1365,13 @@ export default function PeriodTrackingPage() {
             {/* ============================================================ */}
             <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 sm:p-6 shadow-sm glass-card space-y-4">
               {/* Calendar Header & Month Switcher */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setCurrentCalendarDate(new Date(year, month - 1, 1))}
-                    className="p-1.5 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+                    className="p-1.5 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+                    title="Previous Month"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
@@ -1332,21 +1381,43 @@ export default function PeriodTrackingPage() {
                   <button
                     type="button"
                     onClick={() => setCurrentCalendarDate(new Date(year, month + 1, 1))}
-                    className="p-1.5 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+                    className="p-1.5 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+                    title="Next Month"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentCalendarDate(new Date());
+                      setSelectedDayDate(todayStr);
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 transition-all ml-1 cursor-pointer"
+                  >
+                    Today
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentCalendarDate(new Date());
-                    setSelectedDayDate(todayStr);
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 transition-all"
-                >
-                  Today
-                </button>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {monthPeriodLogs.length > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                      <Droplet className="h-3 w-3 fill-rose-500 text-rose-500" />
+                      <span>{monthPeriodLogs.length} cycle{monthPeriodLogs.length > 1 ? "s" : ""} logged</span>
+                    </span>
+                  )}
+
+                  {canManagePeriods && (
+                    <button
+                      type="button"
+                      onClick={() => openCreateModal(`${year}-${String(month + 1).padStart(2, "0")}-01`, 5)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>+ Log Period in {monthName}</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Color Code Legend — Exact 4-Phase Match */}
@@ -1535,6 +1606,91 @@ export default function PeriodTrackingPage() {
                   </div>
                 </div>
 
+                {/* Day-Level Period Actions (Allows Editing or Adding Period for Any Past/Future Day) */}
+                {canManagePeriods && (
+                  <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    {periodCoveringSelectedDay ? (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500 text-white shadow-md">
+                            <Droplet className="h-5 w-5 fill-white text-white" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-[var(--text-primary)]">
+                                Period Logged: {periodCoveringSelectedDay.start_date} → {periodCoveringSelectedDay.end_date || "Ongoing"}
+                              </span>
+                              {!periodCoveringSelectedDay.end_date && (
+                                <span className="rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-bold px-2 py-0.5 text-[10px]">
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                              {periodCoveringSelectedDay.end_date
+                                ? `${diffDaysUtc(periodCoveringSelectedDay.start_date, periodCoveringSelectedDay.end_date) + 1} days recorded flow duration`
+                                : "Currently active ongoing flow"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(periodCoveringSelectedDay)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] px-3.5 py-2 text-xs font-bold text-[var(--text-primary)] transition-all active:scale-95 cursor-pointer"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            <span>Edit This Period</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(periodCoveringSelectedDay.id)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 transition-all active:scale-95 cursor-pointer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-500/10 text-[var(--text-tertiary)]">
+                            <Calendar className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <span className="text-xs text-[var(--text-secondary)] font-medium">
+                              No period cycle recorded on {selectedCellData.dateStr}.
+                            </span>
+                            <p className="text-[10px] text-[var(--text-tertiary)]">
+                              Want to log a past period for this date?
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openCreateModal(selectedCellData.dateStr, 5)}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 px-3.5 py-2 text-xs font-bold text-white shadow-sm active:scale-95 transition-all cursor-pointer"
+                          >
+                            <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                            <span>Log 5-Day Period Here</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openCreateModal(selectedCellData.dateStr)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] px-3 py-2 text-xs font-bold text-[var(--text-primary)] transition-all active:scale-95 cursor-pointer"
+                          >
+                            <span>Custom Dates...</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* 3 Wellness Guidance Cards with Deep Links */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Nutrition */}
@@ -1659,19 +1815,75 @@ export default function PeriodTrackingPage() {
             {/* 5. CYCLE HISTORY & MANAGEMENT                                */}
             {/* ============================================================ */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                  Past Cycle Logs ({periods.length})
-                </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                    Past Cycle Logs ({periods.length})
+                  </h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    Review and edit past menstruation cycles, start dates, and durations.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Filter tabs */}
+                  <div className="inline-flex rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setCycleLogsFilter("all")}
+                      className={cn(
+                        "rounded-lg px-2.5 py-1 font-semibold transition-all cursor-pointer",
+                        cycleLogsFilter === "all"
+                          ? "bg-rose-500 text-white font-bold shadow-xs"
+                          : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      )}
+                    >
+                      All ({periods.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCycleLogsFilter("month")}
+                      className={cn(
+                        "rounded-lg px-2.5 py-1 font-semibold transition-all cursor-pointer",
+                        cycleLogsFilter === "month"
+                          ? "bg-rose-500 text-white font-bold shadow-xs"
+                          : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      )}
+                    >
+                      {monthName} {year} ({monthPeriodLogs.length})
+                    </button>
+                  </div>
+
+                  {canManagePeriods && (
+                    <button
+                      type="button"
+                      onClick={() => openCreateModal(selectedDayDate || `${year}-${String(month + 1).padStart(2, "0")}-01`, 5)}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>+ Log Past Period</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {periods.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-[var(--glass-border)] glass-card p-10 text-center text-xs text-[var(--text-tertiary)]">
-                  No previous cycle entries logged yet. Tap &ldquo;Log Period&rdquo; above to record your history.
+              {displayedPeriodLogs.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-[var(--glass-border)] glass-card p-10 text-center text-xs text-[var(--text-tertiary)] space-y-2">
+                  <p>No cycle entries recorded {cycleLogsFilter === "month" ? `for ${monthName} ${year}` : "yet"}.</p>
+                  {canManagePeriods && (
+                    <button
+                      type="button"
+                      onClick={() => openCreateModal(`${year}-${String(month + 1).padStart(2, "0")}-01`, 5)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Log Period for {monthName} {year}</span>
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {periods.map((entry) => (
+                  {displayedPeriodLogs.map((entry) => (
                     <div
                       key={entry.id}
                       className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 glass-card flex items-center justify-between transition-all hover:border-rose-500/30"
@@ -1694,6 +1906,8 @@ export default function PeriodTrackingPage() {
                           <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
                             {entry.duration_days
                               ? `${entry.duration_days} days total flow duration`
+                              : entry.end_date
+                              ? `${diffDaysUtc(entry.start_date, entry.end_date) + 1} days flow duration`
                               : "Currently ongoing active phase"}
                           </p>
                         </div>
@@ -1704,7 +1918,7 @@ export default function PeriodTrackingPage() {
                           <button
                             type="button"
                             onClick={() => openEditModal(entry)}
-                            className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
+                            className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors cursor-pointer"
                             title="Edit Period Dates"
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -1712,7 +1926,7 @@ export default function PeriodTrackingPage() {
                           <button
                             type="button"
                             onClick={() => handleDelete(entry.id)}
-                            className="p-2 text-[var(--text-tertiary)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                            className="p-2 text-[var(--text-tertiary)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                             title="Delete"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -1781,6 +1995,24 @@ export default function PeriodTrackingPage() {
                 <label htmlFor="ongoing-check" className="text-xs font-semibold text-[var(--text-secondary)] cursor-pointer">
                   This period is currently ongoing
                 </label>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                  Quick Duration Helpers (for Past Cycles)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[4, 5, 6, 7, 8].map((days) => (
+                    <button
+                      key={days}
+                      type="button"
+                      onClick={() => applyPresetDuration(days)}
+                      className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:border-rose-500/50 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer"
+                    >
+                      {days} Days
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {!modalIsOngoing && (
