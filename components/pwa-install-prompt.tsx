@@ -111,9 +111,11 @@ export function PwaInstallPrompt() {
         <div className="rounded-2xl glass-card border border-violet-500/30 bg-[var(--bg-card)] p-4 shadow-2xl backdrop-blur-xl">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-600 text-white font-black text-lg shadow-md glow-accent">
-                U
-              </div>
+              <img
+                src="/icon-192.png"
+                alt="UHC Care"
+                className="h-11 w-11 shrink-0 rounded-xl shadow-md ring-1 ring-white/10 object-cover"
+              />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-sm font-bold text-[var(--text-primary)] tracking-tight">
@@ -327,9 +329,11 @@ export function InstallAppCard() {
 
       <div className="p-4 rounded-2xl bg-[var(--bg-hover)] border border-[var(--glass-border)] mb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-600 text-white font-black text-xl shadow-md glow-accent">
-            U
-          </div>
+          <img
+            src="/icon-192.png"
+            alt="UHC Care"
+            className="h-12 w-12 shrink-0 rounded-2xl shadow-md ring-1 ring-white/15 object-cover"
+          />
           <div>
             <h4 className="text-sm font-bold text-[var(--text-primary)]">
               UHC Care App

@@ -105,14 +105,14 @@ export default function SignupPage() {
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-20 w-40 bg-violet-500/20 blur-3xl rounded-full pointer-events-none" />
 
         <div className="relative z-10 mb-8 text-center">
-          <motion.div
+          <motion.img
+            src="/icon-192.png"
+            alt="UHC Care"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.15, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] as const }}
-            className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-600 text-2xl font-black text-white shadow-xl glow-accent"
-          >
-            U
-          </motion.div>
+            className="mx-auto mb-5 h-16 w-16 rounded-2xl shadow-xl ring-1 ring-white/15 object-cover"
+          />
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-500 dark:text-violet-400">
             Start together
           </p>

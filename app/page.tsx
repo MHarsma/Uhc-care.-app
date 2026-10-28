@@ -293,9 +293,11 @@ export default function HomePage() {
       <header className="relative z-30 mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-5 lg:px-8">
         <nav className="flex items-center justify-between rounded-2xl sm:rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)]/80 px-3 py-2.5 sm:px-6 sm:py-4 shadow-sm backdrop-blur-xl">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-rose-500 text-white font-black text-base sm:text-xl shadow-lg shadow-violet-500/25">
-              U
-            </div>
+            <img
+              src="/icon-192.png"
+              alt="UHC Care"
+              className="h-9 w-9 sm:h-11 sm:w-11 shrink-0 rounded-xl sm:rounded-2xl shadow-lg ring-1 ring-white/10 object-cover"
+            />
             <div>
               <span className="text-sm sm:text-base font-extrabold tracking-tight text-[var(--text-primary)]">
                 UHC Care
