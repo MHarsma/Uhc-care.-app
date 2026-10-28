@@ -1,5 +1,5 @@
-// Service Worker for UHC Care PWA (v4: Network-First for dynamic updates & refreshed brand icons)
-const CACHE_NAME = 'uhc-care-v4';
+// Service Worker for UHC Care PWA (v5: Push & Native Notifications Support)
+const CACHE_NAME = 'uhc-care-v5';
 const OFFLINE_URL = '/';
 
 const ASSETS_TO_CACHE = [
@@ -29,6 +29,19 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+
+  // Allow client to request showing a notification via SW registration
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    event.waitUntil(
+      self.registration.showNotification(title || 'UHC Care', {
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        vibrate: [100, 50, 100],
+        ...options,
+      })
+    );
+  }
 });
 
 self.addEventListener('activate', (event) => {
@@ -45,6 +58,51 @@ self.addEventListener('activate', (event) => {
     })
   );
   self.clients.claim();
+});
+
+// Push notification received from Web Push / server
+self.addEventListener('push', (event) => {
+  let data = {};
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch {
+      data = { title: 'UHC Care', body: event.data.text() };
+    }
+  }
+
+  const title = data.title || 'UHC Care';
+  const options = {
+    body: data.body || data.message || 'New update from your partner in UHC Care',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || '/dashboard',
+    },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Click handler for notifications: focus or navigate to relevant page
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/dashboard';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
 });
 
 self.addEventListener('fetch', (event) => {
@@ -69,7 +127,6 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Static assets & scripts: Network-first with cache fallback
-  // Ensures updates are picked up immediately on both partner devices
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {

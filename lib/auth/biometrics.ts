@@ -7,6 +7,7 @@ export interface BiometricStatus {
   isSupported: boolean;
   isEnrolled: boolean;
   enrolledEmail: string | null;
+  hasStoredKey: boolean;
 }
 
 /** Check if current browser & device hardware supports biometric platform authenticators */
@@ -16,50 +17,52 @@ export async function isBiometricsSupported(): Promise<boolean> {
   }
 
   try {
-    if (PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-      return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    if (typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function") {
+      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      if (available) return true;
     }
-    return false;
+    // Fall back to checking PublicKeyCredential existence in secure context
+    return Boolean(window.isSecureContext && window.PublicKeyCredential);
   } catch {
-    return false;
+    return Boolean(window.isSecureContext && window.PublicKeyCredential);
   }
 }
 
 /** Check enrollment status */
 export function getBiometricStatus(): BiometricStatus {
   if (typeof window === "undefined") {
-    return { isSupported: false, isEnrolled: false, enrolledEmail: null };
+    return { isSupported: false, isEnrolled: false, enrolledEmail: null, hasStoredKey: false };
   }
 
   const isEnrolled = localStorage.getItem("uhc_biometric_enabled") === "true";
   const enrolledEmail = localStorage.getItem("uhc_biometric_user");
+  const hasStoredKey = Boolean(localStorage.getItem("uhc_biometric_token"));
 
   return {
-    isSupported: Boolean(window.PublicKeyCredential),
-    isEnrolled,
+    isSupported: Boolean(window.PublicKeyCredential && window.isSecureContext),
+    isEnrolled: isEnrolled && hasStoredKey,
     enrolledEmail,
+    hasStoredKey,
   };
 }
 
-/** Enroll device fingerprint / biometrics for the logged-in user */
+/** Enroll device fingerprint / biometrics for the currently logged-in user */
 export async function enrollBiometrics(userEmail: string, userName: string): Promise<boolean> {
   if (typeof window === "undefined" || !window.PublicKeyCredential) {
-    throw new Error("Biometric authentication is not supported by your browser or device hardware.");
+    throw new Error("Biometric authentication is not supported by your browser or device.");
   }
 
   // WebAuthn requires a secure context (HTTPS or localhost)
   if (!window.isSecureContext) {
     throw new Error(
-      "Fingerprint enrolment requires a secure connection (HTTPS). " +
-      "If you are running locally, open the app via localhost instead of an IP address."
+      "Fingerprint enrolment requires a secure HTTPS connection. Please access the app over HTTPS."
     );
   }
 
-  const isSupported = await isBiometricsSupported();
-  if (!isSupported) {
+  const currentAuthToken = localStorage.getItem("uhc_auth_token");
+  if (!currentAuthToken) {
     throw new Error(
-      "Your device does not have a compatible fingerprint sensor or biometric hardware. " +
-      "Please ensure your device supports Windows Hello, Touch ID, or a fingerprint scanner."
+      "You must be signed in with your email and password to link your fingerprint sensor."
     );
   }
 
@@ -88,41 +91,63 @@ export async function enrollBiometrics(userEmail: string, userName: string): Pro
     ],
     authenticatorSelection: {
       authenticatorAttachment: "platform", // Native hardware fingerprint / TouchID / Windows Hello
-      userVerification: "required",
+      userVerification: "preferred", // 'preferred' for maximum device compatibility on Android & iOS
       requireResidentKey: false,
     },
     timeout: 60000,
     attestation: "none",
   };
 
-  const credential = (await navigator.credentials.create({
-    publicKey: publicKeyCredentialCreationOptions,
-  })) as PublicKeyCredential | null;
-
-  if (!credential) {
-    throw new Error("Biometric enrollment was cancelled or failed.");
+  let credential: PublicKeyCredential | null = null;
+  try {
+    credential = (await navigator.credentials.create({
+      publicKey: publicKeyCredentialCreationOptions,
+    })) as PublicKeyCredential | null;
+  } catch (err: any) {
+    // If platform authenticator fails, attempt without strict attachment
+    if (err?.name === "NotSupportedError" || err?.name === "InvalidStateError") {
+      const fallbackOptions: PublicKeyCredentialCreationOptions = {
+        ...publicKeyCredentialCreationOptions,
+        authenticatorSelection: {
+          userVerification: "preferred",
+        },
+      };
+      credential = (await navigator.credentials.create({
+        publicKey: fallbackOptions,
+      })) as PublicKeyCredential | null;
+    } else {
+      throw err;
+    }
   }
 
-  // Save successful enrollment metadata locally
+  if (!credential) {
+    throw new Error("Biometric sensor enrollment was cancelled or timed out.");
+  }
+
+  // Save successful enrollment metadata and restore key locally
   localStorage.setItem("uhc_biometric_enabled", "true");
   localStorage.setItem("uhc_biometric_cred_id", credential.id);
   localStorage.setItem("uhc_biometric_user", userEmail);
+  localStorage.setItem("uhc_biometric_token", currentAuthToken);
   localStorage.setItem("uhc_biometric_timestamp", Date.now().toString());
 
   return true;
 }
 
-/** Verify user identity via device fingerprint / biometrics */
-export async function verifyBiometrics(): Promise<{ success: boolean; userEmail: string | null }> {
+/** Verify user identity via device fingerprint / biometrics and restore auth token */
+export async function verifyBiometrics(): Promise<{ success: boolean; userEmail: string | null; token: string | null }> {
   if (typeof window === "undefined" || !window.PublicKeyCredential) {
     throw new Error("Biometric authentication is not supported on this device.");
   }
 
   const enrolledCredId = localStorage.getItem("uhc_biometric_cred_id");
   const enrolledEmail = localStorage.getItem("uhc_biometric_user");
+  const storedToken = localStorage.getItem("uhc_biometric_token");
 
-  if (!enrolledCredId) {
-    throw new Error("No fingerprint enrolled on this device yet. Please enable it in Settings first.");
+  if (!enrolledCredId || !storedToken) {
+    throw new Error(
+      "No fingerprint enrolled on this device yet. Please sign in with password and enable it in Settings."
+    );
   }
 
   const randomChallenge = new Uint8Array(32);
@@ -131,11 +156,10 @@ export async function verifyBiometrics(): Promise<{ success: boolean; userEmail:
   const hostname = window.location.hostname;
   const isIpAddress = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
 
-  // Convert stored base64 credential ID to Uint8Array if needed, or pass allowCredentials
   const publicKeyCredentialRequestOptions: PublicKeyCredentialRequestOptions = {
     challenge: randomChallenge,
     ...(hostname && !isIpAddress ? { rpId: hostname } : {}),
-    userVerification: "required",
+    userVerification: "preferred",
     timeout: 60000,
   };
 
@@ -144,13 +168,24 @@ export async function verifyBiometrics(): Promise<{ success: boolean; userEmail:
   });
 
   if (!assertion) {
-    throw new Error("Biometric verification cancelled.");
+    throw new Error("Fingerprint verification was cancelled.");
   }
+
+  // Restore authentication tokens
+  localStorage.setItem("uhc_auth_token", storedToken);
+  localStorage.setItem("uhc_logged_in", "true");
 
   return {
     success: true,
     userEmail: enrolledEmail,
+    token: storedToken,
   };
+}
+
+/** Test existing enrolled biometrics without logging out */
+export async function testBiometrics(): Promise<boolean> {
+  const result = await verifyBiometrics();
+  return result.success;
 }
 
 /** Disable and clear stored biometric profile */
@@ -159,5 +194,6 @@ export function removeBiometrics(): void {
   localStorage.removeItem("uhc_biometric_enabled");
   localStorage.removeItem("uhc_biometric_cred_id");
   localStorage.removeItem("uhc_biometric_user");
+  localStorage.removeItem("uhc_biometric_token");
   localStorage.removeItem("uhc_biometric_timestamp");
 }

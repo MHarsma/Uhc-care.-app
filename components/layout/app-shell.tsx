@@ -31,6 +31,7 @@ import {
 import { QuickAddTaskDialog } from "@/components/routine-library/quick-add-task-dialog";
 import { RoutineLibraryModal } from "@/components/routine-library/routine-library-modal";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -433,6 +434,7 @@ export function AppShell({
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <NotificationCenter partnerName={partner?.name} />
 
           {streakDays > 0 && (
             <div className="flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[11px] font-bold text-amber-500">
@@ -583,6 +585,7 @@ export function AppShell({
 
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
+            <NotificationCenter partnerName={partner?.name} />
 
             {/* Streak Pill */}
             <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-bold text-amber-500">

@@ -40,14 +40,21 @@ import {
   X,
   Save,
   Fingerprint,
+  Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   isBiometricsSupported,
   getBiometricStatus,
   enrollBiometrics,
+  testBiometrics,
   removeBiometrics,
 } from "@/lib/auth/biometrics";
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  triggerDeviceNotification,
+} from "@/lib/api/notifications";
 
 const PAKISTAN_CITIES = [
   "Talagang",
@@ -152,7 +159,12 @@ export default function SettingsPage() {
   const [biometricSupported, setBiometricSupported] = React.useState(false);
   const [biometricEnrolled, setBiometricEnrolled] = React.useState(false);
   const [biometricEnrolling, setBiometricEnrolling] = React.useState(false);
+  const [biometricTesting, setBiometricTesting] = React.useState(false);
   const [biometricMsg, setBiometricMsg] = React.useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Device Notifications state
+  const [deviceNotifPermission, setDeviceNotifPermission] = React.useState<NotificationPermission | "unsupported">("unsupported");
+  const [deviceNotifMsg, setDeviceNotifMsg] = React.useState<string | null>(null);
 
   const loadData = React.useCallback(async () => {
     try {
@@ -160,6 +172,7 @@ export default function SettingsPage() {
       setLoadError(null);
 
       if (typeof window !== "undefined") {
+        setDeviceNotifPermission(getNotificationPermission());
         isBiometricsSupported().then((sup) => {
           setBiometricSupported(sup);
           const st = getBiometricStatus();
@@ -815,6 +828,85 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Device & Browser Native Notifications Integration */}
+                <div className="mt-4 pt-4 border-t border-[var(--glass-border)] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-[var(--text-primary)]">
+                        Phone & System Alerts
+                      </p>
+                      <p className="text-[10px] text-[var(--text-tertiary)]">
+                        Direct vibration & banner alerts for love nudges & cycle updates
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold px-2.5 py-0.5 rounded-full border",
+                        deviceNotifPermission === "granted"
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                          : deviceNotifPermission === "denied"
+                          ? "bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400"
+                          : "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                      )}
+                    >
+                      {deviceNotifPermission === "granted"
+                        ? "Active"
+                        : deviceNotifPermission === "denied"
+                        ? "Blocked by Browser"
+                        : "Permission Needed"}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {deviceNotifPermission !== "granted" ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const res = await requestNotificationPermission();
+                          setDeviceNotifPermission(res);
+                          if (res === "granted") {
+                            setDeviceNotifMsg("Device notifications enabled!");
+                            triggerDeviceNotification("UHC Care Connected ❤️", {
+                              body: "Native notifications are active on this device.",
+                            });
+                          } else {
+                            setDeviceNotifMsg("Notification permission was not granted.");
+                          }
+                          setTimeout(() => setDeviceNotifMsg(null), 4000);
+                        }}
+                        className="rounded-xl bg-violet-600 hover:bg-violet-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer"
+                      >
+                        Enable Phone Alerts
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setDeviceNotifMsg("Sending test notification...");
+                          const ok = await triggerDeviceNotification("UHC Care Test Alert ❤️", {
+                            body: "Notifications and haptics are working smoothly on your device!",
+                          });
+                          if (ok) {
+                            setDeviceNotifMsg("Test alert sent! Check your notification center.");
+                          } else {
+                            setDeviceNotifMsg("Notification triggered in browser.");
+                          }
+                          setTimeout(() => setDeviceNotifMsg(null), 4000);
+                        }}
+                        className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] px-3.5 py-2 text-xs font-bold text-[var(--text-primary)] transition-all cursor-pointer"
+                      >
+                        Send Test Notification
+                      </button>
+                    )}
+                  </div>
+
+                  {deviceNotifMsg && (
+                    <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      {deviceNotifMsg}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Cycle & Period Care Sharing Card */}
@@ -998,19 +1090,47 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {biometricEnrolled ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          removeBiometrics();
-                          setBiometricEnrolled(false);
-                          setBiometricMsg({ type: "success", text: "Fingerprint ID disabled for this device." });
-                        }}
-                        className="rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 active:scale-95 transition-all"
-                      >
-                        Disable Biometrics
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          disabled={biometricTesting}
+                          onClick={async () => {
+                            setBiometricTesting(true);
+                            setBiometricMsg(null);
+                            try {
+                              await testBiometrics();
+                              setBiometricMsg({
+                                type: "success",
+                                text: "Sensor verified! Fingerprint is active and functioning correctly.",
+                              });
+                            } catch (err: any) {
+                              setBiometricMsg({
+                                type: "error",
+                                text: err?.message || "Sensor test failed or cancelled.",
+                              });
+                            } finally {
+                              setBiometricTesting(false);
+                            }
+                          }}
+                          className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] px-3.5 py-2 text-xs font-bold text-[var(--text-primary)] active:scale-95 transition-all cursor-pointer"
+                        >
+                          {biometricTesting ? "Scanning..." : "Test Sensor"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            removeBiometrics();
+                            setBiometricEnrolled(false);
+                            setBiometricMsg({ type: "success", text: "Fingerprint ID disabled for this device." });
+                          }}
+                          className="rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 active:scale-95 transition-all cursor-pointer"
+                        >
+                          Disable Biometrics
+                        </button>
+                      </>
                     ) : (
                       <button
                         type="button"

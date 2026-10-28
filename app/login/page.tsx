@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { motion } from "framer-motion";
 import { Mail, ArrowRight, Sparkles, Fingerprint } from "lucide-react";
@@ -25,28 +25,39 @@ export default function LoginPage() {
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
 
-  useState(() => {
-    if (typeof window !== "undefined") {
-      isBiometricsSupported().then((supported) => {
-        const status = getBiometricStatus();
-        setBiometricsAvailable(supported && status.isEnrolled);
-      });
+  useEffect(() => {
+    let isMounted = true;
+    async function checkBiometrics() {
+      if (typeof window === "undefined") return;
+      await isBiometricsSupported();
+      const status = getBiometricStatus();
+      if (isMounted) {
+        setBiometricsAvailable(Boolean(status.isEnrolled && status.hasStoredKey));
+        if (status.enrolledEmail && !email) {
+          setEmail(status.enrolledEmail);
+        }
+      }
     }
-  });
+    checkBiometrics();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function handleBiometricLogin() {
     setBiometricLoading(true);
     setError("");
     try {
       const res = await verifyBiometrics();
-      if (res.success) {
+      if (res.success && res.token) {
         if (typeof window !== "undefined") {
           localStorage.setItem("uhc_logged_in", "true");
+          localStorage.setItem("uhc_auth_token", res.token);
         }
         router.push("/dashboard");
       }
     } catch (err: any) {
-      setError(err?.message || "Biometric authentication failed");
+      setError(err?.message || "Biometric authentication failed. Please enter your password.");
     } finally {
       setBiometricLoading(false);
     }
@@ -81,6 +92,11 @@ export default function LoginPage() {
         localStorage.setItem("uhc_logged_in", "true");
         if (body?.token) {
           localStorage.setItem("uhc_auth_token", body.token);
+          // Auto-refresh stored biometric token if this user enrolled biometrics
+          const enrolledUser = localStorage.getItem("uhc_biometric_user");
+          if (enrolledUser === email) {
+            localStorage.setItem("uhc_biometric_token", body.token);
+          }
         }
       }
       router.push("/dashboard");
