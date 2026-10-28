@@ -432,37 +432,16 @@ export function AppShell({
           </Link>
         </div>
 
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <NotificationCenter partnerName={partner?.name} />
-
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {streakDays > 0 && (
-            <div className="flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[11px] font-bold text-amber-500">
-              <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500 animate-fire" />
+            <div className="flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-500">
+              <Flame className="h-3 w-3 text-amber-500 fill-amber-500 animate-fire" />
               <span>{streakDays}d</span>
             </div>
           )}
 
-          {partner && (
-            <button
-              type="button"
-              onClick={handleSendNudge}
-              disabled={nudgeSent}
-              className="flex items-center gap-1 rounded-full bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 text-[11px] font-bold text-rose-500 active:scale-95 transition-all"
-            >
-              <Heart className="h-3 w-3 fill-rose-500 text-rose-500" />
-              <span>{nudgeSent ? "Sent!" : "Nudge"}</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setIsQuickAddOpen(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-sm active:scale-95"
-            aria-label="Add routine"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
+          <NotificationCenter partnerName={partner?.name} />
+          <ThemeToggle />
         </div>
       </header>
 

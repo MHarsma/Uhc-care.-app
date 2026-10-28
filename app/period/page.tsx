@@ -182,11 +182,11 @@ const MOOD_OPTIONS = [
 ];
 
 const FLOW_OPTIONS = [
-  { id: "none", label: "None", icon: "⚪" },
-  { id: "spotting", label: "Spotting", icon: "💧" },
-  { id: "light", label: "Light", icon: "🩸" },
-  { id: "medium", label: "Medium", icon: "🩸🩸" },
-  { id: "heavy", label: "Heavy", icon: "🩸🩸🩸" },
+  { id: "none", label: "No Flow", desc: "No discharge", drops: 0 },
+  { id: "spotting", label: "Spotting", desc: "A few drops", drops: 1 },
+  { id: "light", label: "Light", desc: "Minor flow", drops: 2 },
+  { id: "medium", label: "Medium", desc: "Regular flow", drops: 3 },
+  { id: "heavy", label: "Heavy", desc: "Heavy flow", drops: 4 },
 ];
 
 // Helper to determine phase based on cycle day
@@ -230,10 +230,10 @@ export default function PeriodTrackingPage() {
   const [targetName, setTargetName] = React.useState<string>("");
   const [periodTrackingEnabled, setPeriodTrackingEnabled] = React.useState<boolean>(true);
 
-  // Period management (start/end/edit dates) is strictly reserved for the female user
+  // Period management (start/end/edit dates) is available for female user and paired partner
   const canManagePeriods = React.useMemo(() => {
-    return Boolean(isFemale && !isPartnerView);
-  }, [isFemale, isPartnerView]);
+    return Boolean(isFemale || isPaired);
+  }, [isFemale, isPaired]);
 
   // Calendar View State
   const [currentCalendarDate, setCurrentCalendarDate] = React.useState(new Date());
@@ -386,9 +386,9 @@ export default function PeriodTrackingPage() {
     }
   };
 
-  const loadData = React.useCallback(async () => {
+  const loadData = React.useCallback(async (isSilent = false) => {
     try {
-      setLoading(true);
+      if (!isSilent) setLoading(true);
       setError(null);
       const res = await periodApi.getPeriods();
       setPeriods(res.periods || []);
@@ -411,7 +411,7 @@ export default function PeriodTrackingPage() {
         setError(err?.message || "Unable to load cycle history.");
       }
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }, []);
 
@@ -468,7 +468,7 @@ export default function PeriodTrackingPage() {
     setActionLoading(true);
     try {
       await periodApi.logPeriod({ start_date: todayStr, end_date: null });
-      await loadData();
+      await loadData(true);
     } catch (err: any) {
       alert(err?.message || "Failed to log period start.");
     } finally {
@@ -486,7 +486,7 @@ export default function PeriodTrackingPage() {
       await periodApi.updatePeriod(targetId, {
         end_date: todayStr,
       });
-      await loadData();
+      await loadData(true);
     } catch (err: any) {
       alert(err?.message || "Failed to end period.");
     } finally {
@@ -544,7 +544,7 @@ export default function PeriodTrackingPage() {
     setActionLoading(true);
     try {
       await periodApi.deletePeriod(id);
-      await loadData();
+      await loadData(true);
     } catch (err: any) {
       alert(err?.message || "Failed to delete period record.");
     } finally {
@@ -580,7 +580,7 @@ export default function PeriodTrackingPage() {
         });
       }
       setIsPeriodModalOpen(false);
-      await loadData();
+      await loadData(true);
     } catch (err: any) {
       setModalError(err?.message || "Failed to save cycle entry.");
     } finally {
@@ -1064,25 +1064,54 @@ export default function PeriodTrackingPage() {
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)] flex items-center justify-between">
                     <span>1. Blood Flow Intensity</span>
-                    <span className="text-[11px] font-bold text-rose-500">Selected: {inlineFlow}</span>
+                    <span className="text-[11px] font-bold text-rose-500">
+                      Selected: {inlineFlow ? inlineFlow : "None"}
+                    </span>
                   </label>
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     {FLOW_OPTIONS.map((f) => {
-                      const isSelected = inlineFlow.toLowerCase() === f.label.toLowerCase();
+                      const isSelected =
+                        inlineFlow.toLowerCase() === f.label.toLowerCase() ||
+                        inlineFlow.toLowerCase() === f.id.toLowerCase();
                       return (
                         <button
                           key={f.id}
                           type="button"
                           onClick={() => setInlineFlow(f.label)}
                           className={cn(
-                            "p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center gap-1 active:scale-95",
+                            "p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-between gap-1.5 active:scale-95 cursor-pointer min-h-[72px]",
                             isSelected
-                              ? "border-rose-500 bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold shadow-xs ring-2 ring-rose-500/20"
-                              : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                              ? "border-rose-500 bg-rose-500 text-white font-black shadow-md shadow-rose-500/25 ring-2 ring-rose-300"
+                              : "border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-primary)] hover:border-rose-500/40 hover:bg-rose-500/5 font-semibold"
                           )}
                         >
-                          <span className="text-lg">{f.icon}</span>
-                          <span className="text-xs truncate w-full font-semibold">{f.label}</span>
+                          <div className="flex items-center justify-center gap-0.5 h-5">
+                            {f.drops === 0 ? (
+                              <span className={cn("text-xs font-bold", isSelected ? "text-rose-100" : "text-[var(--text-muted)]")}>
+                                —
+                              </span>
+                            ) : (
+                              Array.from({ length: f.drops }).map((_, i) => (
+                                <Droplet
+                                  key={i}
+                                  className={cn(
+                                    "h-3.5 w-3.5",
+                                    isSelected
+                                      ? "fill-white text-white drop-shadow-xs"
+                                      : "fill-rose-500 text-rose-500"
+                                  )}
+                                />
+                              ))
+                            )}
+                          </div>
+                          <div className="text-center w-full">
+                            <p className={cn("text-xs font-extrabold leading-tight", isSelected ? "text-white" : "text-[var(--text-primary)]")}>
+                              {f.label}
+                            </p>
+                            <p className={cn("text-[10px] mt-0.5 leading-none", isSelected ? "text-rose-100" : "text-[var(--text-tertiary)]")}>
+                              {f.desc}
+                            </p>
+                          </div>
                         </button>
                       );
                     })}
@@ -1478,13 +1507,15 @@ export default function PeriodTrackingPage() {
                     ? "bg-gradient-to-tr from-amber-500 to-amber-600 text-white font-black shadow-md shadow-amber-500/35 ring-1 ring-amber-300"
                     : cell.isFertileWindow
                     ? "bg-amber-400/20 border border-amber-400/40 text-amber-800 dark:text-amber-200 font-semibold"
+                    : cell.phase.type === "ovulation"
+                    ? "bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 font-semibold"
                     : cell.phase.type === "follicular"
                     ? "bg-violet-500/15 border border-violet-500/30 text-violet-700 dark:text-violet-300 font-semibold"
                     : cell.phase.type === "luteal"
                     ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 font-semibold"
                     : cell.phase.type === "menstrual"
                     ? "bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 font-semibold"
-                    : "bg-[var(--glass-bg)] text-[var(--text-primary)]";
+                    : "bg-slate-500/10 border border-slate-500/20 text-[var(--text-primary)] font-semibold";
 
                   return (
                     <button
@@ -2116,23 +2147,53 @@ function SymptomLogModal({
           <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">
             Flow Intensity
           </label>
-          <div className="grid grid-cols-5 gap-1.5">
-            {FLOW_OPTIONS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFlow(f.label)}
-                className={cn(
-                  "p-2 rounded-xl border text-center transition-all flex flex-col items-center",
-                  flow === f.label
-                    ? "border-rose-500 bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold"
-                    : "border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                )}
-              >
-                <span className="text-base">{f.icon}</span>
-                <span className="text-[10px] mt-1 truncate w-full">{f.label}</span>
-              </button>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {FLOW_OPTIONS.map((f) => {
+              const isSelected =
+                (flow || "").toLowerCase() === f.label.toLowerCase() ||
+                (flow || "").toLowerCase() === f.id.toLowerCase();
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFlow(f.label)}
+                  className={cn(
+                    "p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-between gap-1.5 active:scale-95 cursor-pointer min-h-[72px]",
+                    isSelected
+                      ? "border-rose-500 bg-rose-500 text-white font-black shadow-md shadow-rose-500/25 ring-2 ring-rose-300"
+                      : "border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-primary)] hover:border-rose-500/40 hover:bg-rose-500/5 font-semibold"
+                  )}
+                >
+                  <div className="flex items-center justify-center gap-0.5 h-5">
+                    {f.drops === 0 ? (
+                      <span className={cn("text-xs font-bold", isSelected ? "text-rose-100" : "text-[var(--text-muted)]")}>
+                        —
+                      </span>
+                    ) : (
+                      Array.from({ length: f.drops }).map((_, i) => (
+                        <Droplet
+                          key={i}
+                          className={cn(
+                            "h-3.5 w-3.5",
+                            isSelected
+                              ? "fill-white text-white drop-shadow-xs"
+                              : "fill-rose-500 text-rose-500"
+                          )}
+                        />
+                      ))
+                    )}
+                  </div>
+                  <div className="text-center w-full">
+                    <p className={cn("text-xs font-extrabold leading-tight", isSelected ? "text-white" : "text-[var(--text-primary)]")}>
+                      {f.label}
+                    </p>
+                    <p className={cn("text-[10px] mt-0.5 leading-none", isSelected ? "text-rose-100" : "text-[var(--text-tertiary)]")}>
+                      {f.desc}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
