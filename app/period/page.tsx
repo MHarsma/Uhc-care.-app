@@ -230,10 +230,10 @@ export default function PeriodTrackingPage() {
   const [targetName, setTargetName] = React.useState<string>("");
   const [periodTrackingEnabled, setPeriodTrackingEnabled] = React.useState<boolean>(true);
 
-  // Period management (start/end/edit dates) is available for female user and paired partner
+  // Strictly only the female partner has the rights to update, log, or delete period dates
   const canManagePeriods = React.useMemo(() => {
-    return Boolean(isFemale || isPaired);
-  }, [isFemale, isPaired]);
+    return Boolean(isFemale);
+  }, [isFemale]);
 
   // Calendar View State
   const [currentCalendarDate, setCurrentCalendarDate] = React.useState(new Date());
@@ -540,10 +540,16 @@ export default function PeriodTrackingPage() {
   };
 
   const handleDelete = async (id: number) => {
+    if (!canManagePeriods) {
+      alert("Only the female partner has the rights to delete cycle records.");
+      return;
+    }
     if (!confirm("Delete this cycle record?")) return;
     setActionLoading(true);
     try {
       await periodApi.deletePeriod(id);
+      // Immediately remove from local state so UI updates instantly
+      setPeriods((prev) => prev.filter((p) => p.id !== id));
       await loadData(true);
     } catch (err: any) {
       alert(err?.message || "Failed to delete period record.");
@@ -554,6 +560,10 @@ export default function PeriodTrackingPage() {
 
   const handleSavePeriodModal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManagePeriods) {
+      setModalError("Only the female partner has rights to update or log cycle dates.");
+      return;
+    }
     setModalError(null);
 
     if (!modalStartDate) {
@@ -569,15 +579,26 @@ export default function PeriodTrackingPage() {
     setActionLoading(true);
     try {
       if (editingPeriodId) {
-        await periodApi.updatePeriod(editingPeriodId, {
+        const res = await periodApi.updatePeriod(editingPeriodId, {
           start_date: modalStartDate,
           end_date: modalIsOngoing ? null : modalEndDate || null,
         });
+        if (res?.period) {
+          setPeriods((prev) =>
+            prev.map((p) => (p.id === editingPeriodId ? { ...p, ...res.period } : p))
+          );
+        }
       } else {
-        await periodApi.logPeriod({
+        const res = await periodApi.logPeriod({
           start_date: modalStartDate,
           end_date: modalIsOngoing ? null : modalEndDate || null,
         });
+        if (res?.period) {
+          setPeriods((prev) => [
+            res.period,
+            ...prev.filter((p) => p.start_date !== res.period.start_date),
+          ]);
+        }
       }
       setIsPeriodModalOpen(false);
       await loadData(true);
@@ -675,11 +696,13 @@ export default function PeriodTrackingPage() {
       const isPeriodDay = periodDates.has(dateStr);
 
       // Cycle day calculation for this cell using UTC date difference
-      let cellCycleDay: number | null = null;
-      const anchorDateStr = latestPeriod
-        ? latestPeriod.start_date
-        : `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      const isFuture = dateStr > todayStr;
+      const relevantPeriod =
+        periods.find((p) => p.start_date <= dateStr) || latestPeriod;
+      const anchorDateStr =
+        relevantPeriod?.start_date || `${year}-${String(month + 1).padStart(2, "0")}-01`;
 
+      let cellCycleDay: number | null = null;
       const diffDays = diffDaysUtc(anchorDateStr, dateStr) + 1;
       if (diffDays >= 1) {
         cellCycleDay = ((diffDays - 1) % cycleLength) + 1;
@@ -698,7 +721,8 @@ export default function PeriodTrackingPage() {
 
       const isOvulationDay = cellCycleDay === 14;
       const isFertileWindow = cellCycleDay !== null && cellCycleDay >= 12 && cellCycleDay <= 16;
-      const isPredictedPeriod = !isPeriodDay && cellCycleDay !== null && cellCycleDay <= periodLength;
+      // Predicted period is ONLY for future dates that do not yet have a logged period
+      const isPredictedPeriod = isFuture && !isPeriodDay && cellCycleDay !== null && cellCycleDay <= periodLength;
       const hasLoggedSymptoms = Boolean(dailySymptomsMap[dateStr]);
 
       cells.push({
@@ -1500,11 +1524,11 @@ export default function PeriodTrackingPage() {
                 {calendarCells.map((cell) => {
                   // Determine background & border matching 4-phase color system exactly
                   const cellBg = cell.isPeriodDay
-                    ? "bg-rose-500 text-white shadow-md shadow-rose-500/30 ring-1 ring-rose-300/40"
+                    ? "bg-rose-500 text-white shadow-md shadow-rose-500/30 ring-1 ring-rose-400 font-extrabold"
                     : cell.isPredictedPeriod
-                    ? "bg-rose-500/15 border-2 border-dashed border-rose-400 text-rose-600 dark:text-rose-300 font-bold"
+                    ? "bg-rose-500/10 border-2 border-dashed border-rose-400 text-rose-600 dark:text-rose-300 font-bold"
                     : cell.isOvulationDay
-                    ? "bg-gradient-to-tr from-amber-500 to-amber-600 text-white font-black shadow-md shadow-amber-500/35 ring-1 ring-amber-300"
+                    ? "bg-gradient-to-tr from-amber-500 to-amber-600 text-white font-black shadow-md shadow-amber-500/30 ring-1 ring-amber-300"
                     : cell.isFertileWindow
                     ? "bg-amber-400/20 border border-amber-400/40 text-amber-800 dark:text-amber-200 font-semibold"
                     : cell.phase.type === "ovulation"
@@ -1515,7 +1539,15 @@ export default function PeriodTrackingPage() {
                     ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 font-semibold"
                     : cell.phase.type === "menstrual"
                     ? "bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 font-semibold"
-                    : "bg-slate-500/10 border border-slate-500/20 text-[var(--text-primary)] font-semibold";
+                    : "bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-primary)] font-semibold";
+
+                  const selectedRing = cell.isSelected
+                    ? cell.isPeriodDay
+                      ? "ring-2 ring-white ring-offset-2 ring-offset-rose-500 scale-105 z-10 shadow-lg"
+                      : cell.isOvulationDay
+                      ? "ring-2 ring-white ring-offset-2 ring-offset-amber-500 scale-105 z-10 shadow-lg"
+                      : "ring-2 ring-violet-500 ring-offset-2 ring-offset-[var(--bg-card)] scale-105 z-10 shadow-lg"
+                    : "";
 
                   return (
                     <button
@@ -1525,7 +1557,7 @@ export default function PeriodTrackingPage() {
                       className={cn(
                         "relative flex flex-col items-center justify-center h-12 sm:h-16 rounded-2xl transition-all focus:outline-none select-none",
                         cellBg,
-                        cell.isSelected && "ring-2 ring-violet-500 ring-offset-2 ring-offset-[var(--bg-card)] scale-105 z-10 shadow-lg",
+                        selectedRing,
                         cell.isToday && !cell.isPeriodDay && !cell.isOvulationDay && "ring-2 ring-violet-500/70"
                       )}
                     >
@@ -1637,8 +1669,8 @@ export default function PeriodTrackingPage() {
                   </div>
                 </div>
 
-                {/* Day-Level Period Actions (Allows Editing or Adding Period for Any Past/Future Day) */}
-                {canManagePeriods && (
+                {/* Day-Level Period Actions (Allows Editing or Adding Period for Female User; Read-Only for Partner) */}
+                {canManagePeriods ? (
                   <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     {periodCoveringSelectedDay ? (
                       <>
@@ -1720,6 +1752,36 @@ export default function PeriodTrackingPage() {
                       </>
                     )}
                   </div>
+                ) : (
+                  periodCoveringSelectedDay && (
+                    <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500 text-white shadow-md">
+                          <Droplet className="h-5 w-5 fill-white text-white" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-[var(--text-primary)]">
+                              {targetName || "Partner"}&apos;s Period: {periodCoveringSelectedDay.start_date} → {periodCoveringSelectedDay.end_date || "Ongoing"}
+                            </span>
+                            {!periodCoveringSelectedDay.end_date && (
+                              <span className="rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-bold px-2 py-0.5 text-[10px]">
+                                Active Flow
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                            {periodCoveringSelectedDay.end_date
+                              ? `${diffDaysUtc(periodCoveringSelectedDay.start_date, periodCoveringSelectedDay.end_date) + 1} days recorded flow duration`
+                              : "Currently active ongoing flow"}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-[var(--text-tertiary)] bg-[var(--bg-card)] border border-[var(--glass-border)] px-2.5 py-1 rounded-lg self-start sm:self-auto">
+                        Partner Read-Only View
+                      </span>
+                    </div>
+                  )
                 )}
 
                 {/* 3 Wellness Guidance Cards with Deep Links */}

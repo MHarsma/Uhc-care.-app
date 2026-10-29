@@ -146,19 +146,41 @@ export default function NotesPage() {
     try {
       setError("");
       audioChunksRef.current = [];
+
+      if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+        throw new Error(
+          "Microphone access is not supported by this browser. Please ensure you are connected over HTTPS."
+        );
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const mediaRecorder = new MediaRecorder(stream);
+      // Determine supported MIME type for Android Chrome / iOS Safari
+      let mimeType = "";
+      if (typeof MediaRecorder !== "undefined") {
+        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+          mimeType = "audio/webm;codecs=opus";
+        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+          mimeType = "audio/webm";
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = "audio/mp4";
+        }
+      }
+
+      const mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
+        if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const type = mimeType || "audio/webm";
+        const audioBlob = new Blob(audioChunksRef.current, { type });
         setRecordedAudioBlob(audioBlob);
         setRecordedAudioUrl(URL.createObjectURL(audioBlob));
         stream.getTracks().forEach((track) => track.stop());
@@ -177,8 +199,14 @@ export default function NotesPage() {
           return prev + 1;
         });
       }, 1000);
-    } catch (err) {
-      setError("Microphone permission denied or recording not supported.");
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        setError("Microphone permission was denied. Tap the site settings or lock icon in your browser address bar to allow microphone access.");
+      } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+        setError("No microphone was detected on this device.");
+      } else {
+        setError(err?.message || "Could not start audio recording on this device.");
+      }
       console.error(err);
     }
   };

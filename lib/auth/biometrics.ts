@@ -10,6 +10,27 @@ export interface BiometricStatus {
   hasStoredKey: boolean;
 }
 
+function bufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlToUint8Array(base64Url: string): Uint8Array {
+  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  const padLen = (4 - (base64.length % 4)) % 4;
+  const padded = base64 + "=".repeat(padLen === 4 ? 0 : padLen);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 /** Check if current browser & device hardware supports biometric platform authenticators */
 export async function isBiometricsSupported(): Promise<boolean> {
   if (typeof window === "undefined" || !window.PublicKeyCredential) {
@@ -21,7 +42,6 @@ export async function isBiometricsSupported(): Promise<boolean> {
       const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
       if (available) return true;
     }
-    // Fall back to checking PublicKeyCredential existence in secure context
     return Boolean(window.isSecureContext && window.PublicKeyCredential);
   } catch {
     return Boolean(window.isSecureContext && window.PublicKeyCredential);
@@ -115,6 +135,8 @@ export async function enrollBiometrics(userEmail: string, userName: string): Pro
       credential = (await navigator.credentials.create({
         publicKey: fallbackOptions,
       })) as PublicKeyCredential | null;
+    } else if (err?.name === "NotAllowedError") {
+      throw new Error("Sensor scan was cancelled or timed out. Please tap Enable and place your finger on the sensor.");
     } else {
       throw err;
     }
@@ -127,6 +149,9 @@ export async function enrollBiometrics(userEmail: string, userName: string): Pro
   // Save successful enrollment metadata and restore key locally
   localStorage.setItem("uhc_biometric_enabled", "true");
   localStorage.setItem("uhc_biometric_cred_id", credential.id);
+  if (credential.rawId) {
+    localStorage.setItem("uhc_biometric_raw_id", bufferToBase64Url(credential.rawId));
+  }
   localStorage.setItem("uhc_biometric_user", userEmail);
   localStorage.setItem("uhc_biometric_token", currentAuthToken);
   localStorage.setItem("uhc_biometric_timestamp", Date.now().toString());
@@ -140,7 +165,7 @@ export async function verifyBiometrics(): Promise<{ success: boolean; userEmail:
     throw new Error("Biometric authentication is not supported on this device.");
   }
 
-  const enrolledCredId = localStorage.getItem("uhc_biometric_cred_id");
+  const enrolledCredId = localStorage.getItem("uhc_biometric_raw_id") || localStorage.getItem("uhc_biometric_cred_id");
   const enrolledEmail = localStorage.getItem("uhc_biometric_user");
   const storedToken = localStorage.getItem("uhc_biometric_token");
 
@@ -156,16 +181,47 @@ export async function verifyBiometrics(): Promise<{ success: boolean; userEmail:
   const hostname = window.location.hostname;
   const isIpAddress = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
 
+  let credIdBytes: Uint8Array | null = null;
+  try {
+    credIdBytes = base64UrlToUint8Array(enrolledCredId);
+  } catch {
+    credIdBytes = null;
+  }
+
   const publicKeyCredentialRequestOptions: PublicKeyCredentialRequestOptions = {
     challenge: randomChallenge,
     ...(hostname && !isIpAddress ? { rpId: hostname } : {}),
+    ...(credIdBytes ? {
+      allowCredentials: [
+        {
+          type: "public-key",
+          id: credIdBytes as any,
+        },
+      ],
+    } : {}),
     userVerification: "preferred",
     timeout: 60000,
   };
 
-  const assertion = await navigator.credentials.get({
-    publicKey: publicKeyCredentialRequestOptions,
-  });
+  let assertion: Credential | null = null;
+  try {
+    assertion = await navigator.credentials.get({
+      publicKey: publicKeyCredentialRequestOptions,
+    });
+  } catch (err: any) {
+    const msg = String(err?.message || "");
+    if (
+      err?.name === "NotAllowedError" ||
+      msg.includes("not allowed") ||
+      msg.includes("timed out") ||
+      msg.includes("privacy-considerations")
+    ) {
+      throw new Error(
+        "Sensor prompt was cancelled, timed out, or needs re-linking. Please tap 'Disable Biometrics' then re-enable to sync your fingerprint sensor."
+      );
+    }
+    throw err;
+  }
 
   if (!assertion) {
     throw new Error("Fingerprint verification was cancelled.");
@@ -193,6 +249,7 @@ export function removeBiometrics(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem("uhc_biometric_enabled");
   localStorage.removeItem("uhc_biometric_cred_id");
+  localStorage.removeItem("uhc_biometric_raw_id");
   localStorage.removeItem("uhc_biometric_user");
   localStorage.removeItem("uhc_biometric_token");
   localStorage.removeItem("uhc_biometric_timestamp");

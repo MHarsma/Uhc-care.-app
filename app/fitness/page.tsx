@@ -777,8 +777,24 @@ export default function MovementAndVitalityPage() {
         setIsPartnerView(Boolean(res?.is_partner_view));
         setTargetName(res?.target_name || "");
         const summary = res?.active_summary;
-        const day = summary?.cycle_day ?? summary?.current_cycle_day ?? 8;
-        setCycleDay(day);
+        let day: number | null = summary?.cycle_day ?? summary?.current_cycle_day ?? null;
+
+        // If backend summary didn't calculate day, calculate using UTC difference from latest period
+        if (!day && res?.periods && res.periods.length > 0) {
+          const latest = res.periods[0];
+          if (latest?.start_date) {
+            const [y, m, d] = latest.start_date.split("-").map(Number);
+            const startMs = Date.UTC(y, m - 1, d);
+            const now = new Date();
+            const nowMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+            const diffDays = Math.round((nowMs - startMs) / 86400000) + 1;
+            if (diffDays >= 1) {
+              day = ((diffDays - 1) % 28) + 1;
+            }
+          }
+        }
+
+        setCycleDay(day || 1);
         setCycleData(summary || null);
       } catch (err) {
         console.error("Failed to load cycle data:", err);
@@ -869,51 +885,112 @@ export default function MovementAndVitalityPage() {
     return "luteal";
   }, [cycleDay]);
 
-  // Daily Energy Readiness
+  // Dynamic Daily Energy Readiness based on precise cycleDay progression
   const dailyReadiness = React.useMemo(() => {
-    switch (currentPhase) {
-      case "menstrual":
-        return {
-          score: 55,
-          title: "Restorative Pacing & Deep Relief",
-          phaseTitle: "Menstrual Phase",
-          advice: "Estrogen and progesterone are at baseline. Your body thrives with low-impact mobility, back decompression, and restful stretches.",
-          color: "text-rose-500",
-          badgeBg: "bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400",
-          recommendedWorkoutId: "w-restorative-flow",
-        };
-      case "follicular":
-        return {
-          score: 88,
-          title: "Rising Vitality & Progressive Tone",
-          phaseTitle: "Follicular Phase",
-          advice: "Rising estrogen boosts insulin sensitivity, mental sharpness, and stamina. Ideal for progressive strength and sculpting.",
-          color: "text-violet-500",
-          badgeBg: "bg-violet-500/15 border-violet-500/30 text-violet-600 dark:text-violet-400",
-          recommendedWorkoutId: "w-follicular-sculpt",
-        };
-      case "ovulation":
-        return {
-          score: 96,
-          title: "Peak Energy & Cardiovascular Power",
-          phaseTitle: "Ovulatory Phase",
-          advice: "Peak stamina and high pain tolerance. Excellent time for power intervals, endurance, and higher heart rates.",
-          color: "text-emerald-500",
-          badgeBg: "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
-          recommendedWorkoutId: "w-follicular-sculpt",
-        };
-      case "luteal":
-        return {
-          score: 68,
-          title: "Low-Impact Core & Steady Pilates",
-          phaseTitle: "Luteal Phase",
-          advice: "Progesterone is higher. Choose steady low-impact pilates and pelvic floor control without spiking stress hormones.",
-          color: "text-indigo-500",
-          badgeBg: "bg-indigo-500/15 border-indigo-500/30 text-indigo-600 dark:text-indigo-400",
-          recommendedWorkoutId: "w-luteal-pilates",
-        };
+    let score = 80;
+    let title = "Rising Vitality & Progressive Tone";
+    let phaseTitle = "Follicular Phase";
+    let advice = "Your energy and hormonal rhythm are in balance.";
+    let color = "text-violet-500";
+    let badgeBg = "bg-violet-500/15 border-violet-500/30 text-violet-600 dark:text-violet-400";
+    let recommendedWorkoutId = "w-follicular-sculpt";
+
+    if (cycleDay >= 1 && cycleDay <= 5) {
+      phaseTitle = "Menstrual Phase";
+      color = "text-rose-500";
+      badgeBg = "bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400";
+      recommendedWorkoutId = "w-restorative-flow";
+      if (cycleDay === 1) {
+        score = 52;
+        title = "Restorative Pacing & Baseline Rest";
+        advice = "Estrogen & progesterone are at baseline. Prioritize warm hydration, low-impact mobility, and restorative decompression.";
+      } else if (cycleDay === 2) {
+        score = 55;
+        title = "Gentle Decompression & Pelvic Relief";
+        advice = "Peak flow relief. Keep workouts very gentle: restorative stretching, magnesium, and restorative breathing.";
+      } else if (cycleDay === 3) {
+        score = 58;
+        title = "Flow Easing & Gentle Walking";
+        advice = "Cramping naturally tapers. Low-stress 15-minute gentle walks and gentle spinal twists enhance circulation.";
+      } else if (cycleDay === 4) {
+        score = 63;
+        title = "Light Re-awakening & Mobility";
+        advice = "Energy begins gentle upward trend. Joint mobility, gentle core activation, and mineral hydration.";
+      } else {
+        score = 68;
+        title = "Menstrual Tail & Fresh Vitality";
+        advice = "Bleeding ends. Clean renewal of energy and cellular stamina preparing for the follicular rise.";
+      }
+    } else if (cycleDay >= 6 && cycleDay <= 13) {
+      phaseTitle = "Follicular Phase";
+      color = "text-violet-500";
+      badgeBg = "bg-violet-500/15 border-violet-500/30 text-violet-600 dark:text-violet-400";
+      recommendedWorkoutId = "w-follicular-sculpt";
+      if (cycleDay <= 8) {
+        score = 75 + (cycleDay - 6) * 4;
+        title = "Rising Vitality & Progressive Tone";
+        advice = "Rising estrogen enhances insulin sensitivity and stamina. Ideal for progressive strength and sculpting.";
+      } else if (cycleDay <= 11) {
+        score = 85 + (cycleDay - 9) * 3;
+        title = "High Energy & Dynamic Resistance";
+        advice = "Strong cellular resilience and mental clarity. Push resistance training, glute sculpting, and brisk power cardio.";
+      } else {
+        score = 93 + (cycleDay - 12) * 2;
+        title = "Pre-Ovulation Energy Surge";
+        advice = "Estrogen reaches near peak levels. High muscle recruitment, fast recovery, and superior coordination.";
+      }
+    } else if (cycleDay >= 14 && cycleDay <= 17) {
+      phaseTitle = "Ovulatory Phase";
+      color = "text-emerald-500";
+      badgeBg = "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400";
+      recommendedWorkoutId = "w-follicular-sculpt";
+      if (cycleDay === 14) {
+        score = 98;
+        title = "Peak Ovulatory Power & Stamina";
+        advice = "Peak metabolic efficiency and highest pain tolerance of the month. Great for power intervals and peak personal bests.";
+      } else if (cycleDay === 15) {
+        score = 95;
+        title = "Sustained Peak Vitality";
+        advice = "High muscular coordination and strength. Keep heart rate elevated and maintain consistent electrolytes.";
+      } else if (cycleDay === 16) {
+        score = 90;
+        title = "Active Ovulation Transition";
+        advice = "Ovulation completes. Transition into controlled strength, core stability, and antioxidant-rich meals.";
+      } else {
+        score = 86;
+        title = "Post-Ovulation Pacing";
+        advice = "Early progesterone begins rising. Focus on steady resistance and pelvic floor endurance.";
+      }
+    } else {
+      phaseTitle = "Luteal Phase";
+      color = "text-indigo-500";
+      badgeBg = "bg-indigo-500/15 border-indigo-500/30 text-indigo-600 dark:text-indigo-400";
+      recommendedWorkoutId = "w-luteal-pilates";
+      if (cycleDay <= 21) {
+        score = 80 - (cycleDay - 18) * 3;
+        title = "Early Luteal Tone & Steady Pacing";
+        advice = "Progesterone is climbing. Choose steady resistance, controlled pilates, and avoid over-exhaustion.";
+      } else if (cycleDay <= 24) {
+        score = 70 - (cycleDay - 22) * 3;
+        title = "Mid-Luteal Core & Gentle Recovery";
+        advice = "Body temperature is higher. Slower cadence, pelvic stabilization, and magnesium-rich evening recovery.";
+      } else {
+        score = 62 - (cycleDay - 25) * 2;
+        title = "Pre-Menstrual Calm & Deep Stretch";
+        advice = "Hormones preparing for next cycle. Gentle yin yoga, lower back decompression, and restorative pacing.";
+      }
     }
-  }, [currentPhase]);
+
+    return {
+      score,
+      title,
+      phaseTitle,
+      advice,
+      color,
+      badgeBg,
+      recommendedWorkoutId,
+    };
+  }, [cycleDay]);
 
   // Filtered Workout List
   const filteredWorkouts = React.useMemo(() => {

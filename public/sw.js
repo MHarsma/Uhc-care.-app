@@ -1,5 +1,5 @@
-// Service Worker for UHC Care PWA (v5: Push & Native Notifications Support)
-const CACHE_NAME = 'uhc-care-v5';
+// Service Worker for UHC Care PWA (v6: Fresh Cycle, Dynamic Readiness, and Updated Features)
+const CACHE_NAME = 'uhc-care-v6';
 const OFFLINE_URL = '/';
 
 const ASSETS_TO_CACHE = [
