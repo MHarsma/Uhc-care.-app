@@ -1,9 +1,8 @@
-// Service Worker for UHC Care PWA (v6: Fresh Cycle, Dynamic Readiness, and Updated Features)
-const CACHE_NAME = 'uhc-care-v6';
-const OFFLINE_URL = '/';
+// Service Worker for UHC Care PWA (v7: Fresh Network-First Lifecycle, Zero Stale Page Caching)
+const CACHE_NAME = 'uhc-care-v7';
 
-const ASSETS_TO_CACHE = [
-  '/',
+// Only cache pure immutable assets, NEVER HTML pages or auth state
+const STATIC_ASSETS_TO_CACHE = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
@@ -14,14 +13,15 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return Promise.allSettled(
-        ASSETS_TO_CACHE.map((url) =>
+        STATIC_ASSETS_TO_CACHE.map((url) =>
           cache.add(url).catch((err) => {
-            console.warn('[SW] Failed to cache:', url, err);
+            console.warn('[SW] Failed to cache asset:', url, err);
           })
         )
       );
     })
   );
+  // Activate immediately without waiting for existing tabs to close
   self.skipWaiting();
 });
 
@@ -45,18 +45,20 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  // Purge ALL old caches to ensure zero stale pages remain
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => cacheName !== CACHE_NAME)
           .map((cacheName) => {
-            console.log('[SW] Purging old cache:', cacheName);
+            console.log('[SW] Purging old cache version:', cacheName);
             return caches.delete(cacheName);
           })
       );
     })
   );
+  // Take control of all open clients immediately
   self.clients.claim();
 });
 
@@ -106,40 +108,58 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only intercept GET requests
+  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
 
-  // Do not intercept or cache API requests, auth routes, or WebSocket
-  if (url.pathname.startsWith('/api') || url.pathname.includes('/auth/')) {
+  // 1. NEVER intercept or cache API requests, auth routes, or external services
+  if (
+    url.pathname.startsWith('/api') ||
+    url.pathname.includes('/auth/') ||
+    url.hostname !== self.location.hostname
+  ) {
     return;
   }
 
-  // Navigation requests: Network first, fall back to cached shell
+  // 2. Navigation requests (HTML pages): ALWAYS fetch from network!
+  // Never cache HTML so users never see yesterday's frozen screen or stale state
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(OFFLINE_URL) || caches.match('/');
+      fetch(event.request, { cache: 'no-cache' }).catch(() => {
+        // Only if device is totally offline without internet, check cache
+        return caches.match(event.request);
       })
     );
     return;
   }
 
-  // Static assets & scripts: Network-first with cache fallback
-  event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return networkResponse;
+  // 3. Static immutable assets (_next/static, images, icons): Cache with network fallback
+  const isStaticAsset =
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.svg') ||
+    url.pathname.endsWith('.ico') ||
+    url.pathname.endsWith('.json');
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        });
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
-  );
+    );
+    return;
+  }
+
+  // 4. Default: pass directly to network
+  event.respondWith(fetch(event.request));
 });

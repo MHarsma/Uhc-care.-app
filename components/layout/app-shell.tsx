@@ -87,6 +87,23 @@ export function AppShell({
     }
   }, [isAuthError, router, queryClient]);
 
+  // When app returns to foreground (e.g. phone unlocked in the morning), refresh all live data immediately
+  React.useEffect(() => {
+    const handleForegroundResume = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        queryClient.invalidateQueries();
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("visibilitychange", handleForegroundResume);
+      window.addEventListener("focus", handleForegroundResume);
+      return () => {
+        window.removeEventListener("visibilitychange", handleForegroundResume);
+        window.removeEventListener("focus", handleForegroundResume);
+      };
+    }
+  }, [queryClient]);
+
   const { data: partnerData } = useQuery({
     queryKey: ["partnerSummary"],
     queryFn: dashboardApi.getPartnerSummary,
