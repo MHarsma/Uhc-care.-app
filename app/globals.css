@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
 /* ================================================================
    UHC CARE — PREMIUM DESIGN SYSTEM
    Inspired by Habitify · TickTick · Atomic Habits
@@ -9,17 +11,18 @@
 :root,
 .dark,
 [data-theme="dark"] {
-  /* Core palette — Dark Obsidian */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-elevated: #1a1a26;
-  --bg-card: #16161f;
-  --bg-hover: #1e1e2e;
+  /* Core palette — Deep Obsidian Dark */
+  --bg-primary: #09090e;
+  --bg-secondary: #0f0f18;
+  
+  --bg-elevated: #161623;
+  --bg-card: #12121c;
+  --bg-hover: #1a1a28;
 
   /* Surface glass */
-  --glass-bg: rgba(22, 22, 31, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-highlight: rgba(255, 255, 255, 0.03);
+  --glass-bg: rgba(18, 18, 28, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.04);
 
   /* Text — High Contrast & Enhanced Visibility */
   --text-primary: #ffffff;
@@ -259,10 +262,10 @@ body {
 }
 
 .glass-subtle {
-  background: rgba(22, 22, 31, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(18, 18, 28, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .glass-card {

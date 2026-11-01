@@ -65,7 +65,7 @@ interface ExerciseDetail {
   benefits: string[];
   breathing: string;
   commonMistakes: string;
-  svgType: "childs_pose" | "cat_cow" | "butterfly" | "bridge" | "legs_wall" | "chin_tuck" | "trap_stretch" | "squat" | "rdl" | "press" | "pilates_100" | "bird_dog";
+  svgType?: string;
 }
 
 interface WorkoutItem {
@@ -82,6 +82,13 @@ interface WorkoutItem {
   accentColor: string;
   description: string;
   exercises: ExerciseDetail[];
+  targetSymptoms: string[];
+  energyLevel: string;
+  energyPercent: number;
+  moodState: string;
+  relatedConditions: string[];
+  cycleDays: string;
+  hormonalContext: string;
 }
 
 interface SymptomProtocol {
@@ -365,9 +372,663 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
     commonMistakes: "Arching lower back at peak extension or rotating hips open.",
     svgType: "bird_dog",
   },
+  glute_kickback: {
+    id: "glute_kickback",
+    name: "Donkey Kicks & Glute Kickbacks",
+    durationSec: 60,
+    reps: "15 reps per leg",
+    targetMuscles: ["Gluteus Maximus", "Hamstrings"],
+    equipment: "Mat",
+    frontAngleCue: "Hands under shoulders, hips squared to floor.",
+    sideAngleCue: "90-degree bend in knee; drive heel to ceiling squeezing glute.",
+    howTo: [
+      "Start on all fours with hands under shoulders and knees under hips.",
+      "Keeping knee bent at 90 degrees, kick heel straight up toward the ceiling.",
+      "Squeeze glute hard at top lockout without arching your lower back.",
+      "Lower knee back down under control without touching floor between reps.",
+    ],
+    benefits: [
+      "Isolates glutes with zero spinal compression.",
+      "Enhances pelvic support and hip stability.",
+    ],
+    breathing: "Exhale kicking heel up; inhale lowering down.",
+    commonMistakes: "Arching lumbar spine to get higher reach.",
+    svgType: "bridge",
+  },
+  fire_hydrant: {
+    id: "fire_hydrant",
+    name: "Fire Hydrants for Side Glutes",
+    durationSec: 60,
+    reps: "12-15 reps per side",
+    targetMuscles: ["Gluteus Medius", "Outer Hip Stabilizers"],
+    equipment: "Mat",
+    frontAngleCue: "Weight evenly placed on palms, lift knee out sideways.",
+    sideAngleCue: "Flat back from head to tailbone; knee lifts to hip height.",
+    howTo: [
+      "Begin in tabletop position with flat spine.",
+      "Keeping knee bent, lift right thigh out to the side until parallel to floor.",
+      "Pause for 1 second at the top to isolate gluteus medius.",
+      "Lower down slowly under control.",
+    ],
+    benefits: [
+      "Firms outer hips and eliminates pelvic wobble during walking.",
+      "Protects against knee pain and lower back strain.",
+    ],
+    breathing: "Exhale lifting knee outward; inhale lowering down.",
+    commonMistakes: "Tilting body heavily to the opposite side.",
+    svgType: "bird_dog",
+  },
+  hip_thrust: {
+    id: "hip_thrust",
+    name: "Glute Hip Thrust (Couch or Mat)",
+    durationSec: 75,
+    reps: "12-15 reps",
+    targetMuscles: ["Gluteus Maximus", "Hamstrings"],
+    equipment: "Bench / Couch / Mat",
+    frontAngleCue: "Feet planted flat hip-width apart, knees pointing ahead.",
+    sideAngleCue: "Upper back supported, drive hips up to full horizontal tabletop.",
+    howTo: [
+      "Rest upper back against bench or edge of sofa with knees bent and feet flat.",
+      "Drive through heels and extend hips upward toward ceiling.",
+      "Tuck chin lightly and squeeze glutes hard at the top.",
+      "Lower hips down with controlled resistance.",
+    ],
+    benefits: [
+      "Highest glute muscle activation without quad dominance.",
+      "Builds firm, lifted glute shape safely.",
+    ],
+    breathing: "Inhale at bottom; exhale driving hips up.",
+    commonMistakes: "Overextending lower back rather than tucking pelvis.",
+    svgType: "bridge",
+  },
+  walking_lunges: {
+    id: "walking_lunges",
+    name: "Walking Lunges for Lean Legs",
+    durationSec: 60,
+    reps: "10-12 steps per leg",
+    equipment: "Bodyweight / Light Dumbbells",
+    targetMuscles: ["Quadriceps", "Glutes", "Hamstrings", "Calves"],
+    frontAngleCue: "Keep feet on parallel tracks hip-width apart.",
+    sideAngleCue: "Both knees bend to 90 degrees, front knee stays behind toes.",
+    howTo: [
+      "Step forward with your right leg, lowering hips until front knee bends to 90 degrees.",
+      "Hover back knee 1 inch off floor while keeping torso tall.",
+      "Press through right heel to step left foot forward into next lunge.",
+    ],
+    benefits: [
+      "Tones thighs, quads, and glutes while improving functional balance.",
+      "Enhances athletic mobility and calorie burn.",
+    ],
+    breathing: "Inhale stepping down; exhale stepping up.",
+    commonMistakes: "Leaning torso too far forward onto front knee.",
+    svgType: "squat",
+  },
+  sumo_squat: {
+    id: "sumo_squat",
+    name: "Sumo Squat with Inner Thigh Pulses",
+    durationSec: 60,
+    reps: "12 reps + 3 pulses",
+    targetMuscles: ["Adductors (Inner Thighs)", "Gluteus Maximus"],
+    equipment: "Bodyweight or Light Dumbbell",
+    frontAngleCue: "Wide stance, toes flared 45 degrees, knees tracking wide.",
+    sideAngleCue: "Torso tall and upright, hips sinking straight down between knees.",
+    howTo: [
+      "Take a wide stance with toes turned outward.",
+      "Sink hips down until thighs are parallel with floor.",
+      "Perform 3 short controlled pulses at the bottom.",
+      "Press through heels and squeeze inner thighs to stand up.",
+    ],
+    benefits: [
+      "Directly targets and firms inner thigh adductors.",
+      "Tones pelvic diaphragm.",
+    ],
+    breathing: "Inhale lowering down; exhale pressing up to stand.",
+    commonMistakes: "Allowing knees to cave inward away from toes.",
+    svgType: "squat",
+  },
+  wall_sit: {
+    id: "wall_sit",
+    name: "Isometric Wall Sit Hold",
+    durationSec: 45,
+    reps: "30-45s hold",
+    targetMuscles: ["Quadriceps", "Glutes", "Core"],
+    equipment: "Wall",
+    frontAngleCue: "Feet hip-width apart, knees directly above ankles.",
+    sideAngleCue: "Back flat against wall, thighs parallel to floor at 90 degrees.",
+    howTo: [
+      "Slide back down wall until thighs are parallel to the ground.",
+      "Rest hands on chest or at sides, keeping spine flat against wall.",
+      "Hold steadily, breathing calmly throughout the isometric burn.",
+    ],
+    benefits: [
+      "Builds muscular quad endurance without impact or knee strain.",
+      "Strengthens knee stabilizers.",
+    ],
+    breathing: "Slow, calm diaphragmatic breathing throughout.",
+    commonMistakes: "Resting hands on knees to cheat.",
+    svgType: "squat",
+  },
+  knee_pushup: {
+    id: "knee_pushup",
+    name: "Modified Knee Push-ups",
+    durationSec: 60,
+    reps: "10-12 reps",
+    targetMuscles: ["Chest (Pectorals)", "Triceps", "Shoulders", "Core"],
+    equipment: "Mat",
+    frontAngleCue: "Hands slightly wider than shoulders, fingers pointed forward.",
+    sideAngleCue: "Straight diagonal line from knees to head; elbows track back at 45 degrees.",
+    howTo: [
+      "Start in a modified plank on knees with hands under shoulders.",
+      "Lower chest smoothly toward mat, keeping elbows tucked back at 45 degrees.",
+      "Press through your full palms to push floor away and return to top.",
+    ],
+    benefits: [
+      "Firms chest muscles and tones triceps for female physique.",
+      "Builds foundational upper body pushing strength.",
+    ],
+    breathing: "Inhale lowering chest; exhale pushing back up.",
+    commonMistakes: "Flaring elbows wide or letting lower back sag.",
+    svgType: "bridge",
+  },
+  db_chest_press: {
+    id: "db_chest_press",
+    name: "Light Dumbbell Floor Chest Press",
+    durationSec: 60,
+    reps: "12-15 reps (2-5kg)",
+    targetMuscles: ["Pectoralis Major", "Triceps", "Front Deltoids"],
+    equipment: "Light Dumbbells / Mat",
+    frontAngleCue: "Dumbbells centered over chest, neutral to pronated grip.",
+    sideAngleCue: "Upper arms tap floor lightly, keeping shoulder rotators protected.",
+    howTo: [
+      "Lie on your back on the mat with knees bent and feet flat.",
+      "Hold light dumbbells above chest with elbows at 45 degrees.",
+      "Lower until triceps graze floor, then press smoothly back up.",
+    ],
+    benefits: [
+      "Firms and tones pectoral muscles safely with floor limiter.",
+      "Prevents shoulder impingement.",
+    ],
+    breathing: "Inhale lowering; exhale pressing up.",
+    commonMistakes: "Bouncing elbows off floor.",
+    svgType: "bridge",
+  },
+  lateral_raise: {
+    id: "lateral_raise",
+    name: "Dumbbell Lateral Shoulder Raises",
+    durationSec: 60,
+    reps: "12-15 reps (1-3kg)",
+    targetMuscles: ["Lateral Deltoids", "Upper Back"],
+    equipment: "Light Dumbbells",
+    frontAngleCue: "Soft elbow bend, raise weights to shoulder height.",
+    sideAngleCue: "Slight forward torso pitch, arms travel slightly in front of body.",
+    howTo: [
+      "Stand tall holding light dumbbells at your sides.",
+      "With a soft micro-bend in elbows, raise weights out to shoulder level.",
+      "Hold for a split second, then lower slowly with control.",
+    ],
+    benefits: [
+      "Shapes shoulders to enhance hourglass silhouette.",
+      "Improves upright posture and clavicle line.",
+    ],
+    breathing: "Exhale raising up; inhale lowering down.",
+    commonMistakes: "Swinging torso or shrugging shoulders up.",
+    svgType: "cat_cow",
+  },
+  db_row: {
+    id: "db_row",
+    name: "Light Dumbbell Bent-Over Row",
+    durationSec: 60,
+    reps: "12-15 reps",
+    targetMuscles: ["Lats", "Rhomboids", "Mid-Back", "Biceps"],
+    equipment: "Light Dumbbells",
+    frontAngleCue: "Feet hip-width apart, dumbbells in neutral grip.",
+    sideAngleCue: "Hips hinged 45 degrees, flat back; drive elbows back to hips.",
+    howTo: [
+      "Hinge hips back with a flat spine holding light dumbbells.",
+      "Pull elbows back towards hip pockets, squeezing shoulder blades together.",
+      "Lower weights down with control.",
+    ],
+    benefits: [
+      "Eliminates slouching and tones upper back muscles.",
+      "Strengthens postural foundation.",
+    ],
+    breathing: "Exhale rowing elbows back; inhale lowering weights.",
+    commonMistakes: "Rounding the upper spine.",
+    svgType: "rdl",
+  },
+  superman: {
+    id: "superman",
+    name: "Superman Prone Back Extensions",
+    durationSec: 60,
+    reps: "10-12 reps with 2s hold",
+    targetMuscles: ["Erector Spinae", "Glutes", "Upper Back"],
+    equipment: "Mat",
+    frontAngleCue: "Arms extended overhead, neck neutral looking at floor.",
+    sideAngleCue: "Chest and thighs peel 2-4 inches off mat simultaneously.",
+    howTo: [
+      "Lie face down on mat with arms and legs extended.",
+      "Engage glutes and back to lift chest and thighs off floor.",
+      "Hold for 2 seconds, then lower down softly.",
+    ],
+    benefits: [
+      "Strengthens lower back against PMS aches.",
+      "Tones posterior chain and glutes.",
+    ],
+    breathing: "Exhale lifting up; inhale lowering down.",
+    commonMistakes: "Cranking neck up toward ceiling.",
+    svgType: "childs_pose",
+  },
+  deadbug: {
+    id: "deadbug",
+    name: "Deadbug Deep Core Control",
+    durationSec: 60,
+    reps: "10 reps per side",
+    targetMuscles: ["Transverse Abdominis", "Pelvic Floor"],
+    equipment: "Mat",
+    frontAngleCue: "Arms straight up, knees bent 90 degrees over hips.",
+    sideAngleCue: "Lower back glued to mat, opposite arm and leg extend toward floor.",
+    howTo: [
+      "Lie on back with arms straight up and knees bent at 90 degrees.",
+      "Press lower back firmly into floor with zero gap.",
+      "Slowly lower right arm overhead and left leg toward floor.",
+      "Return to start and alternate sides.",
+    ],
+    benefits: [
+      "Flattens deep abdominal wall without neck or spine strain.",
+      "Safe during all cycle phases.",
+    ],
+    breathing: "Inhale at center; exhale extending limbs.",
+    commonMistakes: "Letting lower back arch off floor.",
+    svgType: "pilates_100",
+  },
+  bicycle_crunches: {
+    id: "bicycle_crunches",
+    name: "Controlled Bicycle Crunches",
+    durationSec: 60,
+    reps: "16-20 slow reps",
+    targetMuscles: ["Internal & External Obliques", "Rectus Abdominis"],
+    equipment: "Mat",
+    frontAngleCue: "Fingertips lightly behind head, elbows wide.",
+    sideAngleCue: "Shoulders curled up, rotate ribcage toward opposite knee.",
+    howTo: [
+      "Lie on back with hands behind head, knees in tabletop.",
+      "Curl shoulder blades off floor and twist right armpit toward left knee while extending right leg.",
+      "Pause for 1 second, then switch to opposite side.",
+    ],
+    benefits: [
+      "Cinches the waistline and tones oblique muscles.",
+      "High metabolic core activation.",
+    ],
+    breathing: "Exhale on twist; inhale through center.",
+    commonMistakes: "Yanking on neck with hands.",
+    svgType: "pilates_100",
+  },
+  forearm_plank: {
+    id: "forearm_plank",
+    name: "Forearm Plank with Pelvic Tuck",
+    durationSec: 45,
+    reps: "30-45s hold",
+    targetMuscles: ["Transverse Core", "Glutes", "Shoulders"],
+    equipment: "Mat",
+    frontAngleCue: "Elbows under shoulders, forearms parallel on mat.",
+    sideAngleCue: "Straight line from crown to heels, slight pelvic tuck.",
+    howTo: [
+      "Rest on forearms and toes with body in a straight line.",
+      "Squeeze glutes and tuck pelvis slightly to protect lower back.",
+      "Hold firmly while breathing smoothly.",
+    ],
+    benefits: [
+      "Full-body isometric core strength and endurance.",
+      "Eliminates lower back weakness.",
+    ],
+    breathing: "Controlled nasal breathing throughout.",
+    commonMistakes: "Hips sagging down or sticking up in pyramid.",
+    svgType: "bird_dog",
+  },
+  reverse_crunches: {
+    id: "reverse_crunches",
+    name: "Reverse Crunches for Lower Abs",
+    durationSec: 60,
+    reps: "12-15 reps",
+    targetMuscles: ["Lower Rectus Abdominis", "Transverse Core"],
+    equipment: "Mat",
+    frontAngleCue: "Palms pressed beside hips, knees bent 90 degrees.",
+    sideAngleCue: "Pelvis curls upward lifting tailbone 2-3 inches off mat.",
+    howTo: [
+      "Lie on back with arms by sides and knees bent at 90 degrees.",
+      "Use lower abs to curl tailbone off mat toward chest.",
+      "Lower hips down slowly with 3-second resistance.",
+    ],
+    benefits: [
+      "Targets lower belly pouch without neck stress.",
+      "Strengthens pelvic floor connection.",
+    ],
+    breathing: "Exhale curling tailbone up; inhale lowering down.",
+    commonMistakes: "Swinging legs with momentum.",
+    svgType: "pilates_100",
+  },
+  jumping_jacks: {
+    id: "jumping_jacks",
+    name: "Low-Impact Cardio Jacks",
+    durationSec: 60,
+    reps: "45-60s flow",
+    targetMuscles: ["Full Body", "Cardiovascular", "Calves"],
+    equipment: "Mat / Shoes",
+    frontAngleCue: "Step one foot out to side while arms swing overhead.",
+    sideAngleCue: "Soft knees, light bouncy step without floor pounding.",
+    howTo: [
+      "Stand tall, step right foot out to side while reaching arms overhead.",
+      "Step back to center and immediately step left foot out.",
+      "Keep tempo steady to elevate heart rate gently.",
+    ],
+    benefits: [
+      "Stimulates dopamine and endorphin release to counter low mood.",
+      "Zero high-impact pounding on pelvic joints.",
+    ],
+    breathing: "Rhythmic breathing in time with steps.",
+    commonMistakes: "Landing stiff-legged.",
+    svgType: "squat",
+  },
+  mountain_climbers: {
+    id: "mountain_climbers",
+    name: "Controlled Mountain Climbers",
+    durationSec: 45,
+    reps: "30-45s tempo",
+    targetMuscles: ["Core", "Cardiovascular", "Hip Flexors"],
+    equipment: "Mat",
+    frontAngleCue: "High plank with hands under shoulders, driving knees forward.",
+    sideAngleCue: "Hips remain level with shoulders without bouncing high.",
+    howTo: [
+      "Start in high push-up plank position with core braced.",
+      "Drive one knee forward toward chest, then step back and alternate.",
+      "Maintain a smooth, controlled rhythm.",
+    ],
+    benefits: [
+      "Burns calories and strengthens core without spinal impact.",
+      "Elevates energy and circulation quickly.",
+    ],
+    breathing: "Breathe steadily in rhythm with alternating knees.",
+    commonMistakes: "Bouncing hips up in the air.",
+    svgType: "bird_dog",
+  },
 };
 
 const WORKOUT_DATABASE: WorkoutItem[] = [
+  {
+    id: "w-cycle-menstrual",
+    title: "Menstrual Phase: Soothing Warmth & Pelvic Decompression",
+    category: "Cycle Sync",
+    phase: "menstrual",
+    durationMinutes: 12,
+    calories: 60,
+    intensity: "Gentle (Restorative)",
+    equipment: "Yoga Mat / Soft Carpet",
+    targetMuscles: ["Lower Back", "Pelvic Floor", "Hips"],
+    icon: "🩸",
+    accentColor: "from-rose-500 to-pink-500",
+    description: "Ultra-gentle restorative flow tailored for Days 1–5 to soothe uterine cramps, decompress the lumbar spine, and restore parasympathetic calm.",
+    exercises: [
+      EXERCISE_LIBRARY.childs_pose,
+      EXERCISE_LIBRARY.butterfly,
+      EXERCISE_LIBRARY.legs_wall,
+      EXERCISE_LIBRARY.cat_cow,
+    ],
+    targetSymptoms: ["Uterine Cramps", "Lower Back Pain", "Pelvic Fullness", "Morning Fatigue"],
+    energyLevel: "Gentle Restorative",
+    energyPercent: 30,
+    moodState: "Introspective & Tender • Needs Warmth",
+    relatedConditions: [
+      "Avoid high impact or inverted postures during heavy flow",
+      "Keep abdominal intra-cavity pressure minimal",
+      "Pair with warm electrolyte water and herbal tea",
+    ],
+    cycleDays: "Days 1–5",
+    hormonalContext: "Estrogen & Progesterone are at monthly baseline. Cellular rest & gentle pelvic circulation are primary.",
+  },
+  {
+    id: "w-cycle-menstrual-walk",
+    title: "Menstrual Phase: Light Lymphatic Circulation & Mobility",
+    category: "Cycle Sync",
+    phase: "menstrual",
+    durationMinutes: 15,
+    calories: 75,
+    intensity: "Gentle (Restorative)",
+    equipment: "Comfortable Shoes / Mat",
+    targetMuscles: ["Hamstrings", "Calves", "Thoracic Spine", "Pelvic Floor"],
+    icon: "🌸",
+    accentColor: "from-rose-400 to-amber-400",
+    description: "Gentle mobility and restorative walking rhythm for Days 3–5 as cramping tapers and fresh energy begins to stir.",
+    exercises: [
+      EXERCISE_LIBRARY.cat_cow,
+      EXERCISE_LIBRARY.butterfly,
+      EXERCISE_LIBRARY.bridge,
+      EXERCISE_LIBRARY.legs_wall,
+    ],
+    targetSymptoms: ["Morning Stiffness", "Mild Cramping", "Sluggish Circulation", "Brain Fog"],
+    energyLevel: "Gentle Awakening",
+    energyPercent: 45,
+    moodState: "Calming & Grounding • Gentle Re-entry",
+    relatedConditions: [
+      "Maintain comfortable heart rate below 115 bpm",
+      "Sip warm ginger or peppermint water",
+      "Soft joint mobilization without heavy weights",
+    ],
+    cycleDays: "Days 3–5",
+    hormonalContext: "Bleeding tapers, prostaglandins drop, and the body prepares for estrogen recovery.",
+  },
+  {
+    id: "w-cycle-follicular",
+    title: "Follicular Phase: Rising Vitality Sculpt & Glute Tone",
+    category: "Cycle Sync",
+    phase: "follicular",
+    durationMinutes: 22,
+    calories: 160,
+    intensity: "Moderate",
+    equipment: "Dumbbells / Mat",
+    targetMuscles: ["Glutes", "Hamstrings", "Core", "Quadriceps"],
+    icon: "🌱",
+    accentColor: "from-violet-500 to-indigo-500",
+    description: "Capitalize on rising estrogen during Days 6–10 to sculpt lean muscle tone, improve posture, and accelerate metabolism.",
+    exercises: [
+      EXERCISE_LIBRARY.squat,
+      EXERCISE_LIBRARY.rdl,
+      EXERCISE_LIBRARY.bridge,
+      EXERCISE_LIBRARY.bird_dog,
+    ],
+    targetSymptoms: ["Post-Period Sluggishness", "Postural Weakness", "Low Muscle Tone"],
+    energyLevel: "Rising Stamina & Power",
+    energyPercent: 80,
+    moodState: "Motivated & Upbeat • Creative Drive",
+    relatedConditions: [
+      "Rising estrogen enhances insulin sensitivity — fuel workouts with complex carbohydrates",
+      "Prime window for progressive resistance overload",
+      "Always take morning mineral supplements with breakfast",
+    ],
+    cycleDays: "Days 6–10",
+    hormonalContext: "Developing follicles secrete rising estradiol, boosting glycogen storage and quick muscle recovery.",
+  },
+  {
+    id: "w-cycle-follicular-cardio",
+    title: "Follicular Phase: Dynamic Core & Cardio Ignition",
+    category: "Cycle Sync",
+    phase: "follicular",
+    durationMinutes: 25,
+    calories: 190,
+    intensity: "Moderate",
+    equipment: "Mat / Optional Light Dumbbells",
+    targetMuscles: ["Full Body", "Transverse Core", "Glutes", "Back"],
+    icon: "⚡",
+    accentColor: "from-indigo-500 to-cyan-500",
+    description: "High-tempo athletic movement for Days 11–13 as energy reaches near-peak before ovulation.",
+    exercises: [
+      EXERCISE_LIBRARY.squat,
+      EXERCISE_LIBRARY.pilates_100,
+      EXERCISE_LIBRARY.bird_dog,
+      EXERCISE_LIBRARY.cat_cow,
+    ],
+    targetSymptoms: ["Restless Energy", "Mental Cloudiness", "Metabolic Lag"],
+    energyLevel: "High Momentum & Endurance",
+    energyPercent: 88,
+    moodState: "Social, Confident & Vibrant",
+    relatedConditions: [
+      "Highest glycogen burn efficiency of the month",
+      "Maintain electrolyte hydration with 500ml water before workout",
+    ],
+    cycleDays: "Days 11–13",
+    hormonalContext: "Estrogen reaching peak levels, giving elevated stamina and mental focus.",
+  },
+  {
+    id: "w-cycle-ovulation",
+    title: "Ovulatory Phase: Peak Power, Stamina & Full-Body Strength",
+    category: "Cycle Sync",
+    phase: "ovulation",
+    durationMinutes: 28,
+    calories: 220,
+    intensity: "Peak Vitality",
+    equipment: "Dumbbells / Mat",
+    targetMuscles: ["Full Body", "Glutes", "Core", "Posterior Chain"],
+    icon: "🔥",
+    accentColor: "from-emerald-500 to-teal-500",
+    description: "Peak metabolic efficiency and highest pain tolerance during Days 14–16. Great for personal strength bests.",
+    exercises: [
+      EXERCISE_LIBRARY.squat,
+      EXERCISE_LIBRARY.rdl,
+      EXERCISE_LIBRARY.pilates_100,
+      EXERCISE_LIBRARY.bird_dog,
+      EXERCISE_LIBRARY.bridge,
+    ],
+    targetSymptoms: ["Ovulatory Mittelschmerz Ache", "Mid-Cycle Restlessness", "Mild Breast Sensitivity"],
+    energyLevel: "Peak Vitality & Maximum Output",
+    energyPercent: 98,
+    moodState: "Radiant, Bold & Magnetic • High Confidence",
+    relatedConditions: [
+      "Surging estrogen increases relaxin hormone: maintain strict joint alignment to protect knees and ankles",
+      "Superior muscle recovery rate",
+    ],
+    cycleDays: "Days 14–16",
+    hormonalContext: "Luteinizing Hormone (LH) and Estrogen peak simultaneously for maximum strength potential.",
+  },
+  {
+    id: "w-cycle-ovulation-pilates",
+    title: "Ovulatory Phase: High-Tone Power Pilates & Core Anchor",
+    category: "Cycle Sync",
+    phase: "ovulation",
+    durationMinutes: 20,
+    calories: 140,
+    intensity: "Peak Vitality",
+    equipment: "Mat",
+    targetMuscles: ["Transverse Core", "Pelvic Diaphragm", "Glutes"],
+    icon: "✨",
+    accentColor: "from-teal-500 to-emerald-400",
+    description: "Precision neuromuscular core sculpting that harnesses peak ovulatory coordination for Days 15–17.",
+    exercises: [
+      EXERCISE_LIBRARY.pilates_100,
+      EXERCISE_LIBRARY.bridge,
+      EXERCISE_LIBRARY.bird_dog,
+      EXERCISE_LIBRARY.butterfly,
+    ],
+    targetSymptoms: ["Core Laxity", "Postural Imbalance", "Energy Overflow"],
+    energyLevel: "Dynamic Precision",
+    energyPercent: 92,
+    moodState: "Focused, Decisive & High Clarity",
+    relatedConditions: [
+      "Thorough pelvic ligament warm-up before dynamic pulses",
+      "Hydrate well with balanced sodium and potassium",
+    ],
+    cycleDays: "Days 15–17",
+    hormonalContext: "Transition into post-ovulation corpus luteum formation as progesterone begins rising.",
+  },
+  {
+    id: "w-cycle-luteal",
+    title: "Luteal Phase: Low-Impact Deep Core & Glute Pilates",
+    category: "Cycle Sync",
+    phase: "luteal",
+    durationMinutes: 18,
+    calories: 110,
+    intensity: "Moderate",
+    equipment: "Mat",
+    targetMuscles: ["Deep Transverse Core", "Glutes", "Inner Thighs"],
+    icon: "🌙",
+    accentColor: "from-indigo-500 to-purple-500",
+    description: "Controlled pilates movements that tone without elevating cortisol or straining joints during Days 18–24.",
+    exercises: [
+      EXERCISE_LIBRARY.pilates_100,
+      EXERCISE_LIBRARY.bridge,
+      EXERCISE_LIBRARY.bird_dog,
+      EXERCISE_LIBRARY.butterfly,
+    ],
+    targetSymptoms: ["Water Retention & Bloating", "Elevated Body Temperature", "Lower Back Tension"],
+    energyLevel: "Steady Endurance & Grounding",
+    energyPercent: 65,
+    moodState: "Focused, Detail-Oriented & Grounded",
+    relatedConditions: [
+      "Progesterone raises resting metabolic temperature: eat adequate protein and avoid overheating",
+      "Avoid excessive HIIT to protect against cortisol spikes",
+    ],
+    cycleDays: "Days 18–24",
+    hormonalContext: "Progesterone dominates, calming the uterine wall and stabilizing insulin response.",
+  },
+  {
+    id: "w-cycle-luteal-yin",
+    title: "Luteal Phase: Grounding Yin Recovery & Nervous System Calm",
+    category: "Cycle Sync",
+    phase: "luteal",
+    durationMinutes: 16,
+    calories: 70,
+    intensity: "Gentle (Restorative)",
+    equipment: "Mat / Cushion",
+    targetMuscles: ["Lower Back", "Hamstrings", "Neck & Trapezius"],
+    icon: "🧘‍♀️",
+    accentColor: "from-purple-500 to-rose-400",
+    description: "Deep restorative stretches designed for Days 25–28 to dissolve premenstrual tension, headaches, and irritability.",
+    exercises: [
+      EXERCISE_LIBRARY.childs_pose,
+      EXERCISE_LIBRARY.butterfly,
+      EXERCISE_LIBRARY.legs_wall,
+      EXERCISE_LIBRARY.trap_stretch,
+    ],
+    targetSymptoms: ["Premenstrual Irritability", "Tension Headaches", "Sleep Disturbances", "Lower Back Ache"],
+    energyLevel: "Restorative Calm & Sanctuary",
+    energyPercent: 35,
+    moodState: "Sensitive & Reflective • Seeking Quiet Sanctuary",
+    relatedConditions: [
+      "Pair with Evening Magnesium Glycinate at 8:00 PM to dissolve tension",
+      "Avoid caffeine after 2:00 PM to protect REM sleep",
+      "Lengthen exhales to 6 seconds to trigger parasympathetic vagus response",
+    ],
+    cycleDays: "Days 25–28",
+    hormonalContext: "Both estrogen and progesterone naturally taper, signaling the uterine lining to prepare for cycle renewal.",
+  },
+  {
+    id: "w-headache-relief",
+    title: "Suboccipital & Cervical Headache Rapid Relief",
+    category: "Quick 10-Min",
+    phase: "all",
+    durationMinutes: 10,
+    calories: 40,
+    intensity: "Gentle (Restorative)",
+    equipment: "No Equipment",
+    targetMuscles: ["Neck", "Base of Skull", "Upper Trapezius"],
+    icon: "💆‍♀️",
+    accentColor: "from-amber-500 to-orange-500",
+    description: "Rapid relief for morning tension headaches, neck tightness, screen strain, or empty-stomach supplement discomfort.",
+    exercises: [
+      EXERCISE_LIBRARY.chin_tuck,
+      EXERCISE_LIBRARY.trap_stretch,
+      EXERCISE_LIBRARY.cat_cow,
+      EXERCISE_LIBRARY.legs_wall,
+    ],
+    targetSymptoms: ["Morning Tension Headache", "Empty Stomach Mineral Distress", "Neck Tightness", "Temple Throbbing"],
+    energyLevel: "Restorative Comfort",
+    energyPercent: 30,
+    moodState: "Relief Seeking & Decompressing",
+    relatedConditions: [
+      "CRITICAL: Always take morning Zinc, Iron, or Vitamin C with food (eggs, toast, avocado), never on an empty stomach",
+      "Perform chin retractions without tilting head downward",
+    ],
+    cycleDays: "All Days (1–28)",
+    hormonalContext: "Relieves cervical-vascular tension and decompresses occipital nerve roots across all phases.",
+  },
   {
     id: "w-restorative-flow",
     title: "Restorative Pelvic & Spine Flow",
@@ -388,66 +1049,250 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       EXERCISE_LIBRARY.bridge,
       EXERCISE_LIBRARY.legs_wall,
     ],
+    targetSymptoms: ["Uterine Cramps", "Lower Back Pain", "Pelvic Fullness"],
+    energyLevel: "Gentle Restorative",
+    energyPercent: 30,
+    moodState: "Introspective & Gentle",
+    relatedConditions: ["Avoid abdominal compression", "Prioritize slow diaphragm breathing"],
+    cycleDays: "Days 1–5",
+    hormonalContext: "Pelvic decompression during baseline hormonal phase.",
   },
   {
-    id: "w-headache-relief",
-    title: "Suboccipital & Cervical Headache Relief",
+    id: "w-glutes-isolation",
+    title: "Peach Sculpt: Glute & Hip Single-Muscle Isolation",
+    category: "Strength",
+    phase: "all",
+    durationMinutes: 18,
+    calories: 140,
+    intensity: "Moderate",
+    equipment: "Mat / Couch / Optional Light Dumbbells",
+    targetMuscles: ["Gluteus Maximus", "Gluteus Medius", "Hamstrings"],
+    icon: "🍑",
+    accentColor: "from-pink-500 to-rose-500",
+    description: "Targeted female bodybuilding isolation for rounded, lifted glutes and firm hips without quad bulk or lower back strain.",
+    exercises: [
+      EXERCISE_LIBRARY.hip_thrust,
+      EXERCISE_LIBRARY.glute_kickback,
+      EXERCISE_LIBRARY.fire_hydrant,
+      EXERCISE_LIBRARY.bridge,
+    ],
+    targetSymptoms: ["Glute Amnesia from Sitting", "Pelvic Wobble", "Lower Back Fatigued"],
+    energyLevel: "Focused & Sculpting",
+    energyPercent: 70,
+    moodState: "Confident, Determined & Empowered",
+    relatedConditions: [
+      "No heavy barbells needed — light dumbbell or bodyweight achieves maximum peak contraction",
+      "Pause for 1-2 seconds at the top of every repetition",
+    ],
+    cycleDays: "All Days (Ideal Days 6–20)",
+    hormonalContext: "High neural recruitment during estrogen phases maximizes gluteus activation.",
+  },
+  {
+    id: "w-thighs-sculpt",
+    title: "Lean Legs: Quad & Inner Thigh Tone",
+    category: "Strength",
+    phase: "all",
+    durationMinutes: 20,
+    calories: 155,
+    intensity: "Moderate",
+    equipment: "Mat / Wall / Optional Light Dumbbell",
+    targetMuscles: ["Adductors (Inner Thighs)", "Quadriceps", "Glutes", "Calves"],
+    icon: "🦵",
+    accentColor: "from-amber-500 to-violet-500",
+    description: "Sculpts and leans the inner thighs and quadriceps using high-repetition sumo pulses, walking lunges, and isometric wall holds.",
+    exercises: [
+      EXERCISE_LIBRARY.sumo_squat,
+      EXERCISE_LIBRARY.walking_lunges,
+      EXERCISE_LIBRARY.wall_sit,
+      EXERCISE_LIBRARY.squat,
+    ],
+    targetSymptoms: ["Thigh Heaviness", "Sluggish Circulation", "Knee Weakness"],
+    energyLevel: "Dynamic Muscle Burn",
+    energyPercent: 75,
+    moodState: "Energized & Motivated",
+    relatedConditions: [
+      "Keep knees tracking wide over toes in sumo squats",
+      "Stay hydrated with water and electrolytes",
+    ],
+    cycleDays: "Days 6–17",
+    hormonalContext: "Rising estradiol boosts muscular endurance and lactic acid clearance.",
+  },
+  {
+    id: "w-hourglass-back-chest",
+    title: "Hourglass Upper Body: Back, Shoulders & Posture",
+    category: "Strength",
+    phase: "all",
+    durationMinutes: 18,
+    calories: 125,
+    intensity: "Moderate",
+    equipment: "Light Dumbbells (1-4kg) / Mat",
+    targetMuscles: ["Lats", "Rhomboids", "Lateral Shoulders", "Upper Back"],
+    icon: "⏳",
+    accentColor: "from-violet-500 to-fuchsia-500",
+    description: "Feminine upper-body sculpting to build posture, reverse desk slouching, and create the illusion of a narrower waist.",
+    exercises: [
+      EXERCISE_LIBRARY.db_row,
+      EXERCISE_LIBRARY.lateral_raise,
+      EXERCISE_LIBRARY.superman,
+      EXERCISE_LIBRARY.cat_cow,
+    ],
+    targetSymptoms: ["Desk Slouch & Hunching", "Bra Line Tension", "Shoulder Stiffness"],
+    energyLevel: "Steady & Controlled",
+    energyPercent: 65,
+    moodState: "Poised, Elegant & Upright",
+    relatedConditions: [
+      "Use light weights to keep isolation strictly on back and deltoids without straining traps",
+      "Never swing weights with momentum",
+    ],
+    cycleDays: "All Days",
+    hormonalContext: "Strengthens back stabilizers against cycle postural laxity.",
+  },
+  {
+    id: "w-female-chest-tone",
+    title: "Firm & Toned: Female Chest & Core Push",
+    category: "Strength",
+    phase: "all",
+    durationMinutes: 16,
+    calories: 110,
+    intensity: "Moderate",
+    equipment: "Mat / Light Dumbbells",
+    targetMuscles: ["Pectoralis Major", "Triceps", "Front Deltoids", "Core"],
+    icon: "✨",
+    accentColor: "from-rose-500 to-indigo-500",
+    description: "Gentle yet firm chest and arm toning tailored for females with modified push-ups and floor presses with floor limiters.",
+    exercises: [
+      EXERCISE_LIBRARY.knee_pushup,
+      EXERCISE_LIBRARY.db_chest_press,
+      EXERCISE_LIBRARY.forearm_plank,
+      EXERCISE_LIBRARY.lateral_raise,
+    ],
+    targetSymptoms: ["Upper Body Weakness", "Arm Sluggishness", "Core Laxity"],
+    energyLevel: "Active & Uplifting",
+    energyPercent: 70,
+    moodState: "Strong & Refreshed",
+    relatedConditions: [
+      "Elbows track at 45 degrees to protect delicate shoulder capsules",
+      "Keep ribs anchored down during floor presses",
+    ],
+    cycleDays: "Days 6–22",
+    hormonalContext: "Enhances push power and pectoral tone safely.",
+  },
+  {
+    id: "w-waist-core-crunches",
+    title: "Flat Core & Waist Sculpt: 12-Min Sit-Up & Crunch Protocol",
+    category: "Pilates",
+    phase: "all",
+    durationMinutes: 12,
+    calories: 85,
+    intensity: "Moderate",
+    equipment: "Mat",
+    targetMuscles: ["Transverse Core", "Internal & External Obliques", "Lower Abs"],
+    icon: "🧘‍♀️",
+    accentColor: "from-indigo-500 to-teal-400",
+    description: "Comprehensive female core protocol targeting the deep abdominal girdle with bicycle crunches, reverse crunches, and deadbugs with zero neck strain.",
+    exercises: [
+      EXERCISE_LIBRARY.deadbug,
+      EXERCISE_LIBRARY.bicycle_crunches,
+      EXERCISE_LIBRARY.reverse_crunches,
+      EXERCISE_LIBRARY.pilates_100,
+    ],
+    targetSymptoms: ["Lower Belly Pouch", "Bloating Sensation", "Core Disconnection"],
+    energyLevel: "Concentrated Core Burn",
+    energyPercent: 68,
+    moodState: "Focused, Grounded & Centered",
+    relatedConditions: [
+      "Always keep lower back glued flush to the mat",
+      "Exhale fully with each contraction to activate deep transverse abdominis",
+    ],
+    cycleDays: "Days 6–24",
+    hormonalContext: "Low impact, high deep muscle fiber recruitment that does not spike cortisol.",
+  },
+  {
+    id: "w-yoga-pms-relief",
+    title: "Somatic Yoga: Cramp Dissolving & Pelvic Reset",
+    category: "Yoga & Relief",
+    phase: "all",
+    durationMinutes: 15,
+    calories: 55,
+    intensity: "Gentle (Restorative)",
+    equipment: "Yoga Mat / Soft Blanket",
+    targetMuscles: ["Pelvic Diaphragm", "Lower Lumbar", "Sacroiliac Joint"],
+    icon: "🌸",
+    accentColor: "from-rose-400 to-pink-500",
+    description: "Deep somatic flow designed to dissolve uterine cramps, release trapped emotional tension, and soothe the pelvic nervous system.",
+    exercises: [
+      EXERCISE_LIBRARY.childs_pose,
+      EXERCISE_LIBRARY.butterfly,
+      EXERCISE_LIBRARY.legs_wall,
+      EXERCISE_LIBRARY.cat_cow,
+    ],
+    targetSymptoms: ["Uterine Spasms & Cramps", "Pelvic Heaviness", "Lower Back Aches", "Emotional Tension"],
+    energyLevel: "Deep Rest & Nurturing",
+    energyPercent: 25,
+    moodState: "Tender, Sensitive & Nurturing • Seeking Quiet",
+    relatedConditions: [
+      "Surrender fully into gravity without forcing stretches",
+      "Sip warm herbal chamomile or ginger tea after flow",
+    ],
+    cycleDays: "Days 1–5 & Days 25–28",
+    hormonalContext: "Low estrogen/progesterone window where parasympathetic healing is highest priority.",
+  },
+  {
+    id: "w-mood-cardio-burst",
+    title: "10-Min Dopamine Rush: Low-Impact Cardio Burst",
     category: "Quick 10-Min",
     phase: "all",
     durationMinutes: 10,
-    calories: 40,
-    intensity: "Gentle (Restorative)",
-    equipment: "No Equipment",
-    targetMuscles: ["Neck", "Base of Skull", "Upper Trapezius"],
-    icon: "💆‍♀️",
-    accentColor: "from-amber-500 to-orange-500",
-    description: "Rapid relief for morning tension headaches, neck tightness, or supplement-induced vascular discomfort.",
-    exercises: [
-      EXERCISE_LIBRARY.chin_tuck,
-      EXERCISE_LIBRARY.trap_stretch,
-      EXERCISE_LIBRARY.cat_cow,
-      EXERCISE_LIBRARY.legs_wall,
-    ],
-  },
-  {
-    id: "w-follicular-sculpt",
-    title: "Progressive Lower & Core Sculpt",
-    category: "Strength",
-    phase: "follicular",
-    durationMinutes: 25,
-    calories: 180,
+    calories: 80,
     intensity: "Moderate",
-    equipment: "Dumbbells / Mat",
-    targetMuscles: ["Glutes", "Hamstrings", "Quadriceps", "Core"],
+    equipment: "Mat / Comfortable Shoes",
+    targetMuscles: ["Full Body", "Cardiovascular", "Calves", "Core"],
     icon: "⚡",
-    accentColor: "from-violet-500 to-indigo-500",
-    description: "Capitalize on rising estrogen during Days 6–13 to sculpt lean muscle tone, improve posture, and build strength.",
+    accentColor: "from-amber-400 to-rose-500",
+    description: "Quick 10-minute low-impact cardio blast designed to lift low mood, release natural endorphins, and break through afternoon fatigue.",
     exercises: [
-      EXERCISE_LIBRARY.squat,
-      EXERCISE_LIBRARY.rdl,
-      EXERCISE_LIBRARY.bridge,
-      EXERCISE_LIBRARY.bird_dog,
+      EXERCISE_LIBRARY.jumping_jacks,
+      EXERCISE_LIBRARY.mountain_climbers,
+      EXERCISE_LIBRARY.walking_lunges,
+      EXERCISE_LIBRARY.cat_cow,
     ],
+    targetSymptoms: ["Afternoon Slump", "Low Dopamine & Moody Blues", "Stagnant Circulation"],
+    energyLevel: "Quick Energy Lift",
+    energyPercent: 75,
+    moodState: "Lethargic to Bright & Uplifted",
+    relatedConditions: [
+      "Low impact step-out variations preserve joints while elevating heart rate",
+      "Drink a cold glass of lemon water immediately after",
+    ],
+    cycleDays: "All Days",
+    hormonalContext: "Fast neurotransmitter reset through rhythmic movement without high-cortisol exhaustion.",
   },
   {
-    id: "w-luteal-pilates",
-    title: "Low-Impact Deep Core & Glute Pilates",
-    category: "Pilates",
-    phase: "luteal",
-    durationMinutes: 18,
-    calories: 110,
+    id: "w-quick-glute-pump",
+    title: "10-Min Rapid Glute Pump & Wake-Up",
+    category: "Quick 10-Min",
+    phase: "all",
+    durationMinutes: 10,
+    calories: 70,
     intensity: "Moderate",
     equipment: "Mat",
-    targetMuscles: ["Deep Transverse Core", "Glutes", "Inner Thighs"],
-    icon: "🌙",
-    accentColor: "from-indigo-500 to-purple-500",
-    description: "Controlled pilates movements that tone without elevating cortisol or straining joints during Days 18–28.",
+    targetMuscles: ["Gluteus Maximus", "Gluteus Medius", "Hamstrings"],
+    icon: "🍑",
+    accentColor: "from-pink-500 to-violet-500",
+    description: "Fast 10-minute glute wake-up routine to activate dormant hips after hours of sitting.",
     exercises: [
-      EXERCISE_LIBRARY.pilates_100,
       EXERCISE_LIBRARY.bridge,
-      EXERCISE_LIBRARY.bird_dog,
-      EXERCISE_LIBRARY.butterfly,
+      EXERCISE_LIBRARY.glute_kickback,
+      EXERCISE_LIBRARY.fire_hydrant,
+      EXERCISE_LIBRARY.wall_sit,
     ],
+    targetSymptoms: ["Glute Deadness from Sitting", "Hip Flexor Tightness"],
+    energyLevel: "Snappy & Awakening",
+    energyPercent: 65,
+    moodState: "Alert & Energized",
+    relatedConditions: ["Focus on peak 2-second squeeze on every repetition"],
+    cycleDays: "All Days",
+    hormonalContext: "Restores neuromotor hip drive quickly.",
   },
 ];
 
@@ -701,7 +1546,7 @@ function ExerciseIllustration({
         )}
 
         {/* Fallback generic silhouette */}
-        {!["childs_pose", "chin_tuck", "squat", "bridge", "legs_wall", "butterfly"].includes(type) && (
+        {!["childs_pose", "chin_tuck", "squat", "bridge", "legs_wall", "butterfly"].includes(type ?? "") && (
           <g>
             <circle cx="100" cy="35" r="14" className="fill-violet-500/20" />
             <path d="M100 50 L100 85" />
@@ -757,7 +1602,9 @@ export default function MovementAndVitalityPage() {
 
   // Workout Session State
   const [selectedWorkout, setSelectedWorkout] = React.useState<WorkoutItem | null>(null);
-  const [workoutCategoryFilter, setWorkoutCategoryFilter] = React.useState<string>("All");
+  const [workoutCategoryFilter, setWorkoutCategoryFilter] = React.useState<string>("Cycle Sync");
+  const [cyclePhaseFilter, setCyclePhaseFilter] = React.useState<"all" | CyclePhase>("all");
+  const [selectedSymptomFilter, setSelectedSymptomFilter] = React.useState<string>("all");
   const [isWorkoutActive, setIsWorkoutActive] = React.useState(false);
   const [completedExerciseIndexes, setCompletedExerciseIndexes] = React.useState<Set<number>>(new Set());
 
@@ -994,9 +1841,53 @@ export default function MovementAndVitalityPage() {
 
   // Filtered Workout List
   const filteredWorkouts = React.useMemo(() => {
-    if (workoutCategoryFilter === "All") return WORKOUT_DATABASE;
-    return WORKOUT_DATABASE.filter((w) => w.category === workoutCategoryFilter);
-  }, [workoutCategoryFilter]);
+    let list = WORKOUT_DATABASE;
+
+    if (workoutCategoryFilter === "Cycle Sync") {
+      if (cyclePhaseFilter === "all") {
+        list = WORKOUT_DATABASE.filter((w) => w.category === "Cycle Sync" || w.phase !== "all");
+      } else {
+        list = WORKOUT_DATABASE.filter(
+          (w) => w.phase === cyclePhaseFilter || (w.category === "Cycle Sync" && w.phase === cyclePhaseFilter)
+        );
+      }
+    } else if (workoutCategoryFilter !== "All") {
+      list = WORKOUT_DATABASE.filter((w) => w.category === workoutCategoryFilter);
+    }
+
+    if (selectedSymptomFilter !== "all") {
+      const q = selectedSymptomFilter.toLowerCase();
+      list = list.filter((w) =>
+        w.targetSymptoms.some((s) => s.toLowerCase().includes(q))
+      );
+    }
+
+    // Sort to prioritize today's active phase at top
+    if (workoutCategoryFilter === "Cycle Sync" && cyclePhaseFilter === "all") {
+      list = [...list].sort((a, b) => {
+        if (a.phase === currentPhase && b.phase !== currentPhase) return -1;
+        if (b.phase === currentPhase && a.phase !== currentPhase) return 1;
+        return 0;
+      });
+    }
+
+    return list;
+  }, [workoutCategoryFilter, cyclePhaseFilter, selectedSymptomFilter, currentPhase]);
+
+  const handleQuickLogWorkout = (workout: WorkoutItem) => {
+    setActiveCalories((prev) => {
+      const next = prev + workout.calories;
+      persistLog({ active_calories: next });
+      return next;
+    });
+    setExerciseMinutes((prev) => {
+      const next = prev + workout.durationMinutes;
+      persistLog({ exercise_minutes: next });
+      return next;
+    });
+    setGoalsSavedToast(`Logged ${workout.title}! +${workout.durationMinutes}m & +${workout.calories} kcal added to daily vitality rings! ✨`);
+    setTimeout(() => setGoalsSavedToast(null), 4000);
+  };
 
   // Persist log to API (debounced helper)
   const persistLog = React.useCallback(async (patch: Record<string, number>) => {
@@ -1483,42 +2374,42 @@ export default function MovementAndVitalityPage() {
         </div>
 
         {/* ==================================================================== */}
-        {/* POLISHED MORNING MINERAL SUPPLEMENT SAFETY ALERT */}
+        {/* POLISHED MORNING MINERAL SUPPLEMENT SAFETY ALERT (SUITABLE DARK) */}
         {/* ==================================================================== */}
-        <div className="relative overflow-hidden rounded-3xl border border-amber-500/25 bg-gradient-to-br from-amber-50/90 via-white to-amber-100/50 dark:from-[#0f172a] dark:via-[#1e1b2e] dark:to-[#17132a] p-6 sm:p-7 shadow-xl backdrop-blur-xl transition-all">
+        <div className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#1c1824] via-[#14121d] to-[#0d0d14] p-6 sm:p-7 shadow-2xl backdrop-blur-xl transition-all">
           {/* Ambient Lighting Accents */}
-          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-amber-500/10 dark:bg-amber-400/[0.08] blur-3xl" />
-          <div className="pointer-events-none absolute -left-16 -bottom-16 h-56 w-56 rounded-full bg-violet-500/10 dark:bg-violet-500/[0.08] blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute -left-16 -bottom-16 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" />
 
           <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4 flex-1 min-w-0">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-inner">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-500/40 bg-amber-500/20 text-amber-400 shadow-inner">
                 <AlertTriangle className="h-6 w-6" />
               </div>
               <div className="space-y-2 flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                  <span className="rounded-full border border-amber-500/40 bg-amber-500/20 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
                     Morning Supplement Protocol
                   </span>
-                  <span className="text-xs font-semibold text-amber-700/80 dark:text-amber-400/80">
+                  <span className="text-xs font-semibold text-amber-300/90">
                     Headache & Nausea Prevention
                   </span>
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
                   Take Morning Minerals With Food — Never on an Empty Stomach 🍳
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
                   Taking minerals (such as Zinc, Iron, or Vitamin C) first thing in the morning without food irritates the gastric lining, causing stomach distress and rebound morning tension headaches.
-                  <strong className="font-semibold text-amber-800 dark:text-amber-300"> Recommendation:</strong> Take morning minerals with eggs, toast, or avocado. Shift <strong className="font-semibold text-violet-600 dark:text-violet-400">Magnesium Glycinate to 8:00 PM</strong> to naturally relax muscles, relieve tension headaches, and deepen sleep!
+                  <strong className="font-semibold text-amber-300"> Recommendation:</strong> Take morning minerals with eggs, toast, or avocado. Shift <strong className="font-semibold text-violet-400">Magnesium Glycinate to 8:00 PM</strong> to naturally relax muscles, relieve tension headaches, and deepen sleep!
                 </p>
 
                 {supplementToast && (
                   <motion.div
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-xs font-semibold text-emerald-300"
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                     <span>{supplementToast}</span>
                   </motion.div>
                 )}
@@ -1532,11 +2423,11 @@ export default function MovementAndVitalityPage() {
                 className={cn(
                   "w-full sm:w-[220px] flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all border shadow-xs select-none",
                   tookSupplementWithFood
-                    ? "bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-500/50 shadow-emerald-500/10"
-                    : "bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-500/30 dark:border-amber-500/40"
+                    ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/60 shadow-emerald-500/20"
+                    : "bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-500/40"
                 )}
               >
-                {tookSupplementWithFood ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" /> : <Plus className="h-4 w-4 shrink-0" />}
+                {tookSupplementWithFood ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" /> : <Plus className="h-4 w-4 shrink-0" />}
                 <span className="truncate">{tookSupplementWithFood ? "Logged: With Food" : "Log: Taken With Food"}</span>
               </button>
 
@@ -1546,8 +2437,8 @@ export default function MovementAndVitalityPage() {
                 className={cn(
                   "w-full sm:w-[230px] flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all border shadow-xs select-none",
                   eveningMagnesiumEnabled
-                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-violet-500/40 shadow-md shadow-violet-500/20 hover:opacity-95"
-                    : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700"
+                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-violet-500/50 shadow-md shadow-violet-500/30 hover:opacity-95"
+                    : "bg-white/10 hover:bg-white/15 text-slate-200 border-white/15"
                 )}
               >
                 <Moon className="h-4 w-4 shrink-0" />
@@ -1662,26 +2553,29 @@ export default function MovementAndVitalityPage() {
         {/* ==================================================================== */}
         {/* WORKOUTS COLLECTION & INTERACTIVE EXERCISE TUTORIALS */}
         {/* ==================================================================== */}
-        <div className="space-y-6">
+        <div className="space-y-6" id="workouts-section">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Dumbbell className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                <Dumbbell className="h-5 w-5 text-violet-400" />
                 Cycle-Adapted Movement Library
               </h2>
               <p className="text-xs text-[var(--text-secondary)]">
-                Tap any exercise to view front and side video tutorial angles, proper form, and hormonal benefits.
+                Dedicated exercises customized with symptoms, energy levels, and hormonal safety cues.
               </p>
             </div>
 
-            {/* Filter Pills */}
+            {/* Filter Category Pills */}
             <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-1.5 shadow-xs">
-              {["All", "Cycle Sync", "Strength", "Yoga & Relief", "Pilates", "Quick 10-Min"].map((cat) => (
+              {["Cycle Sync", "All", "Strength", "Yoga & Relief", "Pilates", "Quick 10-Min"].map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => setWorkoutCategoryFilter(cat)}
+                  onClick={() => {
+                    setWorkoutCategoryFilter(cat);
+                    setTimeout(() => document.getElementById("workouts-section")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+                  }}
                   className={cn(
-                    "rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                    "rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer",
                     workoutCategoryFilter === cat
                       ? "bg-violet-600 text-white shadow-xs"
                       : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
@@ -1693,109 +2587,260 @@ export default function MovementAndVitalityPage() {
             </div>
           </div>
 
+          {/* Interactive Phase Sub-Navigation when Cycle Sync is active */}
+          {workoutCategoryFilter === "Cycle Sync" && (
+            <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 via-[var(--bg-card)] to-rose-500/10 p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-violet-400" />
+                  <span className="text-xs font-bold text-[var(--text-primary)]">
+                    Filter by Hormonal Phase & Days
+                  </span>
+                </div>
+                <span className="text-[11px] text-[var(--text-tertiary)]">
+                  Today: Day {cycleDay} of 28 ({dailyReadiness.phaseTitle})
+                </span>
+              </div>
+
+              {/* Phase Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: "all", label: "✨ All 4 Phases (Days 1–28)", phase: null },
+                  { id: "menstrual", label: "🩸 Menstrual (Days 1–5)", phase: "menstrual" },
+                  { id: "follicular", label: "🌱 Follicular (Days 6–13)", phase: "follicular" },
+                  { id: "ovulation", label: "🔥 Ovulatory (Days 14–17)", phase: "ovulation" },
+                  { id: "luteal", label: "🌙 Luteal (Days 18–28)", phase: "luteal" },
+                ].map((item) => {
+                  const isCurrent = item.phase === currentPhase;
+                  const isSelected = cyclePhaseFilter === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setCyclePhaseFilter(item.id as any);
+                        setTimeout(() => document.getElementById("workouts-section")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+                      }}
+                      className={cn(
+                        "relative flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer",
+                        isSelected
+                          ? "bg-violet-600 text-white shadow-md shadow-violet-600/30"
+                          : "border border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                      )}
+                    >
+                      <span>{item.label}</span>
+                      {isCurrent && (
+                        <span className="rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-extrabold px-1.5 py-0.2 border border-emerald-500/40">
+                          Today
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Symptom Quick Filter Filter Chips */}
+              <div className="pt-2 border-t border-[var(--glass-border)] flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
+                <span className="text-[10px] uppercase font-bold text-[var(--text-tertiary)] shrink-0">
+                  Target Symptoms:
+                </span>
+                {[
+                  { id: "all", label: "All Symptoms" },
+                  { id: "cramp", label: "Cramps & Pelvic" },
+                  { id: "headache", label: "Tension Headaches" },
+                  { id: "bloat", label: "Bloating" },
+                  { id: "fatigue", label: "Fatigue & Sluggishness" },
+                  { id: "back", label: "Lower Back Tension" },
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedSymptomFilter(s.id)}
+                    className={cn(
+                      "rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all whitespace-nowrap cursor-pointer",
+                      selectedSymptomFilter === s.id
+                        ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                        : "border border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                    )}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Workouts Grid */}
           <div className="grid gap-6 md:grid-cols-2">
-            {filteredWorkouts.map((workout) => (
-              <div
-                key={workout.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 shadow-xs transition-all hover:border-violet-500/40 hover:shadow-md"
-              >
-                <div className="space-y-4">
-                  {/* Card Header Badges */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl">{workout.icon}</span>
+            {filteredWorkouts.map((workout) => {
+              const isTodayPhase = workout.phase === currentPhase;
+              return (
+                <div
+                  key={workout.id}
+                  className={cn(
+                    "group relative flex flex-col justify-between overflow-hidden rounded-3xl border p-6 shadow-xs transition-all hover:shadow-xl",
+                    isTodayPhase && workoutCategoryFilter === "Cycle Sync"
+                      ? "border-violet-500/50 bg-gradient-to-b from-violet-500/[0.07] via-[var(--bg-card)] to-[var(--bg-card)] shadow-violet-500/5"
+                      : "border-[var(--glass-border)] bg-[var(--bg-card)] hover:border-violet-500/40"
+                  )}
+                >
+                  <div className="space-y-4">
+                    {/* Card Header Badges */}
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-3xl">{workout.icon}</span>
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        {isTodayPhase && (
+                          <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 animate-pulse">
+                            🌟 Today's Active Phase
+                          </span>
+                        )}
+                        <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 text-[10px] font-bold text-violet-300">
+                          {workout.cycleDays}
+                        </span>
+                        <span className="rounded-full border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--text-secondary)]">
+                          {workout.intensity}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-bold text-white group-hover:text-violet-300 transition-colors">
+                        {workout.title}
+                      </h3>
+                      <p className="mt-1 text-xs text-[var(--text-secondary)] leading-relaxed">
+                        {workout.description}
+                      </p>
+                    </div>
+
+                    {/* Dedicated Energy & Mood Badges */}
+                    <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+                      <div className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2.5 space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-amber-400">
+                          ⚡ Energy Pacing
+                        </span>
+                        <p className="text-xs font-semibold text-white">
+                          {workout.energyLevel} ({workout.energyPercent}%)
+                        </p>
+                        <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-emerald-400"
+                            style={{ width: `${workout.energyPercent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2.5 space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-rose-400">
+                          🌸 Matched Mood
+                        </span>
+                        <p className="text-xs font-semibold text-white line-clamp-2">
+                          {workout.moodState}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Target Symptoms Relieved */}
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                        Target Symptoms Relieved:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {workout.targetSymptoms?.map((symptom) => (
+                          <span
+                            key={symptom}
+                            className="rounded-lg border border-rose-500/25 bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-300"
+                          >
+                            🩺 {symptom}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Hormonal & Related Conditions Card */}
+                    <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-3 space-y-1 text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-violet-300">
+                        <Sparkles className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+                        <span>Hormonal Rhythm: {workout.hormonalContext}</span>
+                      </div>
+                      <div className="text-[11px] text-amber-300/90 leading-relaxed pt-1 border-t border-violet-500/15">
+                        <span className="font-bold">⚠️ Safety & Related Conditions: </span>
+                        {workout.relatedConditions?.join(" • ")}
+                      </div>
+                    </div>
+
+                    {/* Exercise Mini Previews (Tap to open tutorial!) */}
+                    <div className="space-y-2 pt-1">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                        Included Exercises ({workout.exercises.length} Movements):
+                      </span>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {workout.exercises.map((ex) => (
+                          <button
+                            key={ex.id}
+                            onClick={() => {
+                              setTutorialExercise(ex);
+                              setTutorialAngle("front");
+                              setTutorialTimer(ex.durationSec);
+                              setIsPlayingTutorial(true);
+                            }}
+                            className="flex items-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2 text-left hover:border-violet-500/50 hover:bg-violet-500/5 transition-colors group/item cursor-pointer"
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+                              <Video className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-semibold text-[var(--text-primary)] group-hover/item:text-violet-400">
+                                {ex.name}
+                              </p>
+                              <span className="text-[10px] text-[var(--text-secondary)]">
+                                {ex.reps || `${ex.durationSec}s`} • See Form
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Workout Card Footer with Actions */}
+                  <div className="mt-6 border-t border-[var(--glass-border)] pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 text-xs font-semibold text-[var(--text-secondary)]">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-violet-400" />
+                        {workout.durationMinutes} min
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Flame className="h-3.5 w-3.5 text-rose-500" />
+                        {workout.calories} kcal
+                      </span>
+                    </div>
+
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--text-secondary)]">
-                        {workout.category}
-                      </span>
-                      <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-300 capitalize">
-                        {workout.phase === "all" ? "All Phases" : `${workout.phase} Phase`}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-bold text-[var(--text-primary)] group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                      {workout.title}
-                    </h3>
-                    <p className="mt-1 text-xs text-[var(--text-secondary)] leading-relaxed">
-                      {workout.description}
-                    </p>
-                  </div>
-
-                  {/* Muscle Tags */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {workout.targetMuscles.map((muscle) => (
-                      <span
-                        key={muscle}
-                        className="rounded-lg border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)]"
+                      <button
+                        type="button"
+                        onClick={() => handleQuickLogWorkout(workout)}
+                        className="flex items-center gap-1 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500/25 active:scale-95 transition-all cursor-pointer"
+                        title="Save & log to today's activity rings"
                       >
-                        {muscle}
-                      </span>
-                    ))}
-                  </div>
+                        <Check className="h-3.5 w-3.5" />
+                        Log Completed
+                      </button>
 
-                  {/* Exercise Mini Previews (Tap to open tutorial!) */}
-                  <div className="space-y-2 pt-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-                      Included Exercises (Tap for angles & tutorial):
-                    </span>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      {workout.exercises.map((ex) => (
-                        <button
-                          key={ex.id}
-                          onClick={() => {
-                            setTutorialExercise(ex);
-                            setTutorialAngle("front");
-                            setTutorialTimer(ex.durationSec);
-                            setIsPlayingTutorial(true);
-                          }}
-                          className="flex items-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2 text-left hover:border-violet-500/50 hover:bg-violet-500/5 transition-colors group/item"
-                        >
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
-                            <Video className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-semibold text-[var(--text-primary)] group-hover/item:text-violet-600 dark:group-hover/item:text-violet-400">
-                              {ex.name}
-                            </p>
-                            <span className="text-[10px] text-[var(--text-secondary)]">
-                              {ex.reps || `${ex.durationSec}s`} • See Form
-                            </span>
-                          </div>
-                        </button>
-                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedWorkout(workout);
+                          setIsWorkoutActive(true);
+                        }}
+                        className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-violet-600/30 hover:bg-violet-500 active:scale-95 transition-all cursor-pointer"
+                      >
+                        <Play className="h-3.5 w-3.5 fill-current" />
+                        Start Session
+                      </button>
                     </div>
                   </div>
                 </div>
-
-                {/* Workout Card Footer */}
-                <div className="mt-6 border-t border-[var(--glass-border)] pt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-xs font-semibold text-[var(--text-secondary)]">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
-                      {workout.durationMinutes} min
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Flame className="h-3.5 w-3.5 text-rose-500" />
-                      {workout.calories} kcal
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setSelectedWorkout(workout);
-                      setIsWorkoutActive(true);
-                    }}
-                    className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-violet-600/30 hover:bg-violet-500 transition-all"
-                  >
-                    <Play className="h-3.5 w-3.5 fill-current" />
-                    Start Session
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

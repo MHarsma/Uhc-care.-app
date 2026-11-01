@@ -19,7 +19,7 @@ import {
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
-import { api, getApiBaseUrl } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 type Reaction = {
@@ -39,7 +39,12 @@ type Note = {
   reactions: Reaction[];
 };
 
-const REACTION_EMOJIS = ["❤️", "👏", "✨", "💪", "🥰", "☕", "🌸"];
+const REACTION_EMOJIS = [
+  "❤️", "💖", "🥰", "😍", "💕", "😘", "🫶", "💝",
+  "🤗", "🫂", "✨", "🌟", "👏", "🙌", "💪", "🔥",
+  "🌸", "🌷", "💐", "☕", "🍵", "🍫", "🍓", "🍦",
+  "🥺", "🥹", "😇", "😊", "😂", "😴", "🩹", "👑",
+];
 
 export default function NotesPage() {
   const [notes, setNotes] = React.useState<Note[]>([]);
@@ -62,6 +67,7 @@ export default function NotesPage() {
   const timerIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [expandedReactions, setExpandedReactions] = React.useState<number | null>(null);
 
   const loadNotes = React.useCallback(async (silent = false) => {
     if (!silent) {
@@ -243,24 +249,14 @@ export default function NotesPage() {
       formData.append("audio", recordedAudioBlob, "voicenote.webm");
       formData.append("audio_duration", String(Math.max(1, recordingSeconds)));
 
-      const apiUrl = getApiBaseUrl();
-      const response = await fetch(`${apiUrl}/couple/notes`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-        },
-        credentials: "include",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload voice note.");
-      }
+      // Use the api client which handles Bearer token, XSRF, and credentials
+      const result = await api.post("/couple/notes", formData);
 
       cancelVoiceRecording();
       await loadNotes();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to post voice note.");
+    } catch (err: any) {
+      const serverMsg = err?.data?.message || err?.message;
+      setError(serverMsg || "Unable to post voice note.");
     } finally {
       setSubmitting(false);
     }
@@ -517,6 +513,7 @@ export default function NotesPage() {
                                   day: "numeric",
                                   hour: "2-digit",
                                   minute: "2-digit",
+                                  hour12: true,
                                 })
                               : "Recently"}
                           </p>
@@ -542,7 +539,13 @@ export default function NotesPage() {
                             <span>Voice Memo ({note.audio_duration || 0}s)</span>
                           </div>
                           {note.audio_url && (
-                            <audio controls src={note.audio_url} className="w-full h-8" />
+                            <audio
+                              controls
+                              preload="metadata"
+                              crossOrigin="anonymous"
+                              src={note.audio_url}
+                              className="w-full h-8"
+                            />
                           )}
                         </div>
                       ) : (
@@ -554,9 +557,9 @@ export default function NotesPage() {
                   </div>
 
                   {/* Reaction Bar */}
-                  <div className="mt-4 pt-3 border-t border-[var(--glass-border)] flex items-center justify-between">
+                  <div className="mt-4 pt-3 border-t border-[var(--glass-border)]">
                     {/* Existing reactions pills */}
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 mb-2">
                       {Array.from(reactionsCountMap.entries()).map(([emoji, count]) => (
                         <span
                           key={emoji}
@@ -569,17 +572,25 @@ export default function NotesPage() {
                     </div>
 
                     {/* Quick emoji reaction pickers */}
-                    <div className="flex items-center gap-1">
-                      {REACTION_EMOJIS.slice(0, 4).map((emoji) => (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {REACTION_EMOJIS.slice(0, expandedReactions === note.id ? REACTION_EMOJIS.length : 5).map((emoji) => (
                         <button
                           key={emoji}
                           type="button"
                           onClick={() => handleAddReaction(note.id, emoji)}
-                          className="h-7 w-7 rounded-lg text-sm hover:bg-[var(--bg-hover)] flex items-center justify-center transition-transform hover:scale-125"
+                          className="h-7 w-7 rounded-lg text-sm hover:bg-[var(--bg-hover)] flex items-center justify-center transition-transform hover:scale-125 active:scale-95"
                         >
                           {emoji}
                         </button>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() => setExpandedReactions(expandedReactions === note.id ? null : note.id)}
+                        className="h-7 px-2 rounded-lg text-[10px] font-bold text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] flex items-center justify-center transition-all"
+                        title={expandedReactions === note.id ? "Show less" : "More reactions"}
+                      >
+                        {expandedReactions === note.id ? "−" : `+${REACTION_EMOJIS.length - 5}`}
+                      </button>
                     </div>
                   </div>
                 </div>

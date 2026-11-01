@@ -211,6 +211,13 @@ export function AppShell({
       icon: BarChart3,
     },
     {
+      id: "notifications",
+      label: "Notifications",
+      shortLabel: "Alerts",
+      href: "/notifications",
+      icon: BellRing,
+    },
+    {
       id: "settings",
       label: "Settings",
       shortLabel: "Settings",

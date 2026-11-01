@@ -227,14 +227,53 @@ export async function verifyBiometrics(): Promise<{ success: boolean; userEmail:
     throw new Error("Fingerprint verification was cancelled.");
   }
 
+  // Validate the stored token against the server before restoring session
+  // This prevents the "flash to dashboard then back to login" bug when tokens have expired
+  let validatedToken = storedToken;
+  try {
+    const apiBase = typeof window !== "undefined"
+      ? (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/[\r\n]+/g, "").replace(/\/+$/, "") || "https://api.uhc-ap.me/api"
+      : "https://api.uhc-ap.me/api";
+
+    const validateResponse = await fetch(`${apiBase}/auth/user`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${storedToken}`,
+      },
+      credentials: "include",
+    });
+
+    if (validateResponse.status === 401) {
+      // Token is stale/expired — clear the stored biometric token so user gets a fresh one on next password login
+      localStorage.removeItem("uhc_biometric_token");
+      localStorage.removeItem("uhc_biometric_enabled");
+      throw new Error(
+        "Your saved fingerprint session has expired. Please sign in with your email and password, then re-enable fingerprint in Settings."
+      );
+    }
+
+    if (!validateResponse.ok) {
+      // Non-401 errors (network issues, 500, etc.) — still allow login with the stored token
+      // The app shell will handle re-auth if needed
+    }
+  } catch (validateError: any) {
+    // If the error is our own stale-token error, rethrow it
+    if (validateError?.message?.includes("expired")) {
+      throw validateError;
+    }
+    // For network errors (offline, DNS), allow the biometric login to proceed
+    // The app will show offline state or retry when connectivity returns
+  }
+
   // Restore authentication tokens
-  localStorage.setItem("uhc_auth_token", storedToken);
+  localStorage.setItem("uhc_auth_token", validatedToken);
   localStorage.setItem("uhc_logged_in", "true");
 
   return {
     success: true,
     userEmail: enrolledEmail,
-    token: storedToken,
+    token: validatedToken,
   };
 }
 

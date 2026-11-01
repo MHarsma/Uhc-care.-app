@@ -29,8 +29,9 @@ export function AndroidDeviceWrapper({ children }: AndroidDeviceWrapperProps) {
       const now = new Date();
       const hours = now.getHours();
       const minutes = now.getMinutes();
+      const ampm = hours >= 12 ? "PM" : "AM";
       setCurrentTime(
-        `${hours % 12 || 12}:${minutes.toString().padStart(2, "0")}`
+        `${hours % 12 || 12}:${minutes.toString().padStart(2, "0")} ${ampm}`
       );
     };
     updateTime();
