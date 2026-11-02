@@ -539,13 +539,27 @@ export default function NotesPage() {
                             <span>Voice Memo ({note.audio_duration || 0}s)</span>
                           </div>
                           {note.audio_url && (
-                            <audio
-                              controls
-                              preload="metadata"
-                              crossOrigin="anonymous"
-                              src={note.audio_url}
-                              className="w-full h-8"
-                            />
+                            <div className="space-y-1.5 pt-1">
+                              <audio
+                                controls
+                                preload="metadata"
+                                playsInline
+                                src={note.audio_url}
+                                className="w-full h-10 rounded-xl"
+                              >
+                                Your browser does not support audio playback.
+                              </audio>
+                              <div className="flex items-center justify-between text-[10px] text-[var(--text-tertiary)] px-1">
+                                <a
+                                  href={note.audio_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-violet-500 hover:underline flex items-center gap-1 font-semibold"
+                                >
+                                  Open / Replay Audio Directly ↗
+                                </a>
+                              </div>
+                            </div>
                           )}
                         </div>
                       ) : (

@@ -242,17 +242,16 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = React.useState<PreviewTab>("couple");
   const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
 
-  // Automatically check active session and redirect authenticated users to dashboard without delay
+  // Direct users to login or dashboard immediately
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       const hasToken = Boolean(localStorage.getItem("uhc_auth_token"));
       const hasFlag = localStorage.getItem("uhc_logged_in") === "true";
       if (hasToken || hasFlag) {
         router.replace("/dashboard");
-        return;
+      } else {
+        router.replace("/login");
       }
-      // If no stored credentials, show landing immediately without network lag
-      setIsCheckingAuth(false);
       return;
     }
 
