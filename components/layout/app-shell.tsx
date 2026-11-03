@@ -457,7 +457,7 @@ export function AppShell({
             </div>
           )}
 
-          <NotificationCenter partnerName={partner?.name} />
+          <NotificationCenter />
           <ThemeToggle />
         </div>
       </header>
@@ -581,7 +581,7 @@ export function AppShell({
 
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
-            <NotificationCenter partnerName={partner?.name} />
+            <NotificationCenter />
 
             {/* Streak Pill */}
             <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-bold text-amber-500">

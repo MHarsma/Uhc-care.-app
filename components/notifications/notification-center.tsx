@@ -3,29 +3,19 @@
 import * as React from "react";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Bell,
   Heart,
   Droplet,
-  FileText,
-  Activity,
   CheckCircle2,
   X,
-  Volume2,
-  CalendarHeart,
-  Sparkles,
-  BellRing,
-  Clock,
-  Check,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   notificationsApi,
   NotificationItem,
-  getNotificationPermission,
-  requestNotificationPermission,
-  triggerDeviceNotification,
 } from "@/lib/api/notifications";
 
 /* ───────────────── Time formatting (12-hour AM/PM) ────────────────── */
@@ -58,18 +48,21 @@ function formatRelativeTime(dateString: string): string {
 
 type TabFilter = "all" | "unread" | "love";
 
-export function NotificationCenter({
-  partnerName,
-}: {
-  partnerName?: string | null;
-}) {
+export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
+  const [panelPosition, setPanelPosition] = useState<{
+    top: number;
+    right: number;
+    width: number;
+    maxHeight: number;
+  } | null>(null);
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Fetch notifications
   const loadNotifications = useCallback(async (isSilent = false) => {
@@ -88,19 +81,75 @@ export function NotificationCenter({
   }, []);
 
   useEffect(() => {
-    loadNotifications(true);
+    const initialLoad = window.setTimeout(() => {
+      loadNotifications(true);
+    }, 0);
     const interval = setInterval(() => {
       if (typeof document !== "undefined" && !document.hidden) {
         loadNotifications(true);
       }
     }, 25000);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(initialLoad);
+      clearInterval(interval);
+    };
   }, [loadNotifications]);
+
+  // Keep the panel inside the viewport even when the header is narrow or transformed.
+  React.useLayoutEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const updatePanelPosition = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) {
+        return;
+      }
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const width = Math.min(360, Math.max(0, viewportWidth - 24));
+      const desiredHeight = Math.min(520, Math.max(0, viewportHeight - 24));
+      const availableBelow = Math.max(0, viewportHeight - triggerRect.bottom - 20);
+      const availableAbove = Math.max(0, triggerRect.top - 20);
+      const showAbove =
+        availableBelow < desiredHeight * 0.6 && availableAbove > availableBelow;
+      const maxHeight = Math.min(
+        desiredHeight,
+        showAbove ? availableAbove : availableBelow
+      );
+      const rightLimit = Math.max(12, viewportWidth - width - 12);
+      const right = Math.min(
+        rightLimit,
+        Math.max(12, viewportWidth - triggerRect.right)
+      );
+      const top = showAbove
+        ? Math.max(12, triggerRect.top - maxHeight - 8)
+        : triggerRect.bottom + 8;
+
+      setPanelPosition({ top, right, width, maxHeight });
+    };
+
+    updatePanelPosition();
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition, true);
+    };
+  }, [isOpen]);
 
   // Click outside to close popover
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        !triggerRef.current?.contains(target) &&
+        !panelRef.current?.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
@@ -141,7 +190,7 @@ export function NotificationCenter({
     return true;
   });
 
-  const renderIcon = (type: string, data: any) => {
+  const renderIcon = (type: string, data: NotificationItem["data"]) => {
     const notifType = (data?.type || type || "").toLowerCase();
     if (notifType.includes("nudge") || notifType.includes("love")) {
       return (
@@ -172,9 +221,10 @@ export function NotificationCenter({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       {/* Bell Trigger Button */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => {
           setIsOpen(!isOpen);
@@ -196,16 +246,24 @@ export function NotificationCenter({
         )}
       </button>
 
-      {/* Classic Notification Dropdown Panel anchored right directly beneath the bell icon */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 z-50 w-[360px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] shadow-2xl overflow-hidden backdrop-blur-xl"
-          >
+      {isOpen &&
+        panelPosition &&
+        typeof document !== "undefined" &&
+        createPortal(
+            <motion.div
+              ref={panelRef}
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                top: panelPosition.top,
+                right: panelPosition.right,
+                width: panelPosition.width,
+                maxHeight: panelPosition.maxHeight,
+              }}
+              className="fixed z-[100] flex flex-col rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] shadow-2xl overflow-hidden backdrop-blur-xl"
+            >
             {/* Header */}
             <div className="px-4 py-3 border-b border-[var(--glass-border)] flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -257,7 +315,7 @@ export function NotificationCenter({
             </div>
 
             {/* Notifications Feed */}
-            <div className="max-h-[360px] overflow-y-auto divide-y divide-[var(--glass-border)]">
+            <div className="min-h-0 flex-1 overflow-y-auto divide-y divide-[var(--glass-border)]">
               {loading && notifications.length === 0 ? (
                 <div className="p-8 text-center text-xs text-[var(--text-tertiary)]">
                   Loading notifications...
@@ -268,21 +326,15 @@ export function NotificationCenter({
                     {activeTab === "unread" ? "No unread alerts" : "No notifications yet"}
                   </p>
                   <p className="text-[11px] text-[var(--text-tertiary)]">
-                    You're completely up to date.
+                    You&apos;re completely up to date.
                   </p>
                 </div>
               ) : (
                 filteredNotifications.map((item) => {
                   const isUnread = !item.read_at;
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => isUnread && handleMarkSingleRead(item.id)}
-                      className={cn(
-                        "p-3.5 flex items-start gap-3 transition-colors cursor-pointer hover:bg-[var(--bg-hover)]",
-                        isUnread ? "bg-violet-500/[0.04]" : ""
-                      )}
-                    >
+                  const isNewNote = item.data?.type === "new_note_posted";
+                  const notificationContent = (
+                    <>
                       {renderIcon(item.type, item.data)}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-1">
@@ -296,7 +348,45 @@ export function NotificationCenter({
                         <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5 line-clamp-2 leading-relaxed">
                           {item.data?.message}
                         </p>
+                        {item.data?.note_type === "voice" && (
+                          <span className="mt-1 block text-[10px] font-semibold text-violet-500">
+                            Open shared notes to play this voice message
+                          </span>
+                        )}
                       </div>
+                    </>
+                  );
+                  const notificationClassName = cn(
+                    "p-3.5 flex items-start gap-3 transition-colors hover:bg-[var(--bg-hover)]",
+                    isUnread ? "bg-violet-500/[0.04]" : "",
+                    isNewNote && "cursor-pointer"
+                  );
+
+                  if (isNewNote) {
+                    return (
+                      <Link
+                        key={item.id}
+                        href="/notes"
+                        onClick={() => {
+                          if (isUnread) {
+                            void handleMarkSingleRead(item.id);
+                          }
+                          setIsOpen(false);
+                        }}
+                        className={notificationClassName}
+                      >
+                        {notificationContent}
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => isUnread && handleMarkSingleRead(item.id)}
+                      className={cn(notificationClassName, "cursor-pointer")}
+                    >
+                      {notificationContent}
                     </div>
                   );
                 })
@@ -316,9 +406,9 @@ export function NotificationCenter({
                 Clear Unread
               </button>
             </div>
-          </motion.div>
+            </motion.div>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 }

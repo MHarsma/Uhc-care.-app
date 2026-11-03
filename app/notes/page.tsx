@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
-import { api, getApiBaseUrl } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 type Reaction = {
@@ -554,36 +554,34 @@ export default function NotesPage() {
                             <FileAudio className="h-4 w-4" />
                             <span>Voice Memo ({note.audio_duration || 0}s)</span>
                           </div>
-                          {(note.audio_url || note.id) && (
+                          {note.audio_url ? (
                             <div className="space-y-1.5 pt-1">
-                              {(() => {
-                                const streamUrl = `${getApiBaseUrl()}/couple/notes/${note.id}/audio`;
-                                const fallbackUrl = note.audio_url || streamUrl;
-                                return (
-                                  <>
-                                    <audio
-                                      controls
-                                      preload="metadata"
-                                      playsInline
-                                      src={streamUrl || fallbackUrl}
-                                      className="h-10 w-full rounded-xl"
-                                    >
-                                      Your browser does not support audio playback.
-                                    </audio>
-                                    <div className="flex items-center justify-between text-[10px] text-[var(--text-tertiary)] px-1">
-                                      <a
-                                        href={streamUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-violet-500 hover:underline flex items-center gap-1 font-semibold"
-                                      >
-                                        Open / Replay Audio Directly ↗
-                                      </a>
-                                    </div>
-                                  </>
-                                );
-                              })()}
+                              <audio
+                                controls
+                                preload="metadata"
+                                playsInline
+                                src={note.audio_url ?? undefined}
+                                className="h-10 w-full rounded-xl"
+                              >
+                                Your browser does not support audio playback.
+                              </audio>
+                              {note.audio_url && (
+                                <div className="flex items-center justify-between text-[10px] text-[var(--text-tertiary)] px-1">
+                                  <a
+                                    href={note.audio_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-violet-500 hover:underline flex items-center gap-1 font-semibold"
+                                  >
+                                    Open / Replay Audio Directly ↗
+                                  </a>
+                                </div>
+                              )}
                             </div>
+                          ) : (
+                            <p className="pt-1 text-xs text-rose-500" role="status">
+                              This voice message has no playable audio file.
+                            </p>
                           )}
                         </div>
                       ) : (

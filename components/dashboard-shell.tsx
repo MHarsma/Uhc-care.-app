@@ -3,15 +3,18 @@
 import * as React from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { dashboardApi, DashboardData, DashboardTask } from "@/lib/api/dashboard";
 import { tasksApi } from "@/lib/api/tasks";
-import { ROUTINE_CATEGORIES } from "@/lib/templates/routines";
+import {
+  getRoutineCategoryLabel,
+  normalizeRoutineCategory,
+  ROUTINE_CATEGORIES,
+} from "@/lib/templates/routines";
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/layout/app-shell";
 import { LeaveRequestDialog } from "@/components/dashboard/leave-request-dialog";
-import { ReplanUnfinishedDialog } from "@/components/dashboard/replan-unfinished-dialog";
 import { RoutineLibraryModal } from "@/components/routine-library/routine-library-modal";
 import { QuickAddTaskDialog } from "@/components/routine-library/quick-add-task-dialog";
 import {
@@ -26,16 +29,12 @@ import {
   Flame,
   Check,
   ArrowRight,
-  TrendingUp,
-  Moon,
   Sun,
   Sunrise,
   Sunset,
-  ShieldCheck,
   Pencil,
   Trash2,
   AlertTriangle,
-  Zap,
   Target,
   Quote,
 } from "lucide-react";
@@ -78,7 +77,6 @@ export function DashboardShell() {
     data: dashboard,
     isLoading: isDashboardLoading,
     error: dashboardError,
-    refetch: refetchDashboard,
   } = useQuery({
     queryKey: ["dashboard"],
     queryFn: dashboardApi.getDashboard,
@@ -176,7 +174,10 @@ export function DashboardShell() {
   // Filter and sort tasks chronologically (Time-of-day order)
   const filteredTasks = React.useMemo(() => {
     const list = tasks.filter((t) => {
-      if (selectedCategory !== "all" && (t.category || "other").toLowerCase() !== selectedCategory.toLowerCase()) {
+      if (
+        selectedCategory !== "all" &&
+        normalizeRoutineCategory(t.category) !== selectedCategory
+      ) {
         return false;
       }
       if (selectedTimeOfDay !== "all") {
@@ -211,52 +212,53 @@ export function DashboardShell() {
     return [...list].sort((a, b) => getTaskMinutes(a) - getTaskMinutes(b));
   }, [tasks, selectedCategory, selectedTimeOfDay]);
 
-  // Group tasks by Time-of-Day periods (Morning, Afternoon, Evening)
-  const timeGroupedTasks = React.useMemo(() => {
-    const getSlotKey = (t: DashboardTask): "morning" | "afternoon" | "evening" => {
-      if (t.time_of_day) {
-        const h = parseInt(t.time_of_day.split(":")[0], 10);
-        if (h >= 5 && h < 12) return "morning";
-        if (h >= 12 && h < 17) return "afternoon";
-        return "evening";
-      }
-      const titleLower = t.title.toLowerCase();
-      if (titleLower.includes("fajr") || titleLower.includes("morning") || titleLower.includes("wake")) return "morning";
-      if (titleLower.includes("dhuhr") || titleLower.includes("lunch")) return "afternoon";
-      if (titleLower.includes("asr") || titleLower.includes("maghrib") || titleLower.includes("isha") || titleLower.includes("night") || titleLower.includes("bed")) return "evening";
-      return "morning";
-    };
-
-    const slots: {
-      key: "morning" | "afternoon" | "evening";
-      label: string;
-      icon: string;
-      desc: string;
-      tasks: DashboardTask[];
-    }[] = [
-      { key: "morning", label: "Morning Rituals", icon: "🌅", desc: "Start strong & centered", tasks: [] },
-      { key: "afternoon", label: "Afternoon Focus", icon: "☀️", desc: "Midday momentum & Salah", tasks: [] },
-      { key: "evening", label: "Evening & Wind Down", icon: "🌙", desc: "Reflect, connect & rest", tasks: [] },
-    ];
+  // Group by purpose while preserving scheduled-time ordering inside each category.
+  const categoryGroupedTasks = React.useMemo(() => {
+    const groups = new Map<string, DashboardTask[]>();
 
     filteredTasks.forEach((task) => {
-      const slot = getSlotKey(task);
-      const target = slots.find((s) => s.key === slot);
-      if (target) {
-        target.tasks.push(task);
-      }
+      const categoryKey = normalizeRoutineCategory(task.category);
+      const categoryTasks = groups.get(categoryKey) ?? [];
+      categoryTasks.push(task);
+      groups.set(categoryKey, categoryTasks);
     });
 
-    return slots.filter((s) => s.tasks.length > 0);
+    const categoryKeys = [
+      ...ROUTINE_CATEGORIES.map((category) => category.key).filter((key) =>
+        groups.has(key)
+      ),
+      ...Array.from(groups.keys())
+        .filter((key) => !ROUTINE_CATEGORIES.some((category) => category.key === key))
+        .sort(),
+    ];
+
+    return categoryKeys.map((key) => {
+      const category = ROUTINE_CATEGORIES.find((item) => item.key === key);
+
+      return {
+        key,
+        label: category?.label ?? getRoutineCategoryLabel(key),
+        icon: category?.icon ?? "✨",
+        description: category?.description ?? "Other routines and tasks",
+        tasks: groups.get(key) ?? [],
+      };
+    });
   }, [filteredTasks]);
 
   // Unique categories list for tab filters
   const availableCategories = React.useMemo(() => {
     const cats = new Set<string>();
     tasks.forEach((t) => {
-      if (t.category) cats.add(t.category.toLowerCase());
+      cats.add(normalizeRoutineCategory(t.category));
     });
-    return Array.from(cats);
+    return [
+      ...ROUTINE_CATEGORIES.map((category) => category.key).filter((key) =>
+        cats.has(key)
+      ),
+      ...Array.from(cats)
+        .filter((key) => !ROUTINE_CATEGORIES.some((category) => category.key === key))
+        .sort(),
+    ];
   }, [tasks]);
 
   if (isDashboardLoading) {
@@ -504,10 +506,14 @@ export function DashboardShell() {
             </motion.div>
           )}
 
-          {/* Filter Bar: Time of Day & Categories */}
+          {/* Time and category filters are separate; categories describe task purpose. */}
           <div className="space-y-3">
             {/* Time of Day Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <div className="space-y-1.5">
+              <p className="px-1 text-[11px] font-bold text-[var(--text-secondary)]">
+                Filter by time of day
+              </p>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               {[
                 { key: "all", label: "All Day", icon: Sparkles },
                 { key: "morning", label: "Morning", icon: Sunrise },
@@ -533,6 +539,7 @@ export function DashboardShell() {
                   </button>
                 );
               })}
+              </div>
             </div>
 
             {/* Quick Category Jump Bar */}
@@ -541,7 +548,7 @@ export function DashboardShell() {
                 <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-secondary)] px-1">
                   <span className="flex items-center gap-1.5">
                     <Target className="h-3.5 w-3.5 text-violet-500" />
-                    <span>Filter & Jump to Category:</span>
+                    <span>Filter by category:</span>
                   </span>
                   {selectedCategory !== "all" && (
                     <button
@@ -568,7 +575,7 @@ export function DashboardShell() {
                   </button>
                   {availableCategories.map((catKey) => {
                     const count = tasks.filter(
-                      (t) => (t.category || "other").toLowerCase() === catKey
+                      (t) => normalizeRoutineCategory(t.category) === catKey
                     ).length;
                     const meta = ROUTINE_CATEGORIES.find((c) => c.key === catKey);
                     const icon = meta?.icon || "✨";
@@ -679,28 +686,28 @@ export function DashboardShell() {
             </motion.div>
           ) : (
             <div className="space-y-6">
-              {timeGroupedTasks.map((slot, groupIdx) => {
-                const catCompleted = slot.tasks.filter((t) => t.done).length;
-                const catTotal = slot.tasks.length;
+              {categoryGroupedTasks.map((category, groupIdx) => {
+                const catCompleted = category.tasks.filter((t) => t.done).length;
+                const catTotal = category.tasks.length;
 
                 return (
                   <motion.div
-                    key={slot.key}
+                    key={category.key}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: groupIdx * 0.06, duration: 0.35 }}
                     className="space-y-3"
                   >
-                    {/* Time of Day Section Header */}
+                    {/* Category Section Header */}
                     <div className="flex items-center justify-between px-1 text-xs font-bold">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-xl">{slot.icon}</span>
+                        <span className="text-xl">{category.icon}</span>
                         <div>
                           <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">
-                            {slot.label}
+                            {category.label}
                           </h3>
                           <p className="text-[11px] font-normal text-[var(--text-tertiary)] -mt-0.5">
-                            {slot.desc}
+                            {category.description}
                           </p>
                         </div>
                       </div>
@@ -711,7 +718,7 @@ export function DashboardShell() {
 
                     {/* Task Cards List */}
                     <div className="space-y-2.5">
-                      {slot.tasks.map((task, taskIdx) => (
+                      {category.tasks.map((task, taskIdx) => (
                         <ModernTaskCard
                           key={task.id}
                           task={task}

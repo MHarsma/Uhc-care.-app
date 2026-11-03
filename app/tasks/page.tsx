@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState, useMemo } from "react";
 import type { Task, TaskLog } from "@/types/task";
 import { AppShell } from "@/components/layout/app-shell";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Plus,
   Pencil,
@@ -17,21 +17,22 @@ import {
   CheckCircle2,
   ListTodo,
   AlertTriangle,
-  Flame,
-  Check,
   Timer,
   Search,
   History,
-  MoreVertical,
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getApiBaseUrl } from "@/lib/api/client";
+import {
+  getRoutineCategoryLabel,
+  normalizeRoutineCategory,
+  ROUTINE_CATEGORIES,
+} from "@/lib/templates/routines";
 
 const apiUrl = getApiBaseUrl();
 
 const ICONS = ["✨", "🏃", "💧", "📖", "🧘", "🌙", "💼", "🍎", "📚", "✍️", "🎯", "🧹", "💊", "🌿", "🚶", "🥗"];
-const CATEGORIES = ["All", "Health", "Study", "Deen", "Work", "Prayer", "Other"];
 const WEEKDAYS = [
   { key: "monday", label: "Mon" },
   { key: "tuesday", label: "Tue" },
@@ -48,7 +49,7 @@ const inputClasses =
 const emptyForm = {
   title: "",
   icon: "✨",
-  category: "Health",
+  category: "health",
   recurrence_type: "daily",
   recurrence_days: [] as string[],
   time_of_day: "",
@@ -57,6 +58,7 @@ const emptyForm = {
 };
 
 export default function TasksPage() {
+  const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -69,11 +71,34 @@ export default function TasksPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const categoryOptions = useMemo(() => {
+    const knownCategories = new Set<string>(
+      ROUTINE_CATEGORIES.map((category) => category.key)
+    );
+    const customCategories = Array.from(
+      new Set(
+        tasks
+          .map((task) => normalizeRoutineCategory(task.category))
+          .filter((category) => !knownCategories.has(category))
+      )
+    ).sort();
 
-  async function loadTasks(): Promise<void> {
+    return [
+      ...ROUTINE_CATEGORIES.map((category) => ({
+        id: category.key,
+        label: category.label,
+      })),
+      ...customCategories.map((category) => ({
+        id: category,
+        label: getRoutineCategoryLabel(category),
+      })),
+    ];
+  }, [tasks]);
+
+  const loadTasks = React.useCallback(async (): Promise<void> => {
     setLoading(true);
     setLoadError(null);
     try {
@@ -82,7 +107,7 @@ export default function TasksPage() {
         credentials: "include",
       });
       if (response.status === 401) {
-        window.location.href = "/login";
+        router.push("/login");
         return;
       }
       if (!response.ok) {
@@ -90,25 +115,33 @@ export default function TasksPage() {
       }
       const result: { tasks: Task[] } = await response.json();
       setTasks(result.tasks || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load tasks:", err);
       setLoadError(
-        err?.message || "Could not connect to server. Please check your connection."
+        err instanceof Error
+          ? err.message
+          : "Could not connect to server. Please check your connection."
       );
     } finally {
       setLoading(false);
     }
-  }
+  }, [router]);
 
   useEffect(() => {
-    void loadTasks();
-  }, []);
+    const initialLoad = window.setTimeout(() => {
+      void loadTasks();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(initialLoad);
+    };
+  }, [loadTasks]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       const matchesCat =
-        selectedCategory === "All" ||
-        (t.category || "Other").toLowerCase() === selectedCategory.toLowerCase();
+        selectedCategory === "all" ||
+        normalizeRoutineCategory(t.category) === selectedCategory;
       const matchesSearch =
         !searchQuery.trim() ||
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -128,7 +161,7 @@ export default function TasksPage() {
     setForm({
       title: task.title,
       icon: task.icon ?? "✨",
-      category: task.category ?? "Health",
+      category: normalizeRoutineCategory(task.category),
       recurrence_type: task.recurrence_type ?? "daily",
       recurrence_days: task.recurrence_days ?? [],
       time_of_day: task.time_of_day ? task.time_of_day.slice(0, 5) : "",
@@ -295,26 +328,26 @@ export default function TasksPage() {
         {/* Filter Bar & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {CATEGORIES.map((cat) => {
+            {[{ id: "all", label: "All" }, ...categoryOptions].map((cat) => {
               const count =
-                cat === "All"
+                cat.id === "all"
                   ? tasks.length
                   : tasks.filter(
-                      (t) => (t.category || "Other").toLowerCase() === cat.toLowerCase()
+                      (t) => normalizeRoutineCategory(t.category) === cat.id
                     ).length;
               return (
                 <button
-                  key={cat}
+                  key={cat.id}
                   type="button"
-                  onClick={() => setSelectedCategory(cat)}
+                  onClick={() => setSelectedCategory(cat.id)}
                   className={cn(
                     "rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all shrink-0 press-effect border",
-                    selectedCategory === cat
+                    selectedCategory === cat.id
                       ? "bg-gradient-to-r from-violet-600/20 to-indigo-600/10 text-violet-600 dark:text-violet-300 border-violet-500/30"
                       : "bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                   )}
                 >
-                  {cat} ({count})
+                  {cat.label} ({count})
                 </button>
               );
             })}
@@ -401,7 +434,7 @@ export default function TasksPage() {
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="text-2xl select-none">{task.icon || "✨"}</span>
                       <span className="inline-block rounded-md bg-[var(--glass-bg)] border border-[var(--glass-border)] px-2 py-0.5 text-[10px] font-bold text-[var(--text-secondary)] capitalize">
-                        {task.category || "General"}
+                        {getRoutineCategoryLabel(task.category)}
                       </span>
                     </div>
 
@@ -562,8 +595,8 @@ export default function TasksPage() {
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
                     className={inputClasses}
                   >
-                    {CATEGORIES.filter((c) => c !== "All").map((c) => (
-                      <option key={c} value={c} className="bg-[var(--bg-card)] text-[var(--text-primary)]">{c}</option>
+                    {categoryOptions.map((category) => (
+                      <option key={category.id} value={category.id} className="bg-[var(--bg-card)] text-[var(--text-primary)]">{category.label}</option>
                     ))}
                   </select>
                 </div>

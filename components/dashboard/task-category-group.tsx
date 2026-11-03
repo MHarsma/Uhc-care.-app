@@ -3,7 +3,10 @@
 import * as React from "react";
 import { DashboardTask } from "@/lib/api/dashboard";
 import { TaskItem } from "./task-item";
-import { ROUTINE_CATEGORIES } from "@/lib/templates/routines";
+import {
+  normalizeRoutineCategory,
+  ROUTINE_CATEGORIES,
+} from "@/lib/templates/routines";
 
 interface TaskCategoryGroupProps {
   tasks: DashboardTask[];
@@ -29,7 +32,7 @@ export function TaskCategoryGroup({
     const map = new Map<string, DashboardTask[]>();
 
     filteredTasks.forEach((task) => {
-      const cat = (task.category || "other").toLowerCase();
+      const cat = normalizeRoutineCategory(task.category);
       if (!map.has(cat)) {
         map.set(cat, []);
       }

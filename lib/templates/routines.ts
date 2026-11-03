@@ -2,16 +2,15 @@ export interface RoutineTemplate {
   id: string;
   title: string;
   category:
-    | "morning"
+    | "deen"
     | "health"
     | "fitness"
     | "study"
     | "work"
-    | "deen"
     | "relationship"
-    | "evening"
+    | "lifestyle"
     | "sleep"
-    | "home";
+    | "other";
   icon: string;
   suggestedTime?: string;
   recurrence: "daily" | "weekdays" | "weekends";
@@ -27,13 +26,6 @@ export interface RoutineCategoryInfo {
 }
 
 export const ROUTINE_CATEGORIES: RoutineCategoryInfo[] = [
-  {
-    key: "morning",
-    label: "Morning",
-    icon: "🌅",
-    color: "from-amber-500/20 to-orange-500/20 text-amber-900 border-amber-200",
-    description: "Start the day intentional and energised",
-  },
   {
     key: "deen",
     label: "Deen & Spiritual",
@@ -77,11 +69,11 @@ export const ROUTINE_CATEGORIES: RoutineCategoryInfo[] = [
     description: "Meaningful check-ins, appreciation, and shared moments",
   },
   {
-    key: "evening",
-    label: "Evening & Wind Down",
-    icon: "🌙",
-    color: "from-purple-500/20 to-indigo-500/20 text-purple-900 border-purple-200",
-    description: "Unwind, review the day, and prepare for tomorrow",
+    key: "lifestyle",
+    label: "Lifestyle & Home",
+    icon: "🏡",
+    color: "from-amber-500/20 to-orange-500/20 text-amber-900 border-amber-200",
+    description: "Daily habits, home care, and personal organization",
   },
   {
     key: "sleep",
@@ -90,14 +82,46 @@ export const ROUTINE_CATEGORIES: RoutineCategoryInfo[] = [
     color: "from-slate-500/20 to-slate-600/20 text-slate-800 border-slate-200",
     description: "Consistent sleep schedule and restorative rest",
   },
+  {
+    key: "other",
+    label: "Other",
+    icon: "✨",
+    color: "from-slate-500/20 to-slate-600/20 text-slate-800 border-slate-200",
+    description: "Routines that do not fit another category",
+  },
 ];
 
+export function normalizeRoutineCategory(category?: string | null): string {
+  const normalized = category?.trim().toLowerCase() || "other";
+
+  if (normalized === "morning" || normalized === "evening" || normalized === "home") {
+    return "lifestyle";
+  }
+
+  if (normalized === "prayer") {
+    return "deen";
+  }
+
+  return normalized;
+}
+
+export function getRoutineCategoryLabel(category?: string | null): string {
+  const key = normalizeRoutineCategory(category);
+  const categoryInfo = ROUTINE_CATEGORIES.find((item) => item.key === key);
+
+  if (categoryInfo) {
+    return categoryInfo.label;
+  }
+
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
 export const SUGGESTED_ROUTINES: RoutineTemplate[] = [
-  // Morning
+  // Lifestyle and daily habits
   {
     id: "m1",
     title: "Wake up by 6:30 AM",
-    category: "morning",
+    category: "lifestyle",
     icon: "⏰",
     suggestedTime: "06:30",
     recurrence: "daily",
@@ -105,7 +129,7 @@ export const SUGGESTED_ROUTINES: RoutineTemplate[] = [
   {
     id: "m2",
     title: "Drink a large glass of water",
-    category: "morning",
+    category: "health",
     icon: "💧",
     suggestedTime: "06:35",
     recurrence: "daily",
@@ -113,7 +137,7 @@ export const SUGGESTED_ROUTINES: RoutineTemplate[] = [
   {
     id: "m3",
     title: "Make bed & tidy space",
-    category: "morning",
+    category: "lifestyle",
     icon: "🛏️",
     suggestedTime: "06:45",
     recurrence: "daily",
@@ -121,7 +145,7 @@ export const SUGGESTED_ROUTINES: RoutineTemplate[] = [
   {
     id: "m4",
     title: "Morning skincare & wash face",
-    category: "morning",
+    category: "health",
     icon: "✨",
     suggestedTime: "07:00",
     recurrence: "daily",
@@ -129,7 +153,7 @@ export const SUGGESTED_ROUTINES: RoutineTemplate[] = [
   {
     id: "m5",
     title: "Nutritious breakfast & vitamins",
-    category: "morning",
+    category: "health",
     icon: "🍳",
     suggestedTime: "07:30",
     recurrence: "daily",
@@ -137,7 +161,7 @@ export const SUGGESTED_ROUTINES: RoutineTemplate[] = [
   {
     id: "m6",
     title: "Review daily schedule & goals",
-    category: "morning",
+    category: "work",
     icon: "📋",
     suggestedTime: "08:00",
     recurrence: "weekdays",
@@ -145,7 +169,7 @@ export const SUGGESTED_ROUTINES: RoutineTemplate[] = [
   {
     id: "m7",
     title: "15 min morning stretch or walk",
-    category: "morning",
+    category: "fitness",
     icon: "🚶",
     suggestedTime: "07:15",
     recurrence: "daily",
@@ -357,11 +381,11 @@ export const SUGGESTED_ROUTINES: RoutineTemplate[] = [
     recurrence: "daily",
   },
 
-  // Evening & Sleep
+  // Lifestyle and sleep
   {
     id: "e1",
     title: "Review today's routine progress",
-    category: "evening",
+    category: "lifestyle",
     icon: "📊",
     suggestedTime: "21:30",
     recurrence: "daily",
@@ -369,7 +393,7 @@ export const SUGGESTED_ROUTINES: RoutineTemplate[] = [
   {
     id: "e2",
     title: "Clean desk & prep tomorrow's clothes",
-    category: "evening",
+    category: "lifestyle",
     icon: "👔",
     suggestedTime: "22:00",
     recurrence: "daily",
