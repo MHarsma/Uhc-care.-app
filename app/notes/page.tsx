@@ -48,6 +48,7 @@ const REACTION_EMOJIS = [
 
 export default function NotesPage() {
   const [notes, setNotes] = React.useState<Note[]>([]);
+  const [noteToDelete, setNoteToDelete] = React.useState<Note | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState<"text" | "voice">("text");
 
@@ -271,10 +272,12 @@ export default function NotesPage() {
     }
   };
 
-  const handleDeleteNote = async (noteId: number) => {
+  const handleConfirmDelete = async () => {
+    if (!noteToDelete) return;
     try {
-      await api.delete(`/couple/notes/${noteId}`);
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      await api.delete(`/couple/notes/${noteToDelete.id}`);
+      setNotes((prev) => prev.filter((n) => n.id !== noteToDelete.id));
+      setNoteToDelete(null);
     } catch (err) {
       console.error("Failed to delete note:", err);
     }
@@ -522,7 +525,7 @@ export default function NotesPage() {
 
                       <button
                         type="button"
-                        onClick={() => handleDeleteNote(note.id)}
+                        onClick={() => setNoteToDelete(note)}
                         className="p-1.5 text-[var(--text-tertiary)] hover:text-rose-500 rounded-lg hover:bg-rose-500/10 transition-colors"
                         title="Delete note"
                       >
@@ -623,6 +626,41 @@ export default function NotesPage() {
           </div>
         )}
       </div>
+      {/* Delete Confirmation Modal */}
+      {noteToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-card)] p-6 shadow-2xl border border-[var(--glass-border)] text-center animate-in zoom-in-95 duration-150 space-y-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-500">
+              <Trash2 className="h-7 w-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                Delete Note?
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">
+                Are you sure you want to permanently delete this {noteToDelete.type === "voice" ? "voice memo" : "note"}? This will permanently remove it from the database for both you and your partner.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setNoteToDelete(null)}
+                className="rounded-xl border border-[var(--glass-border)] py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

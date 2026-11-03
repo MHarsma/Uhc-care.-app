@@ -790,214 +790,6 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* ============================================================ */}
-            {/* COLUMN 2: PRAYERS, NOTIFICATIONS & SECURITY                 */}
-            {/* ============================================================ */}
-            <div className="space-y-6">
-              {/* Prayer Times & Sync Card */}
-              <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-500 dark:text-indigo-400">
-                      <Moon className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                        Prayer Times (Salah)
-                      </h3>
-                      <p className="text-[11px] text-[var(--text-secondary)]">
-                        Calculated automatically for {city || "your city"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleSyncPrayers}
-                    disabled={prayersSyncing}
-                    className="flex items-center gap-1 rounded-xl bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition-all"
-                  >
-                    <RefreshCw className={cn("h-3 w-3", prayersSyncing && "animate-spin")} />
-                    <span>{prayersSyncing ? "Syncing..." : "Sync Routines"}</span>
-                  </button>
-                </div>
-
-                {prayerSyncMessage && (
-                  <div className="mb-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                    {prayerSyncMessage}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-5 gap-2">
-                  {prayers.map((prayer) => (
-                    <button
-                      type="button"
-                      key={prayer.prayer_name}
-                      onClick={() => handleOpenPrayerEdit(prayer)}
-                      className="flex flex-col items-center p-2.5 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-violet-500/30 transition-all text-center group"
-                    >
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
-                        {prayer.display_name}
-                      </span>
-                      <span className="text-xs font-black text-[var(--text-primary)] mt-1 whitespace-nowrap">
-                        {format12Hour(prayer.effective_time)}
-                      </span>
-                      <span className="text-[9px] text-violet-600 dark:text-violet-400 font-semibold group-hover:underline mt-0.5">
-                        Edit
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Notification Preferences */}
-              <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500 dark:text-amber-400">
-                    <Bell className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                      Notifications
-                    </h3>
-                    <p className="text-[11px] text-[var(--text-secondary)]">
-                      Alerts and daily reminders
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    {
-                      key: "task_completed_realtime" as const,
-                      label: "Partner Routine Updates",
-                      desc: "Instant notice when your partner completes a routine",
-                    },
-                    {
-                      key: "note_reactions" as const,
-                      label: "Note Love Reactions",
-                      desc: "When your partner reacts to your shared note",
-                    },
-                    {
-                      key: "streak_milestones" as const,
-                      label: "Streak Milestones",
-                      desc: "Celebrations for 7-day, 30-day streak wins",
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.key}
-                      className="flex items-center justify-between p-3 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]"
-                    >
-                      <div>
-                        <p className="text-xs font-bold text-[var(--text-primary)]">
-                          {item.label}
-                        </p>
-                        <p className="text-[10px] text-[var(--text-tertiary)]">{item.desc}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleNotification(item.key)}
-                        className={cn(
-                          "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
-                          notifications[item.key] ? "bg-violet-600" : "bg-[var(--text-muted)]"
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition",
-                            notifications[item.key] ? "translate-x-4" : "translate-x-0"
-                          )}
-                        />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Device & Browser Native Notifications Integration */}
-                <div className="mt-4 pt-4 border-t border-[var(--glass-border)] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-[var(--text-primary)]">
-                        Phone & System Alerts
-                      </p>
-                      <p className="text-[10px] text-[var(--text-tertiary)]">
-                        Direct vibration & banner alerts for love nudges & cycle updates
-                      </p>
-                    </div>
-                    <span
-                      className={cn(
-                        "text-[10px] font-bold px-2.5 py-0.5 rounded-full border",
-                        deviceNotifPermission === "granted"
-                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                          : deviceNotifPermission === "denied"
-                          ? "bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400"
-                          : "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
-                      )}
-                    >
-                      {deviceNotifPermission === "granted"
-                        ? "Active"
-                        : deviceNotifPermission === "denied"
-                        ? "Blocked by Browser"
-                        : "Permission Needed"}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {deviceNotifPermission !== "granted" ? (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const res = await requestNotificationPermission();
-                          setDeviceNotifPermission(res);
-                          if (res === "granted") {
-                            setDeviceNotifMsg("Device notifications enabled!");
-                            triggerDeviceNotification("UHC Care Connected ❤️", {
-                              body: "Native notifications are active on this device.",
-                            });
-                          } else {
-                            setDeviceNotifMsg("Notification permission was not granted.");
-                          }
-                          setTimeout(() => setDeviceNotifMsg(null), 4000);
-                        }}
-                        className="rounded-xl bg-violet-600 hover:bg-violet-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer"
-                      >
-                        Enable Phone Alerts
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setDeviceNotifMsg("Sending test notification...");
-                          const ok = await triggerDeviceNotification("UHC Care Test Alert ❤️", {
-                            body: "Notifications and haptics are working smoothly on your device!",
-                          });
-                          if (ok) {
-                            setDeviceNotifMsg("Test alert sent! Check your notification center.");
-                          } else {
-                            setDeviceNotifMsg("Notification triggered in browser.");
-                          }
-                          setTimeout(() => setDeviceNotifMsg(null), 4000);
-                        }}
-                        className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] px-3.5 py-2 text-xs font-bold text-[var(--text-primary)] transition-all cursor-pointer"
-                      >
-                        Send Test Notification
-                      </button>
-                    )}
-                  </div>
-
-                  {deviceNotifMsg && (
-                    <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                      {deviceNotifMsg}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Mobile PWA Install Card */}
-              <InstallAppCard />
-
               {/* Password & Security Card */}
               <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
@@ -1221,7 +1013,215 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
-      </div>
+            </div>
+
+            {/* ============================================================ */}
+            {/* COLUMN 2: PRAYERS, NOTIFICATIONS & SECURITY                 */}
+            {/* ============================================================ */}
+            <div className="space-y-6">
+              {/* Prayer Times & Sync Card */}
+              <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-500 dark:text-indigo-400">
+                      <Moon className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                        Prayer Times (Salah)
+                      </h3>
+                      <p className="text-[11px] text-[var(--text-secondary)]">
+                        Calculated automatically for {city || "your city"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSyncPrayers}
+                    disabled={prayersSyncing}
+                    className="flex items-center gap-1 rounded-xl bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition-all"
+                  >
+                    <RefreshCw className={cn("h-3 w-3", prayersSyncing && "animate-spin")} />
+                    <span>{prayersSyncing ? "Syncing..." : "Sync Routines"}</span>
+                  </button>
+                </div>
+
+                {prayerSyncMessage && (
+                  <div className="mb-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                    {prayerSyncMessage}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-5 gap-2">
+                  {prayers.map((prayer) => (
+                    <button
+                      type="button"
+                      key={prayer.prayer_name}
+                      onClick={() => handleOpenPrayerEdit(prayer)}
+                      className="flex flex-col items-center p-2.5 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:border-violet-500/30 transition-all text-center group"
+                    >
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
+                        {prayer.display_name}
+                      </span>
+                      <span className="text-xs font-black text-[var(--text-primary)] mt-1 whitespace-nowrap">
+                        {format12Hour(prayer.effective_time)}
+                      </span>
+                      <span className="text-[9px] text-violet-600 dark:text-violet-400 font-semibold group-hover:underline mt-0.5">
+                        Edit
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notification Preferences */}
+              <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500 dark:text-amber-400">
+                    <Bell className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                      Notifications
+                    </h3>
+                    <p className="text-[11px] text-[var(--text-secondary)]">
+                      Alerts and daily reminders
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {[
+                    {
+                      key: "task_completed_realtime" as const,
+                      label: "Partner Routine Updates",
+                      desc: "Instant notice when your partner completes a routine",
+                    },
+                    {
+                      key: "note_reactions" as const,
+                      label: "Note Love Reactions",
+                      desc: "When your partner reacts to your shared note",
+                    },
+                    {
+                      key: "streak_milestones" as const,
+                      label: "Streak Milestones",
+                      desc: "Celebrations for 7-day, 30-day streak wins",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]"
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-[var(--text-primary)]">
+                          {item.label}
+                        </p>
+                        <p className="text-[10px] text-[var(--text-tertiary)]">{item.desc}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleNotification(item.key)}
+                        className={cn(
+                          "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
+                          notifications[item.key] ? "bg-violet-600" : "bg-[var(--text-muted)]"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition",
+                            notifications[item.key] ? "translate-x-4" : "translate-x-0"
+                          )}
+                        />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Device & Browser Native Notifications Integration */}
+                <div className="mt-4 pt-4 border-t border-[var(--glass-border)] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-[var(--text-primary)]">
+                        Phone & System Alerts
+                      </p>
+                      <p className="text-[10px] text-[var(--text-tertiary)]">
+                        Direct vibration & banner alerts for love nudges & cycle updates
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold px-2.5 py-0.5 rounded-full border",
+                        deviceNotifPermission === "granted"
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                          : deviceNotifPermission === "denied"
+                          ? "bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400"
+                          : "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                      )}
+                    >
+                      {deviceNotifPermission === "granted"
+                        ? "Active"
+                        : deviceNotifPermission === "denied"
+                        ? "Blocked by Browser"
+                        : "Permission Needed"}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {deviceNotifPermission !== "granted" ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const res = await requestNotificationPermission();
+                          setDeviceNotifPermission(res);
+                          if (res === "granted") {
+                            setDeviceNotifMsg("Device notifications enabled!");
+                            triggerDeviceNotification("UHC Care Connected ❤️", {
+                              body: "Native notifications are active on this device.",
+                            });
+                          } else {
+                            setDeviceNotifMsg("Notification permission was not granted.");
+                          }
+                          setTimeout(() => setDeviceNotifMsg(null), 4000);
+                        }}
+                        className="rounded-xl bg-violet-600 hover:bg-violet-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs active:scale-95 transition-all cursor-pointer"
+                      >
+                        Enable Phone Alerts
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setDeviceNotifMsg("Sending test notification...");
+                          const ok = await triggerDeviceNotification("UHC Care Test Alert ❤️", {
+                            body: "Notifications and haptics are working smoothly on your device!",
+                          });
+                          if (ok) {
+                            setDeviceNotifMsg("Test alert sent! Check your notification center.");
+                          } else {
+                            setDeviceNotifMsg("Notification triggered in browser.");
+                          }
+                          setTimeout(() => setDeviceNotifMsg(null), 4000);
+                        }}
+                        className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] px-3.5 py-2 text-xs font-bold text-[var(--text-primary)] transition-all cursor-pointer"
+                      >
+                        Send Test Notification
+                      </button>
+                    )}
+                  </div>
+
+                  {deviceNotifMsg && (
+                    <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      {deviceNotifMsg}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile PWA Install Card */}
+              <InstallAppCard />
+
+              </div>
 
       {/* Prayer Time Edit Modal */}
       {editingPrayer && (
