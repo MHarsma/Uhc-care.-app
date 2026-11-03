@@ -96,6 +96,19 @@ const TIMEZONES = [
   { value: "Australia/Sydney", label: "Australia/Sydney" },
 ];
 
+function format12Hour(timeStr?: string | null): string {
+  if (!timeStr) return "";
+  const parts = timeStr.trim().split(":");
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1].slice(0, 2);
+  if (isNaN(hours)) return timeStr;
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return `${hours}:${minutes} ${ampm}`;
+}
+
 export default function SettingsPage() {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -704,6 +717,79 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
+
+              {/* Cycle & Period Care Sharing Card */}
+              <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/15 text-rose-500">
+                      <CalendarHeart className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                        Cycle & Period Care Sharing
+                      </h3>
+                      <p className="text-[11px] text-[var(--text-secondary)]">
+                        Partner sync & cycle visibility
+                      </p>
+                    </div>
+                  </div>
+
+                  {profile?.gender === "female" && (
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                        periodSharing
+                          ? "bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400"
+                          : "bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-muted)]"
+                      )}
+                    >
+                      {periodSharing ? "Sharing Active" : "Private"}
+                    </span>
+                  )}
+                </div>
+
+                {profile?.gender === "female" ? (
+                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+                    <div className="max-w-[75%]">
+                      <p className="text-xs font-bold text-[var(--text-primary)]">
+                        Share period details with partner
+                      </p>
+                      <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
+                        {partner
+                          ? `Allows ${partner.name} to view your cycle phase, wellness tips, and know how best to support you.`
+                          : "Allows your future paired partner to view your cycle phase and support tips."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleTogglePeriodSharing}
+                      className={cn(
+                        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
+                        periodSharing ? "bg-rose-500" : "bg-[var(--text-muted)]"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition",
+                          periodSharing ? "translate-x-4" : "translate-x-0"
+                        )}
+                      />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] space-y-1.5">
+                    <p className="text-xs font-bold text-[var(--text-primary)]">
+                      Partner Cycle Sync
+                    </p>
+                    <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                      {partner
+                        ? `When ${partner.name} enables period sharing in her settings, her cycle phases, ovulation calendar, and partner care suggestions will automatically display in your Cycle & Care tab and Partner Hub.`
+                        : "Once you pair with a female partner and she enables period sharing in her settings, her cycle phases and care suggestions will appear for you."}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* ============================================================ */}
@@ -755,8 +841,8 @@ export default function SettingsPage() {
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
                         {prayer.display_name}
                       </span>
-                      <span className="text-xs font-black text-[var(--text-primary)] mt-1">
-                        {prayer.effective_time.slice(0, 5)}
+                      <span className="text-xs font-black text-[var(--text-primary)] mt-1 whitespace-nowrap">
+                        {format12Hour(prayer.effective_time)}
                       </span>
                       <span className="text-[9px] text-violet-600 dark:text-violet-400 font-semibold group-hover:underline mt-0.5">
                         Edit
@@ -907,79 +993,6 @@ export default function SettingsPage() {
                     </p>
                   )}
                 </div>
-              </div>
-
-              {/* Cycle & Period Care Sharing Card */}
-              <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/15 text-rose-500">
-                      <CalendarHeart className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                        Cycle & Period Care Sharing
-                      </h3>
-                      <p className="text-[11px] text-[var(--text-secondary)]">
-                        Partner sync & cycle visibility
-                      </p>
-                    </div>
-                  </div>
-
-                  {profile?.gender === "female" && (
-                    <span
-                      className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded-full border",
-                        periodSharing
-                          ? "bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400"
-                          : "bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-muted)]"
-                      )}
-                    >
-                      {periodSharing ? "Sharing Active" : "Private"}
-                    </span>
-                  )}
-                </div>
-
-                {profile?.gender === "female" ? (
-                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-                    <div className="max-w-[75%]">
-                      <p className="text-xs font-bold text-[var(--text-primary)]">
-                        Share period details with partner
-                      </p>
-                      <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
-                        {partner
-                          ? `Allows ${partner.name} to view your cycle phase, wellness tips, and know how best to support you.`
-                          : "Allows your future paired partner to view your cycle phase and support tips."}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleTogglePeriodSharing}
-                      className={cn(
-                        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
-                        periodSharing ? "bg-rose-500" : "bg-[var(--text-muted)]"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition",
-                          periodSharing ? "translate-x-4" : "translate-x-0"
-                        )}
-                      />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="p-3.5 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] space-y-1.5">
-                    <p className="text-xs font-bold text-[var(--text-primary)]">
-                      Partner Cycle Sync
-                    </p>
-                    <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                      {partner
-                        ? `When ${partner.name} enables period sharing in her settings, her cycle phases, ovulation calendar, and partner care suggestions will automatically display in your Cycle & Care tab and Partner Hub.`
-                        : "Once you pair with a female partner and she enables period sharing in her settings, her cycle phases and care suggestions will appear for you."}
-                    </p>
-                  </div>
-                )}
               </div>
 
               {/* Mobile PWA Install Card */}

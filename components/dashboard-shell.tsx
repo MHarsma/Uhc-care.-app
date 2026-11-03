@@ -173,9 +173,9 @@ export function DashboardShell() {
     return "Good evening";
   }, []);
 
-  // Filter tasks based on category & time of day
+  // Filter and sort tasks chronologically (Time-of-day order)
   const filteredTasks = React.useMemo(() => {
-    return tasks.filter((t) => {
+    const list = tasks.filter((t) => {
       if (selectedCategory !== "all" && (t.category || "other").toLowerCase() !== selectedCategory.toLowerCase()) {
         return false;
       }
@@ -188,19 +188,66 @@ export function DashboardShell() {
       }
       return true;
     });
+
+    // Helper to get minutes from midnight for sorting
+    const getTaskMinutes = (t: DashboardTask): number => {
+      if (t.time_of_day) {
+        const parts = t.time_of_day.split(":");
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1] || "0", 10);
+        if (!isNaN(h)) return h * 60 + (isNaN(m) ? 0 : m);
+      }
+      const titleLower = t.title.toLowerCase();
+      if (titleLower.includes("fajr")) return 5 * 60 + 15;
+      if (titleLower.includes("dhuhr")) return 13 * 60;
+      if (titleLower.includes("asr")) return 16 * 60 + 30;
+      if (titleLower.includes("maghrib")) return 18 * 60 + 25;
+      if (titleLower.includes("isha")) return 20 * 60;
+      if (titleLower.includes("morning") || titleLower.includes("wake")) return 7 * 60;
+      if (titleLower.includes("night") || titleLower.includes("sleep") || titleLower.includes("bed")) return 22 * 60;
+      return 12 * 60; // Default midday
+    };
+
+    return [...list].sort((a, b) => getTaskMinutes(a) - getTaskMinutes(b));
   }, [tasks, selectedCategory, selectedTimeOfDay]);
 
-  // Group tasks by category for sectioning
-  const groupedTasks = React.useMemo(() => {
-    const map = new Map<string, DashboardTask[]>();
-    filteredTasks.forEach((task) => {
-      const cat = (task.category || "other").toLowerCase();
-      if (!map.has(cat)) {
-        map.set(cat, []);
+  // Group tasks by Time-of-Day periods (Morning, Afternoon, Evening)
+  const timeGroupedTasks = React.useMemo(() => {
+    const getSlotKey = (t: DashboardTask): "morning" | "afternoon" | "evening" => {
+      if (t.time_of_day) {
+        const h = parseInt(t.time_of_day.split(":")[0], 10);
+        if (h >= 5 && h < 12) return "morning";
+        if (h >= 12 && h < 17) return "afternoon";
+        return "evening";
       }
-      map.get(cat)!.push(task);
+      const titleLower = t.title.toLowerCase();
+      if (titleLower.includes("fajr") || titleLower.includes("morning") || titleLower.includes("wake")) return "morning";
+      if (titleLower.includes("dhuhr") || titleLower.includes("lunch")) return "afternoon";
+      if (titleLower.includes("asr") || titleLower.includes("maghrib") || titleLower.includes("isha") || titleLower.includes("night") || titleLower.includes("bed")) return "evening";
+      return "morning";
+    };
+
+    const slots: {
+      key: "morning" | "afternoon" | "evening";
+      label: string;
+      icon: string;
+      desc: string;
+      tasks: DashboardTask[];
+    }[] = [
+      { key: "morning", label: "Morning Rituals", icon: "🌅", desc: "Start strong & centered", tasks: [] },
+      { key: "afternoon", label: "Afternoon Focus", icon: "☀️", desc: "Midday momentum & Salah", tasks: [] },
+      { key: "evening", label: "Evening & Wind Down", icon: "🌙", desc: "Reflect, connect & rest", tasks: [] },
+    ];
+
+    filteredTasks.forEach((task) => {
+      const slot = getSlotKey(task);
+      const target = slots.find((s) => s.key === slot);
+      if (target) {
+        target.tasks.push(task);
+      }
     });
-    return Array.from(map.entries());
+
+    return slots.filter((s) => s.tasks.length > 0);
   }, [filteredTasks]);
 
   // Unique categories list for tab filters
@@ -488,41 +535,70 @@ export function DashboardShell() {
               })}
             </div>
 
-            {/* Category Filter Pills */}
+            {/* Quick Category Jump Bar */}
             {availableCategories.length > 1 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory("all")}
-                  className={cn(
-                    "rounded-xl px-3 py-1.5 text-xs font-semibold transition-all shrink-0 press-effect",
-                    selectedCategory === "all"
-                      ? "bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/30"
-                      : "bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                  )}
-                >
-                  All Categories ({tasks.length})
-                </button>
-                {availableCategories.map((catKey) => {
-                  const count = tasks.filter(
-                    (t) => (t.category || "other").toLowerCase() === catKey
-                  ).length;
-                  return (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-secondary)] px-1">
+                  <span className="flex items-center gap-1.5">
+                    <Target className="h-3.5 w-3.5 text-violet-500" />
+                    <span>Filter & Jump to Category:</span>
+                  </span>
+                  {selectedCategory !== "all" && (
                     <button
-                      key={catKey}
                       type="button"
-                      onClick={() => setSelectedCategory(catKey)}
-                      className={cn(
-                        "rounded-xl px-3 py-1.5 text-xs font-semibold capitalize transition-all shrink-0 press-effect",
-                        selectedCategory === catKey
-                          ? "bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/30"
-                          : "bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                      )}
+                      onClick={() => setSelectedCategory("all")}
+                      className="text-violet-500 hover:underline cursor-pointer"
                     >
-                      {catKey} ({count})
+                      Clear Filter (Show All)
                     </button>
-                  );
-                })}
+                  )}
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory("all")}
+                    className={cn(
+                      "rounded-xl px-3.5 py-2 text-xs font-bold transition-all shrink-0 press-effect cursor-pointer flex items-center gap-1.5",
+                      selectedCategory === "all"
+                        ? "bg-violet-600 text-white shadow-md shadow-violet-500/20"
+                        : "bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                    )}
+                  >
+                    <span>All ({tasks.length})</span>
+                  </button>
+                  {availableCategories.map((catKey) => {
+                    const count = tasks.filter(
+                      (t) => (t.category || "other").toLowerCase() === catKey
+                    ).length;
+                    const meta = ROUTINE_CATEGORIES.find((c) => c.key === catKey);
+                    const icon = meta?.icon || "✨";
+                    const label = meta?.label || catKey;
+                    const isActive = selectedCategory === catKey;
+
+                    return (
+                      <button
+                        key={catKey}
+                        type="button"
+                        onClick={() => setSelectedCategory(catKey)}
+                        className={cn(
+                          "rounded-xl px-3.5 py-2 text-xs font-bold capitalize transition-all shrink-0 press-effect cursor-pointer flex items-center gap-1.5",
+                          isActive
+                            ? "bg-violet-600 text-white shadow-md shadow-violet-500/20"
+                            : "bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                        )}
+                      >
+                        <span>{icon}</span>
+                        <span>{label}</span>
+                        <span className={cn(
+                          "px-1.5 py-0.2 rounded-full text-[10px]",
+                          isActive ? "bg-white/20 text-white" : "bg-[var(--bg-card)] text-[var(--text-tertiary)]"
+                        )}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -603,32 +679,30 @@ export function DashboardShell() {
             </motion.div>
           ) : (
             <div className="space-y-6">
-              {groupedTasks.map(([categoryKey, categoryTasks], groupIdx) => {
-                const categoryMeta = ROUTINE_CATEGORIES.find(
-                  (c) => c.key === categoryKey
-                );
-                const catCompleted = categoryTasks.filter((t) => t.done).length;
-                const catTotal = categoryTasks.length;
-                const catIcon = categoryMeta?.icon || "✨";
-                const catTitle =
-                  categoryMeta?.label ||
-                  categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
+              {timeGroupedTasks.map((slot, groupIdx) => {
+                const catCompleted = slot.tasks.filter((t) => t.done).length;
+                const catTotal = slot.tasks.length;
 
                 return (
                   <motion.div
-                    key={categoryKey}
+                    key={slot.key}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: groupIdx * 0.06, duration: 0.35 }}
                     className="space-y-3"
                   >
-                    {/* Category Header */}
+                    {/* Time of Day Section Header */}
                     <div className="flex items-center justify-between px-1 text-xs font-bold">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-lg">{catIcon}</span>
-                        <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight capitalize">
-                          {catTitle}
-                        </h3>
+                        <span className="text-xl">{slot.icon}</span>
+                        <div>
+                          <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">
+                            {slot.label}
+                          </h3>
+                          <p className="text-[11px] font-normal text-[var(--text-tertiary)] -mt-0.5">
+                            {slot.desc}
+                          </p>
+                        </div>
                       </div>
                       <span className="rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
                         {catCompleted} / {catTotal} completed
@@ -637,7 +711,7 @@ export function DashboardShell() {
 
                     {/* Task Cards List */}
                     <div className="space-y-2.5">
-                      {categoryTasks.map((task, taskIdx) => (
+                      {slot.tasks.map((task, taskIdx) => (
                         <ModernTaskCard
                           key={task.id}
                           task={task}

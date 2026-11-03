@@ -19,7 +19,7 @@ import {
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
-import { api } from "@/lib/api/client";
+import { api, getApiBaseUrl } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 type Reaction = {
@@ -538,27 +538,37 @@ export default function NotesPage() {
                             <FileAudio className="h-4 w-4" />
                             <span>Voice Memo ({note.audio_duration || 0}s)</span>
                           </div>
-                          {note.audio_url && (
+                          {(note.audio_url || note.id) && (
                             <div className="space-y-1.5 pt-1">
-                              <audio
-                                controls
-                                preload="metadata"
-                                playsInline
-                                src={note.audio_url}
-                                className="w-full h-10 rounded-xl"
-                              >
-                                Your browser does not support audio playback.
-                              </audio>
-                              <div className="flex items-center justify-between text-[10px] text-[var(--text-tertiary)] px-1">
-                                <a
-                                  href={note.audio_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-violet-500 hover:underline flex items-center gap-1 font-semibold"
-                                >
-                                  Open / Replay Audio Directly ↗
-                                </a>
-                              </div>
+                              {(() => {
+                                const streamUrl = `${getApiBaseUrl()}/couple/notes/${note.id}/audio`;
+                                const fallbackUrl = note.audio_url || streamUrl;
+                                return (
+                                  <>
+                                    <audio
+                                      controls
+                                      preload="metadata"
+                                      playsInline
+                                      className="w-full h-10 rounded-xl"
+                                    >
+                                      <source src={streamUrl} type="audio/webm" />
+                                      <source src={streamUrl} type="audio/mp4" />
+                                      <source src={fallbackUrl} />
+                                      Your browser does not support audio playback.
+                                    </audio>
+                                    <div className="flex items-center justify-between text-[10px] text-[var(--text-tertiary)] px-1">
+                                      <a
+                                        href={streamUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-violet-500 hover:underline flex items-center gap-1 font-semibold"
+                                      >
+                                        Open / Replay Audio Directly ↗
+                                      </a>
+                                    </div>
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
