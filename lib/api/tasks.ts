@@ -65,25 +65,12 @@ export const tasksApi = {
   deleteTask: (id: number) => api.delete<{ message: string }>(`/tasks/${id}`),
 
   toggleTask: (id: number) =>
-    api.post<{ status: string; log: any }>(`/tasks/${id}/toggle`),
+    api.post<{ task_id: number; status: string; completed_at: string | null }>(`/tasks/${id}/toggle`),
 
   batchCreateTasks: async (tasks: TaskPayload[]): Promise<TaskItem[]> => {
     const sanitized = tasks.map(sanitizePayload);
-    try {
-      const response = await api.post<{ tasks: TaskItem[] }>("/tasks/batch", { tasks: sanitized });
-      return response?.tasks || [];
-    } catch (err) {
-      console.warn("Direct batch failed, falling back to iterative create:", err);
-      const results: TaskItem[] = [];
-      for (const t of sanitized) {
-        try {
-          const res = await tasksApi.createTask(t);
-          if (res?.task) results.push(res.task);
-        } catch (e) {
-          console.error("Failed to add task:", t.title, e);
-        }
-      }
-      return results;
-    }
+    const response = await api.post<{ tasks: TaskItem[] }>("/tasks/batch", { tasks: sanitized });
+
+    return response.tasks;
   },
 };

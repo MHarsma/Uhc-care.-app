@@ -11,15 +11,12 @@ import {
   settingsApi,
   UserProfile,
   PartnerSummary,
-  CoupleSummary,
   NotificationSettings,
   PrayerTimeItem,
 } from "@/lib/api/settings";
-import { api, getApiBaseUrl } from "@/lib/api/client";
+import { api, ApiError } from "@/lib/api/client";
 import {
   User,
-  MapPin,
-  Clock,
   KeyRound,
   Bell,
   Heart,
@@ -29,18 +26,13 @@ import {
   Palette,
   LogOut,
   UserX,
-  Sparkles,
-  Check,
   AlertTriangle,
   RefreshCw,
-  Edit2,
   CalendarHeart,
-  ShieldCheck,
   CheckCircle2,
   X,
   Save,
   Fingerprint,
-  Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -109,15 +101,22 @@ function format12Hour(timeStr?: string | null): string {
   return `${hours}:${minutes} ${ampm}`;
 }
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 export default function SettingsPage() {
   const router = useRouter();
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [profile, setProfile] = React.useState<UserProfile | null>(null);
   const [partner, setPartner] = React.useState<PartnerSummary | null>(null);
-  const [couple, setCouple] = React.useState<CoupleSummary | null>(null);
   const [notifications, setNotifications] = React.useState<NotificationSettings>({
     task_completed_realtime: true,
     note_reactions: true,
@@ -162,7 +161,7 @@ export default function SettingsPage() {
   // Unpair dialog state
   const [showUnpairModal, setShowUnpairModal] = React.useState(false);
   const [unpairingLoading, setUnpairingLoading] = React.useState(false);
-  const [unpairMessage, setUnpairMessage] = React.useState<string | null>(null);
+  const [unpairError, setUnpairError] = React.useState<string | null>(null);
 
   // Sign out confirmation modal state
   const [showSignoutModal, setShowSignoutModal] = React.useState(false);
@@ -210,14 +209,13 @@ export default function SettingsPage() {
         );
         setTimezone(profRes.value.user.timezone || "Asia/Karachi");
         setPartner(profRes.value.partner);
-        setCouple(profRes.value.couple);
       } else {
-        const reason: any = profRes.reason;
-        if (reason?.status === 401) {
+        const reason: unknown = profRes.reason;
+        if (reason instanceof ApiError && reason.status === 401) {
           router.push("/login");
           return;
         }
-        setLoadError(reason?.message || "Failed to load user profile and settings.");
+        setLoadError(getErrorMessage(reason, "Failed to load user profile and settings."));
       }
 
       if (notifRes.status === "fulfilled") {
@@ -231,16 +229,22 @@ export default function SettingsPage() {
       if (prayerRes.status === "fulfilled") {
         setPrayers(prayerRes.value.prayer_times);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to load settings:", err);
-      setLoadError(err?.message || "An unexpected error occurred while loading settings.");
+      setLoadError(getErrorMessage(err, "An unexpected error occurred while loading settings."));
     } finally {
       setLoading(false);
     }
   }, [router]);
 
   React.useEffect(() => {
-    void loadData();
+    const initialLoad = setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => {
+      clearTimeout(initialLoad);
+    };
   }, [loadData]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -256,10 +260,10 @@ export default function SettingsPage() {
 
       const updatedPrayers = await settingsApi.getPrayerTimes();
       setPrayers(updatedPrayers.prayer_times);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setProfileMessage({
         type: "error",
-        text: err?.message || "Failed to update profile.",
+        text: getErrorMessage(err, "Failed to update profile."),
       });
     } finally {
       setProfileSaving(false);
@@ -290,10 +294,10 @@ export default function SettingsPage() {
         setPasswordMessage(null);
         setShowPasswordForm(false);
       }, 2500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setPasswordMessage({
         type: "error",
-        text: err?.message || "Failed to change password.",
+        text: getErrorMessage(err, "Failed to change password."),
       });
     } finally {
       setPasswordSaving(false);
@@ -331,8 +335,8 @@ export default function SettingsPage() {
       const res = await settingsApi.syncPrayersToRoutines();
       setPrayerSyncMessage(res.message);
       setTimeout(() => setPrayerSyncMessage(null), 3500);
-    } catch (err: any) {
-      setPrayerSyncMessage(err?.message || "Failed to sync prayer routines.");
+    } catch (err: unknown) {
+      setPrayerSyncMessage(getErrorMessage(err, "Failed to sync prayer routines."));
     } finally {
       setPrayersSyncing(false);
     }
@@ -358,8 +362,8 @@ export default function SettingsPage() {
       setEditingPrayer(null);
       const updatedPrayers = await settingsApi.getPrayerTimes();
       setPrayers(updatedPrayers.prayer_times);
-    } catch (err: any) {
-      setPrayerOverrideError(err?.message || "Failed to update prayer time.");
+    } catch (err: unknown) {
+      setPrayerOverrideError(getErrorMessage(err, "Failed to update prayer time."));
     } finally {
       setSavingPrayerOverride(false);
     }
@@ -367,27 +371,15 @@ export default function SettingsPage() {
 
   const handleUnpair = async () => {
     setUnpairingLoading(true);
+    setUnpairError(null);
     try {
       await settingsApi.requestUnpair();
       setShowUnpairModal(false);
-      setUnpairMessage("Couple connection unlinked.");
       await loadData();
-    } catch (err: any) {
-      setUnpairMessage(err?.message || "Failed to unpair.");
+    } catch (err: unknown) {
+      setUnpairError(getErrorMessage(err, "Failed to unpair."));
     } finally {
       setUnpairingLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch(`${getApiBaseUrl()}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      router.push("/login");
-    } catch {
-      router.push("/login");
     }
   };
 
@@ -396,7 +388,7 @@ export default function SettingsPage() {
       headerTitle="Settings"
       headerSubtitle="Profile, couple pairing, reminders & preferences"
     >
-      <div className="space-y-6 max-w-5xl">
+      <div className="mx-auto w-full max-w-7xl space-y-6">
         {loading ? (
           <div className="space-y-4 animate-pulse">
             <div className="h-44 rounded-3xl shimmer" />
@@ -425,11 +417,26 @@ export default function SettingsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-5 xl:grid-cols-2 xl:gap-6">
             {/* ============================================================ */}
             {/* COLUMN 1: PROFILE & COUPLE PAIRING                          */}
             {/* ============================================================ */}
-            <div className="space-y-6">
+            <section aria-labelledby="account-settings-heading" className="space-y-5">
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] px-4 py-4 shadow-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 id="account-settings-heading" className="text-sm font-semibold text-[var(--text-primary)]">
+                    Account & personal care
+                  </h2>
+                  <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                    Your profile, partner connection, privacy, and sign-in security
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
               {/* Appearance & Theme Card */}
               <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm">
                 <div className="flex items-center gap-2.5 mb-4">
@@ -910,10 +917,10 @@ export default function SettingsPage() {
                                 type: "success",
                                 text: "Sensor verified! Fingerprint is active and functioning correctly.",
                               });
-                            } catch (err: any) {
+                            } catch (err: unknown) {
                               setBiometricMsg({
                                 type: "error",
-                                text: err?.message || "Sensor test failed or cancelled.",
+                                text: getErrorMessage(err, "Sensor test failed or cancelled."),
                               });
                             } finally {
                               setBiometricTesting(false);
@@ -958,10 +965,13 @@ export default function SettingsPage() {
                               type: "success",
                               text: "Fingerprint enrolled! You can now unlock the app with 1 tap.",
                             });
-                          } catch (err: any) {
+                          } catch (err: unknown) {
                             setBiometricMsg({
                               type: "error",
-                              text: err?.message || "Failed to register fingerprint scanner. Ensure your browser has permission.",
+                              text: getErrorMessage(
+                                err,
+                                "Failed to register fingerprint scanner. Ensure your browser has permission."
+                              ),
                             });
                           } finally {
                             setBiometricEnrolling(false);
@@ -1010,15 +1020,28 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-            </div>
+              </div>
+            </section>
 
             {/* ============================================================ */}
-            {/* COLUMN 2: PRAYERS, NOTIFICATIONS & SECURITY                 */}
+            {/* COLUMN 2: PRAYERS, NOTIFICATIONS & APP PREFERENCES          */}
             {/* ============================================================ */}
-            <div className="space-y-6">
+            <section aria-labelledby="preferences-settings-heading" className="space-y-5">
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] px-4 py-4 shadow-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                  <Bell className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 id="preferences-settings-heading" className="text-sm font-semibold text-[var(--text-primary)]">
+                    Daily tools & preferences
+                  </h2>
+                  <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                    Prayer schedules, notifications, and your mobile app experience
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
               {/* Prayer Times & Sync Card */}
               <div className="rounded-3xl border border-[var(--glass-border)] glass-card p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
@@ -1220,8 +1243,11 @@ export default function SettingsPage() {
 
               {/* Mobile PWA Install Card */}
               <InstallAppCard />
-
-              </div>
+            </div>
+            </section>
+          </div>
+        )}
+      </div>
 
       {/* Prayer Time Edit Modal */}
       {editingPrayer && (
@@ -1297,6 +1323,12 @@ export default function SettingsPage() {
             <p className="text-xs text-[var(--text-secondary)] mt-1">
               You will no longer share routine percentages or leave passes. You can pair again anytime.
             </p>
+
+            {unpairError && (
+              <p role="alert" className="mt-3 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                {unpairError}
+              </p>
+            )}
 
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button

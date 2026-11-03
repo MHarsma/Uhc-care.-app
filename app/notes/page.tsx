@@ -1,21 +1,14 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import {
   Send,
-  Heart,
   MessageSquareHeart,
-  Sparkles,
   Mic,
   Square,
   Trash2,
-  Volume2,
   FileAudio,
-  CheckCircle2,
-  Smile,
-  Paperclip,
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
@@ -34,6 +27,7 @@ type Note = {
   content?: string | null;
   audio_url?: string | null;
   audio_duration?: number | null;
+  can_delete: boolean;
   created_at?: string | null;
   author?: { id: number; name: string } | null;
   reactions: Reaction[];
@@ -49,6 +43,8 @@ const REACTION_EMOJIS = [
 export default function NotesPage() {
   const [notes, setNotes] = React.useState<Note[]>([]);
   const [noteToDelete, setNoteToDelete] = React.useState<Note | null>(null);
+  const [deletingNoteId, setDeletingNoteId] = React.useState<number | null>(null);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState<"text" | "voice">("text");
 
@@ -80,10 +76,10 @@ export default function NotesPage() {
     try {
       const result = await api.get<{ notes: Note[] }>("/couple/notes");
       setNotes(result.notes ?? []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!silent) {
         setNotes([]);
-        setLoadError(err?.message || "Unable to load notes. Please check connection.");
+        setLoadError(err instanceof Error ? err.message : "Unable to load notes. Please check connection.");
       }
     } finally {
       setLoading(false);
@@ -93,7 +89,9 @@ export default function NotesPage() {
 
   // Initial fetch and focus / visibility handlers
   React.useEffect(() => {
-    void loadNotes(false);
+    const initialLoad = setTimeout(() => {
+      void loadNotes(false);
+    }, 0);
 
     // Live polling: check for new messages every 4 seconds when tab is visible
     const interval = setInterval(() => {
@@ -110,6 +108,7 @@ export default function NotesPage() {
     document.addEventListener("visibilitychange", handleFocus);
 
     return () => {
+      clearTimeout(initialLoad);
       clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleFocus);
@@ -206,13 +205,15 @@ export default function NotesPage() {
           return prev + 1;
         });
       }, 1000);
-    } catch (err: any) {
-      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+    } catch (err: unknown) {
+      const errorName = err instanceof Error ? err.name : "";
+
+      if (errorName === "NotAllowedError" || errorName === "PermissionDeniedError") {
         setError("Microphone permission was denied. Tap the site settings or lock icon in your browser address bar to allow microphone access.");
-      } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+      } else if (errorName === "NotFoundError" || errorName === "DevicesNotFoundError") {
         setError("No microphone was detected on this device.");
       } else {
-        setError(err?.message || "Could not start audio recording on this device.");
+        setError(err instanceof Error ? err.message : "Could not start audio recording on this device.");
       }
       console.error(err);
     }
@@ -251,13 +252,12 @@ export default function NotesPage() {
       formData.append("audio_duration", String(Math.max(1, recordingSeconds)));
 
       // Use the api client which handles Bearer token, XSRF, and credentials
-      const result = await api.post("/couple/notes", formData);
+      await api.post("/couple/notes", formData);
 
       cancelVoiceRecording();
       await loadNotes();
-    } catch (err: any) {
-      const serverMsg = err?.data?.message || err?.message;
-      setError(serverMsg || "Unable to post voice note.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unable to post voice note.");
     } finally {
       setSubmitting(false);
     }
@@ -274,12 +274,19 @@ export default function NotesPage() {
 
   const handleConfirmDelete = async () => {
     if (!noteToDelete) return;
+
+    const noteId = noteToDelete.id;
+    setDeletingNoteId(noteId);
+    setDeleteError(null);
+
     try {
-      await api.delete(`/couple/notes/${noteToDelete.id}`);
-      setNotes((prev) => prev.filter((n) => n.id !== noteToDelete.id));
+      await api.delete(`/couple/notes/${noteId}`);
+      setNotes((prev) => prev.filter((note) => note.id !== noteId));
       setNoteToDelete(null);
     } catch (err) {
-      console.error("Failed to delete note:", err);
+      setDeleteError(err instanceof Error ? err.message : "Unable to delete this note. Please try again.");
+    } finally {
+      setDeletingNoteId(null);
     }
   };
 
@@ -523,14 +530,20 @@ export default function NotesPage() {
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setNoteToDelete(note)}
-                        className="p-1.5 text-[var(--text-tertiary)] hover:text-rose-500 rounded-lg hover:bg-rose-500/10 transition-colors"
-                        title="Delete note"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      {note.can_delete && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteError(null);
+                            setNoteToDelete(note);
+                          }}
+                          className="rounded-lg p-2 text-[var(--text-tertiary)] transition-colors hover:bg-rose-500/10 hover:text-rose-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40"
+                          title="Delete your note"
+                          aria-label={`Delete your ${note.type === "voice" ? "voice memo" : "note"}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
 
                     {/* Content */}
@@ -552,11 +565,9 @@ export default function NotesPage() {
                                       controls
                                       preload="metadata"
                                       playsInline
-                                      className="w-full h-10 rounded-xl"
+                                      src={streamUrl || fallbackUrl}
+                                      className="h-10 w-full rounded-xl"
                                     >
-                                      <source src={streamUrl} type="audio/webm" />
-                                      <source src={streamUrl} type="audio/mp4" />
-                                      <source src={fallbackUrl} />
                                       Your browser does not support audio playback.
                                     </audio>
                                     <div className="flex items-center justify-between text-[10px] text-[var(--text-tertiary)] px-1">
@@ -628,34 +639,60 @@ export default function NotesPage() {
       </div>
       {/* Delete Confirmation Modal */}
       {noteToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-card)] p-6 shadow-2xl border border-[var(--glass-border)] text-center animate-in zoom-in-95 duration-150 space-y-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-500">
-              <Trash2 className="h-7 w-7" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                Delete Note?
-              </h3>
-              <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">
-                Are you sure you want to permanently delete this {noteToDelete.type === "voice" ? "voice memo" : "note"}? This will permanently remove it from the database for both you and your partner.
-              </p>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && deletingNoteId === null) {
+              setNoteToDelete(null);
+            }
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-note-title"
+            aria-describedby="delete-note-description"
+            className="w-full max-w-md space-y-5 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 text-left shadow-2xl"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 id="delete-note-title" className="text-base font-semibold text-[var(--text-primary)]">
+                  Delete this {noteToDelete.type === "voice" ? "voice memo" : "note"}?
+                </h3>
+                <p id="delete-note-description" className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                  This permanently removes it for you and your partner. This action cannot be undone.
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 pt-2">
+            {deleteError && (
+              <p role="alert" className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
+                {deleteError}
+              </p>
+            )}
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={() => setNoteToDelete(null)}
-                className="rounded-xl border border-[var(--glass-border)] py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-all cursor-pointer"
+                onClick={() => {
+                  setDeleteError(null);
+                  setNoteToDelete(null);
+                }}
+                disabled={deletingNoteId !== null}
+                className="rounded-xl border border-[var(--glass-border)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleConfirmDelete}
-                className="rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer"
+                onClick={() => void handleConfirmDelete()}
+                disabled={deletingNoteId !== null}
+                className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Yes, Delete
+                {deletingNoteId !== null ? "Deleting…" : "Delete permanently"}
               </button>
             </div>
           </div>
