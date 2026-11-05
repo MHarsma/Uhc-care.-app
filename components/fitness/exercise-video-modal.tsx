@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   DetailedExerciseVideo,
   EXERCISE_VIDEO_LIBRARY,
-  PostureCheckpoint,
 } from "@/lib/data/exercise-videos";
 import {
   X,
@@ -34,70 +33,23 @@ interface ExerciseVideoModalProps {
   onClose: () => void;
 }
 
-function playCompletionChime() {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const now = ctx.currentTime;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(880, now);
-    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.35);
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.6);
-
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate([200, 100, 200]);
-    }
-  } catch {}
-}
-
 export function ExerciseVideoModal({
   exerciseId,
   onClose,
 }: ExerciseVideoModalProps) {
-  const [selectedAngle, setSelectedAngle] = React.useState<"front" | "side">(
-    "side"
-  );
   const [isSlowMo, setIsSlowMo] = React.useState(false);
-  const [isPlaying, setIsPlaying] = React.useState(true);
   const [activeCheckpoint, setActiveCheckpoint] = React.useState<number>(0);
-  const [timerSeconds, setTimerSeconds] = React.useState(0);
+  const [timerSeconds, setTimerSeconds] = React.useState(() =>
+    exerciseId ? (EXERCISE_VIDEO_LIBRARY[exerciseId]?.durationSec ?? 60) : 60,
+  );
   const [isTimerRunning, setIsTimerRunning] = React.useState(false);
   const [timerCompleted, setTimerCompleted] = React.useState(false);
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
 
   const videoData: DetailedExerciseVideo | null = React.useMemo(() => {
     if (!exerciseId) return null;
-    return (
-      EXERCISE_VIDEO_LIBRARY[exerciseId] ||
-      Object.values(EXERCISE_VIDEO_LIBRARY).find(
-        (v) =>
-          v.name.toLowerCase().includes(exerciseId.toLowerCase()) ||
-          exerciseId.toLowerCase().includes(v.id)
-      ) ||
-      EXERCISE_VIDEO_LIBRARY.childs_pose
-    );
+    return EXERCISE_VIDEO_LIBRARY[exerciseId] ?? null;
   }, [exerciseId]);
-
-  // Reset angle & timer when exercise changes
-  React.useEffect(() => {
-    if (videoData) {
-      setSelectedAngle("side");
-      setTimerSeconds(videoData.durationSec || 60);
-      setIsTimerRunning(false);
-      setTimerCompleted(false);
-      setActiveCheckpoint(0);
-      setIsSlowMo(false);
-    }
-  }, [videoData]);
 
   // Countdown timer logic with notification chime & vibration
   React.useEffect(() => {
@@ -108,7 +60,6 @@ export function ExerciseVideoModal({
           if (prev <= 1) {
             setIsTimerRunning(false);
             setTimerCompleted(true);
-            playCompletionChime();
             return 0;
           }
           return prev - 1;
@@ -139,15 +90,7 @@ export function ExerciseVideoModal({
 
   if (!videoData) return null;
 
-  const currentVideoId =
-    selectedAngle === "front"
-      ? videoData.frontVideoId
-      : videoData.sideVideoId;
-
-  const currentAngleCue =
-    selectedAngle === "front"
-      ? videoData.frontAngleCue
-      : videoData.sideAngleCue;
+  const currentVideoId = videoData.videoId;
 
   return (
     <AnimatePresence>
@@ -192,39 +135,9 @@ export function ExerciseVideoModal({
 
           {/* Modal Scrollable Body */}
           <div className="overflow-y-auto p-4 sm:p-6 space-y-6 flex-1">
-            {/* Video Player & Angle Perspective Switcher */}
+            {/* Video tutorial and exercise timer */}
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--glass-border)]">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAngle("side")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5",
-                      selectedAngle === "side"
-                        ? "bg-violet-600 text-white shadow-xs"
-                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                    )}
-                  >
-                    <span>📐</span>
-                    <span>Side Profile Angle</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAngle("front")}
-                    className={cn(
-                      "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5",
-                      selectedAngle === "front"
-                        ? "bg-violet-600 text-white shadow-xs"
-                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                    )}
-                  >
-                    <span>👁️</span>
-                    <span>Front Facing Angle</span>
-                  </button>
-                </div>
-
-                {/* Slow-mo & Timer Controls */}
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
@@ -235,7 +148,7 @@ export function ExerciseVideoModal({
                         ? "bg-amber-500/20 border-amber-500/40 text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/30"
                         : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     )}
-                    title="Toggle slow-motion 0.5x playback for granular biomechanics examination"
+                    title="Toggle slow-motion playback"
                   >
                     <span>⚡</span>
                     <span>{isSlowMo ? "0.5x Slow-Mo (Active)" : "Normal Speed (1.0x)"}</span>
@@ -263,7 +176,7 @@ export function ExerciseVideoModal({
                     ) : (
                       <>
                         <Play className="h-3.5 w-3.5" />
-                        <span>Start {videoData.durationSec}s Hold Timer</span>
+                        <span>Start {videoData.durationSec}s Timer</span>
                       </>
                     )}
                   </button>
@@ -275,7 +188,7 @@ export function ExerciseVideoModal({
                 <div className="flex items-center justify-between rounded-2xl bg-emerald-500/15 border border-emerald-500/35 p-3 text-xs font-bold text-emerald-700 dark:text-emerald-300 animate-in fade-in slide-in-from-top-1">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <span>🎉 Interval Complete! Great job holding proper posture.</span>
+                    <span>Interval complete. Take a moment before continuing.</span>
                   </div>
                   <button
                     type="button"
@@ -287,16 +200,17 @@ export function ExerciseVideoModal({
                 </div>
               )}
 
-              {/* High Definition Video Embed Player */}
+              {/* Embedded video with an external fallback for privacy or regional restrictions */}
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black border border-[var(--glass-border)] shadow-inner">
                 {currentVideoId ? (
                   <iframe
                     ref={iframeRef}
-                    key={`${currentVideoId}-${selectedAngle}`}
-                    src={`https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1&mute=1&loop=1&playlist=${currentVideoId}&controls=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
-                    title={`${videoData.name} Form Video`}
+                    key={currentVideoId}
+                    src={`https://www.youtube-nocookie.com/embed/${currentVideoId}?controls=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+                    title={`${videoData.name} tutorial`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
                     className="h-full w-full object-cover border-0"
                   />
                 ) : (
@@ -306,9 +220,9 @@ export function ExerciseVideoModal({
                   </div>
                 )}
 
-                {/* Angle Overlay Badge & External Link */}
+                {/* Tutorial label and external fallback */}
                 <div className="absolute top-3 left-3 pointer-events-none rounded-full bg-black/60 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white border border-white/20">
-                  {selectedAngle === "front" ? "Front Perspective" : "Side Alignment Perspective"}
+                  Video tutorial
                 </div>
 
                 {currentVideoId && (
@@ -324,15 +238,21 @@ export function ExerciseVideoModal({
                 )}
               </div>
 
-              {/* Angle Form Coaching Cue */}
-              <div className="rounded-2xl border border-violet-500/25 bg-violet-500/5 p-3.5 text-xs text-violet-800 dark:text-violet-200 flex items-start gap-2.5">
-                <Compass className="h-4 w-4 shrink-0 mt-0.5 text-violet-600 dark:text-violet-400" />
-                <p className="leading-relaxed">
-                  <strong className="text-violet-900 dark:text-violet-100 font-bold">
-                    {selectedAngle === "front" ? "Front Angle Cue:" : "Side Profile Cue:"}
-                  </strong>{" "}
-                  {currentAngleCue}
-                </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[videoData.frontAngleCue, videoData.sideAngleCue].map((cue, index) => (
+                  <div
+                    key={cue}
+                    className="rounded-2xl border border-violet-500/25 bg-violet-500/5 p-3.5 text-xs text-violet-800 dark:text-violet-200 flex items-start gap-2.5"
+                  >
+                    <Compass className="h-4 w-4 shrink-0 mt-0.5 text-violet-600 dark:text-violet-400" />
+                    <p className="leading-relaxed">
+                      <strong className="text-violet-900 dark:text-violet-100 font-bold">
+                        {index === 0 ? "Front-view cue:" : "Side-view cue:"}
+                      </strong>{" "}
+                      {cue}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -343,7 +263,7 @@ export function ExerciseVideoModal({
                   Biomechanics & Posture Checkpoints:
                 </span>
                 <span className="text-[11px] text-[var(--text-tertiary)]">
-                  Tap to verify joint alignment
+                  Use these as general form reminders
                 </span>
               </div>
 
@@ -369,7 +289,7 @@ export function ExerciseVideoModal({
                           <span>{cp.part}</span>
                         </span>
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                          Verified
+                          Form cue
                         </span>
                       </div>
                       <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
@@ -416,7 +336,7 @@ export function ExerciseVideoModal({
               </div>
             </div>
 
-            {/* Breathing Guide & Hormonal Benefit */}
+            {/* Breathing guide and general safety note */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 space-y-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 flex items-center gap-1">
@@ -427,12 +347,12 @@ export function ExerciseVideoModal({
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-pink-600 dark:text-pink-400 flex items-center gap-1">
-                  <Sparkles className="h-3.5 w-3.5" /> Endocrine & Phase Benefit
+              <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5" /> Move at your pace
                 </span>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  {videoData.hormonalBenefit}
+                  Cycle phases do not prescribe a specific workout. Choose a comfortable range and stop if pain, dizziness, or other symptoms worsen.
                 </p>
               </div>
             </div>

@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
-import { api } from "@/lib/api/client";
+import { api, getApiBaseUrl } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 type Reaction = {
@@ -32,6 +32,130 @@ type Note = {
   author?: { id: number; name: string } | null;
   reactions: Reaction[];
 };
+
+function getAudioFileExtension(mimeType: string): string {
+  if (mimeType.includes("mp4")) return "m4a";
+  if (mimeType.includes("ogg")) return "ogg";
+  if (mimeType.includes("wav")) return "wav";
+
+  return "webm";
+}
+
+function VoiceNotePlayer({ note }: { note: Note }) {
+  const [audioSource, setAudioSource] = React.useState<string | null>(
+    note.audio_url?.includes("/storage/") ? null : note.audio_url ?? null,
+  );
+  const [playbackError, setPlaybackError] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(
+    Boolean(note.audio_url?.includes("/storage/")),
+  );
+
+  React.useEffect(() => {
+    const audioUrl = note.audio_url;
+    if (!audioUrl?.includes("/storage/")) {
+      return;
+    }
+
+    const controller = new AbortController();
+    let objectUrl: string | null = null;
+    let isCurrent = true;
+
+    const loadAudio = async () => {
+      setPlaybackError(null);
+
+      try {
+        const headers = new Headers();
+        const token = localStorage.getItem("uhc_auth_token");
+        if (token) {
+          headers.set("Authorization", `Bearer ${token}`);
+        }
+
+        const response = await fetch(
+          `${getApiBaseUrl()}/couple/notes/${note.id}/audio`,
+          {
+            credentials: "include",
+            headers,
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Audio request failed (${response.status}).`);
+        }
+
+        const audioBlob = await response.blob();
+        if (audioBlob.size === 0) {
+          throw new Error("The audio file is empty.");
+        }
+
+        objectUrl = URL.createObjectURL(audioBlob);
+        if (isCurrent) {
+          setAudioSource(objectUrl);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+
+        console.error("Could not load voice note from the audio stream:", error);
+        if (isCurrent) {
+          setAudioSource(audioUrl);
+          setPlaybackError("Could not load the audio stream. Try the direct file link.");
+        }
+      } finally {
+        if (isCurrent) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadAudio();
+
+    return () => {
+      isCurrent = false;
+      controller.abort();
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [note.audio_url, note.id]);
+
+  return (
+    <div className="space-y-1.5 pt-1">
+      {audioSource ? (
+        <audio
+          controls
+          preload="metadata"
+          playsInline
+          src={audioSource}
+          onError={() => setPlaybackError("This audio file could not be played. Try the direct file link.")}
+          className="h-10 w-full rounded-xl"
+        >
+          Your browser does not support audio playback.
+        </audio>
+      ) : (
+        <p className="text-xs text-[var(--text-secondary)]" role="status">
+          {isLoading ? "Loading voice note..." : "Audio is not available."}
+        </p>
+      )}
+      {note.audio_url && (
+        <div className="flex items-center justify-between text-[10px] text-[var(--text-tertiary)] px-1">
+          <a
+            href={note.audio_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-violet-500 hover:underline flex items-center gap-1 font-semibold"
+          >
+            Open / Replay Audio Directly ↗
+          </a>
+        </div>
+      )}
+      {playbackError && (
+        <p className="px-1 text-[10px] text-rose-500" role="status">
+          {playbackError}
+        </p>
+      )}
+    </div>
+  );
+}
 
 const REACTION_EMOJIS = [
   "❤️", "💖", "🥰", "😍", "💕", "😘", "🫶", "💝",
@@ -185,7 +309,7 @@ export default function NotesPage() {
       };
 
       mediaRecorder.onstop = () => {
-        const type = mimeType || "audio/webm";
+        const type = mediaRecorder.mimeType || mimeType || "audio/webm";
         const audioBlob = new Blob(audioChunksRef.current, { type });
         setRecordedAudioBlob(audioBlob);
         setRecordedAudioUrl(URL.createObjectURL(audioBlob));
@@ -248,7 +372,11 @@ export default function NotesPage() {
     try {
       const formData = new FormData();
       formData.append("type", "voice");
-      formData.append("audio", recordedAudioBlob, "voicenote.webm");
+      formData.append(
+        "audio",
+        recordedAudioBlob,
+        `voicenote.${getAudioFileExtension(recordedAudioBlob.type)}`,
+      );
       formData.append("audio_duration", String(Math.max(1, recordingSeconds)));
 
       // Use the api client which handles Bearer token, XSRF, and credentials
@@ -555,29 +683,7 @@ export default function NotesPage() {
                             <span>Voice Memo ({note.audio_duration || 0}s)</span>
                           </div>
                           {note.audio_url ? (
-                            <div className="space-y-1.5 pt-1">
-                              <audio
-                                controls
-                                preload="metadata"
-                                playsInline
-                                src={note.audio_url ?? undefined}
-                                className="h-10 w-full rounded-xl"
-                              >
-                                Your browser does not support audio playback.
-                              </audio>
-                              {note.audio_url && (
-                                <div className="flex items-center justify-between text-[10px] text-[var(--text-tertiary)] px-1">
-                                  <a
-                                    href={note.audio_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-violet-500 hover:underline flex items-center gap-1 font-semibold"
-                                  >
-                                    Open / Replay Audio Directly ↗
-                                  </a>
-                                </div>
-                              )}
-                            </div>
+                            <VoiceNotePlayer note={note} />
                           ) : (
                             <p className="pt-1 text-xs text-rose-500" role="status">
                               This voice message has no playable audio file.

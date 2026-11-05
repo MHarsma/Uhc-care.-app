@@ -27,6 +27,7 @@ import {
   CalendarHeart,
   Dumbbell,
   History,
+  Activity,
 } from "lucide-react";
 import { QuickAddTaskDialog } from "@/components/routine-library/quick-add-task-dialog";
 import { RoutineLibraryModal } from "@/components/routine-library/routine-library-modal";
@@ -202,6 +203,13 @@ export function AppShell({
       shortLabel: "Fitness",
       href: "/fitness",
       icon: Dumbbell,
+    },
+    {
+      id: "workout",
+      label: "Workout",
+      shortLabel: "Workout",
+      href: "/workout",
+      icon: Activity,
     },
     {
       id: "analytics",
@@ -663,6 +671,7 @@ export function AppShell({
             }
 
             items.push({ id: "fitness", label: "Fitness", href: "/fitness", icon: Dumbbell });
+            items.push({ id: "workout", label: "Workout", href: "/workout", icon: Activity });
             items.push({
               id: "partner",
               label: "Partner",

@@ -14,9 +14,7 @@ export interface DetailedExerciseVideo {
   reps?: string;
   equipment: string;
   targetMuscles: string[];
-  // High quality embed/video representations
-  frontVideoId: string; // YouTube embed ID or video stream
-  sideVideoId: string;
+  videoId: string;
   videoPoster: string;
   frontAngleCue: string;
   sideAngleCue: string;
@@ -24,7 +22,6 @@ export interface DetailedExerciseVideo {
   correctFormPoints: string[];
   mistakesToAvoid: string[];
   breathingGuide: string;
-  hormonalBenefit: string;
 }
 
 export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
@@ -38,8 +35,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "Hold for 8-10 deep breaths",
     equipment: "Yoga Mat or Soft Carpet",
     targetMuscles: ["Lower Back", "Pelvic Floor", "Hip Adductors", "Latissimus Dorsi"],
-    frontVideoId: "2MJGg-dUKh0",
-    sideVideoId: "eqVMAPM00DM",
+    videoId: "2MJGg-dUKh0",
     videoPoster: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Open knees mat-width apart, big toes touching together. Allow ribcage to rest between thighs.",
     sideAngleCue: "Sink sit bones back toward heels. Spine stays long with forehead resting softly on mat.",
@@ -60,7 +56,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Holding breath when feeling pelvic tension.",
     ],
     breathingGuide: "Inhale deeply for 4s down into the pelvic floor; exhale slowly for 6s releasing all lower-back stiffness.",
-    hormonalBenefit: "Calms sympathetic 'fight-or-flight' nervous system, reducing prostaglandin-induced cramping during menstrual flow.",
   },
 
   cat_cow: {
@@ -73,8 +68,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "10-12 rhythmic waves",
     equipment: "No Equipment / Mat",
     targetMuscles: ["Thoracic Spine", "Cervical Spine", "Abdominal Wall", "Pelvic Diaphragm"],
-    frontVideoId: "kqnua4rHVVA",
-    sideVideoId: "yO0w2z6r9_g",
+    videoId: "kqnua4rHVVA",
     videoPoster: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Wrists directly stacked under shoulder joints, knees hip-width apart and firmly planted.",
     sideAngleCue: "Inhale arching into Cow (belly drops, chest broadens); exhale rounding into Cat (navel to spine).",
@@ -95,7 +89,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Bending elbows excessively instead of articulating the vertebral column.",
     ],
     breathingGuide: "Inhale fully through your nose as your belly drops (Cow); exhale smoothly out through mouth as you round your back (Cat).",
-    hormonalBenefit: "Stimulates cerebrospinal fluid flow and tones the vagus nerve, reducing morning brain fog and hormonal irritability.",
   },
 
   butterfly: {
@@ -108,8 +101,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "2 minutes passive restorative hold",
     equipment: "Mat, optional pillow under knees",
     targetMuscles: ["Pelvic Floor", "Adductor Longus", "Iliopsoas", "Lower Lumbar"],
-    frontVideoId: "s39KkH-M1mQ",
-    sideVideoId: "8x8_9bJ3a1U",
+    videoId: "N4figcWjDGI",
     videoPoster: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Soles of feet pressed lightly together; knees dropping outward naturally with zero force.",
     sideAngleCue: "Entire spine and back of skull supported comfortably on mat; arms resting open beside hips.",
@@ -129,7 +121,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Tensing glutes instead of allowing full surrender.",
     ],
     breathingGuide: "Inhale down into the lower pelvis expanding your belly; exhale letting all tightness melt away.",
-    hormonalBenefit: "Increases venous and arterial blood flow to the ovaries and uterus, soothing dysmenorrhea and uterine spasms.",
   },
 
   bridge: {
@@ -142,8 +133,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "10-12 slow controlled reps",
     equipment: "Yoga Mat",
     targetMuscles: ["Gluteus Maximus", "Hamstrings", "Transverse Abdominis", "Pelvic Stabilizers"],
-    frontVideoId: "OUgrh8iS_2g",
-    sideVideoId: "8bbE64NuDTU",
+    videoId: "8bbE64NuDTU",
     videoPoster: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Feet planted hip-width apart and parallel, second toes pointing straight ahead.",
     sideAngleCue: "Drive through heels until a straight diagonal line forms from knees to hips to shoulders.",
@@ -164,7 +154,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Lifting heels off the ground.",
     ],
     breathingGuide: "Inhale at the bottom; exhale with core brace as you drive hips up; inhale lowering down.",
-    hormonalBenefit: "Counteracts anterior pelvic tilt from prolonged sitting, relieving sacral nerve pressure and lumbar fatigue.",
   },
 
   legs_wall: {
@@ -177,8 +166,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "3 minutes static restorative hold",
     equipment: "Wall or Sturdy Headboard",
     targetMuscles: ["Hamstrings", "Lymphatic Network", "Venous Return", "Adrenal Glands"],
-    frontVideoId: "0bL39wDjhJ0",
-    sideVideoId: "W983G-k9u4s",
+    videoId: "_OQEIiZLY-0",
     videoPoster: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Legs vertically aligned up the wall, feet relaxed hip-width apart.",
     sideAngleCue: "Sit bones close to baseboard; arms out at 45 degrees with palms facing ceiling.",
@@ -198,7 +186,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Checking your phone — keep eyes closed for true nervous system reset.",
     ],
     breathingGuide: "Inhale for 4 seconds; exhale for 6-8 seconds to engage deep parasympathetic healing.",
-    hormonalBenefit: "Relieves fluid retention, luteal phase ankle swelling, and lowers elevated cortisol before bedtime.",
   },
 
   chin_tuck: {
@@ -211,8 +198,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "12-15 controlled retractions",
     equipment: "No Equipment (Chair or Standing)",
     targetMuscles: ["Deep Neck Flexors (Longus Colli)", "Suboccipital Base", "Upper Trapezius"],
-    frontVideoId: "wQYL_4gKqAk",
-    sideVideoId: "VbE3q-p29m8",
+    videoId: "7rnlAVhAK-8",
     videoPoster: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Ears level over shoulders, eyes looking straight forward at eye level, jaw unclenched.",
     sideAngleCue: "Glide head straight back as if sliding a drawer in, creating a slight double chin without tilting down.",
@@ -232,7 +218,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Holding your breath during the retraction.",
     ],
     breathingGuide: "Inhale at neutral; exhale as you glide head backwards and hold for 3 seconds.",
-    hormonalBenefit: "Directly decompresses the greater occipital nerve roots, preventing cervicogenic and hormonal tension headaches.",
   },
 
   trap_stretch: {
@@ -245,8 +230,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "45 seconds per side",
     equipment: "No Equipment",
     targetMuscles: ["Upper Trapezius", "Levator Scapulae", "Scalenes", "Sternocleidomastoid"],
-    frontVideoId: "g6j9B7P4y6E",
-    sideVideoId: "U3sYkE0wP9I",
+    videoId: "-r0eoFS7_5Q",
     videoPoster: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Gently tip right ear toward right shoulder while reaching left fingertips down toward floor.",
     sideAngleCue: "Torso stays strictly vertical without leaning sideways. Opposite shoulder stays dropped down.",
@@ -266,7 +250,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Holding tension in your jaw or clenching teeth.",
     ],
     breathingGuide: "Exhale deeply into the feeling of tension releasing with each cycle.",
-    hormonalBenefit: "Releases trapped somatic stress stored in neck fascia during progesterone shifts, eliminating throbbing temple pain.",
   },
 
   squat: {
@@ -279,8 +262,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "12-15 controlled reps",
     equipment: "Dumbbell or Kettlebell (or Bodyweight)",
     targetMuscles: ["Quadriceps", "Gluteus Maximus", "Adductor Magnus", "Transverse Core"],
-    frontVideoId: "MeIiIdhvXT4",
-    sideVideoId: "MVMNK0HiTPg",
+    videoId: "MeIiIdhvXT4",
     videoPoster: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Feet slightly wider than shoulders, toes angled out 15-30 degrees, knees track over toes.",
     sideAngleCue: "Hips travel back and down simultaneously; chest stays proudly upright with neutral spine.",
@@ -301,7 +283,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Rounding the upper back and collapsing the chest.",
     ],
     breathingGuide: "Inhale and brace core on the descent; exhale with power as you stand back up.",
-    hormonalBenefit: "Maximizes peak estrogen muscle protein synthesis during follicular days 6–13, boosting metabolic rate and bone density.",
   },
 
   rdl: {
@@ -314,8 +295,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "10-12 reps",
     equipment: "Pair of Dumbbells",
     targetMuscles: ["Hamstrings", "Gluteus Maximus", "Erector Spinae", "Latissimus Dorsi"],
-    frontVideoId: "JCXUYuzwNrM",
-    sideVideoId: "5_vecpWp_kU",
+    videoId: "JCXUYuzwNrM",
     videoPoster: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Feet hip-width apart and parallel, dumbbells resting lightly against front of thighs.",
     sideAngleCue: "Hips push straight back like closing a car door behind you; spine remains rigid and flat.",
@@ -336,7 +316,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Letting the dumbbells drift far away from your legs.",
     ],
     breathingGuide: "Inhale and brace core as hips push back; exhale forcefully as you drive hips forward to stand.",
-    hormonalBenefit: "Strengthens entire postural posterior chain, reversing the slouch of desk work and sculpting lean muscle.",
   },
 
   bird_dog: {
@@ -349,8 +328,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "10 alternating reps with 3s hold",
     equipment: "Yoga Mat",
     targetMuscles: ["Erector Spinae", "Gluteus Medius", "Transverse Abdominis", "Multifidus"],
-    frontVideoId: "wiFNA3sqjCA",
-    sideVideoId: "vbfnNhpkI98",
+    videoId: "wiFNA3sqjCA",
     videoPoster: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Wrists under shoulders, knees under hips. Tabletop flat back with zero pelvic tilt.",
     sideAngleCue: "Opposite arm reaches straight forward and leg reaches straight back in a single parallel line.",
@@ -370,7 +348,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Rushing through reps without pausing to stabilize.",
     ],
     breathingGuide: "Exhale as arm and leg reach out into full extension; inhale as they return under control to all fours.",
-    hormonalBenefit: "Strengthens deep multifidus muscles and prevents sacroiliac joint instability caused by cycle relaxin fluctuations.",
   },
 
   pilates_100: {
@@ -383,8 +360,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "100 arm pumps (10 breath cycles)",
     equipment: "Mat",
     targetMuscles: ["Transverse Abdominis", "Rectus Abdominis", "Intercostals", "Pelvic Diaphragm"],
-    frontVideoId: "vP3fN31n29c",
-    sideVideoId: "w_pT57q6q1g",
+    videoId: "UaqpuUzs1i8",
     videoPoster: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Legs in tabletop (shins parallel to floor) or extended 45 degrees; arms hovering by hips.",
     sideAngleCue: "Head and shoulder blades curled off mat; lower back firmly imprinted into floor.",
@@ -404,7 +380,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Floppy or bent elbows during the arm pumps.",
     ],
     breathingGuide: "Inhale through the nose for 5 counts; exhale through pursed lips for 5 counts.",
-    hormonalBenefit: "Tones the deep abdominal wall without high-impact spinal pounding, ideal for high-progesterone luteal days.",
   },
 
   glute_kickback: {
@@ -417,8 +392,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "15 reps per leg",
     equipment: "Yoga Mat",
     targetMuscles: ["Gluteus Maximus", "Hamstrings", "Pelvic Stabilizers"],
-    frontVideoId: "4U2_r3oQfEw",
-    sideVideoId: "S85j71D2o0A",
+    videoId: "YoOlLusFMYU",
     videoPoster: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Hands directly under shoulders, hips squared to floor with no twisting.",
     sideAngleCue: "Maintain 90-degree bend in knee; drive heel upward toward ceiling squeezing glute at top.",
@@ -438,7 +412,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Letting the opposite hip sag to the side.",
     ],
     breathingGuide: "Exhale driving heel toward ceiling; inhale lowering knee down under control.",
-    hormonalBenefit: "Isolates glutes with zero spinal compression, perfect for all energy levels and cycle phases.",
   },
 
   fire_hydrant: {
@@ -451,8 +424,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "12-15 reps per side",
     equipment: "Mat",
     targetMuscles: ["Gluteus Medius", "Gluteus Minimus", "Tensor Fasciae Latae", "Core"],
-    frontVideoId: "Q1N4yR9z2lY",
-    sideVideoId: "La3oxb_HqY8",
+    videoId: "IRkRgk2Gc1E",
     videoPoster: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Weight evenly distributed across both hands; lift knee out to the side without leaning.",
     sideAngleCue: "Spine straight from neck to tailbone; knee lifts to hip height with 90-degree bend.",
@@ -470,7 +442,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Rushing repetitions without pause.",
     ],
     breathingGuide: "Exhale as knee lifts outward; inhale as it returns to center.",
-    hormonalBenefit: "Tones the lateral hip muscles, stabilizing the pelvis against menstrual sacral ache.",
   },
 
   hip_thrust: {
@@ -483,8 +454,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "12-15 controlled reps",
     equipment: "Couch, Bench, or Mat",
     targetMuscles: ["Gluteus Maximus", "Hamstrings", "Quadriceps"],
-    frontVideoId: "SEdqd1n0cvg",
-    sideVideoId: "A8nFGuY77CE",
+    videoId: "SEdqd1n0cvg",
     videoPoster: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Feet planted flat hip-width apart, knees pointing in direction of toes.",
     sideAngleCue: "Upper back rested against edge; drive hips up until thighs and torso form flat table.",
@@ -502,7 +472,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Placing feet too close or too far from the hips.",
     ],
     breathingGuide: "Inhale at the bottom; exhale forcefully driving hips up to full lockout.",
-    hormonalBenefit: "Stimulates glute hypertrophy without quad dominance or lower back fatigue.",
   },
 
   walking_lunges: {
@@ -515,8 +484,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "10-12 steps per leg",
     equipment: "Bodyweight / Light Dumbbells",
     targetMuscles: ["Quadriceps", "Gluteus Maximus", "Calves", "Core"],
-    frontVideoId: "L8fvypPrzzs",
-    sideVideoId: "wrwwXE_x-pQ",
+    videoId: "L8fvypPrzzs",
     videoPoster: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Step feet on 'railroad tracks' hip-width apart for optimal stability.",
     sideAngleCue: "Both front and back knees bend to 90 degrees; front knee stays behind toes.",
@@ -533,7 +501,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Leaning upper body forward onto the front thigh.",
     ],
     breathingGuide: "Inhale stepping forward and lowering; exhale rising smoothly up.",
-    hormonalBenefit: "Improves balance and unilateral lower-body tone while elevating metabolic rate.",
   },
 
   sumo_squat: {
@@ -546,8 +513,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "12 reps with 3 pulses at bottom",
     equipment: "Bodyweight or Light Dumbbell",
     targetMuscles: ["Adductors (Inner Thighs)", "Gluteus Maximus", "Quadriceps"],
-    frontVideoId: "9ZuDXYJm9j8",
-    sideVideoId: "sqdg5Nwb_7g",
+    videoId: "kjlfpqXnyL8",
     videoPoster: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Wide stance, toes turned out at 45 degrees, knees tracking wide over toes.",
     sideAngleCue: "Keep spine tall and hips sinking straight down between knees.",
@@ -565,7 +531,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Folding forward from the waist.",
     ],
     breathingGuide: "Inhale lowering into the squat; exhale pressing through heels to stand.",
-    hormonalBenefit: "Tones inner thigh adductors and pelvic floor muscles, supporting pelvic stability.",
   },
 
   wall_sit: {
@@ -578,8 +543,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "Hold for 30-45 seconds",
     equipment: "Smooth Wall",
     targetMuscles: ["Quadriceps", "Glutes", "Calves", "Core"],
-    frontVideoId: "y-wV4Venusw",
-    sideVideoId: "MMV3v4ap4ro",
+    videoId: "y-wV4Venusw",
     videoPoster: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Feet planted hip-width apart, knees tracking straight forward.",
     sideAngleCue: "Back flat against wall with knees bent at 90 degrees like sitting on an invisible chair.",
@@ -596,7 +560,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Slumping forward away from the wall.",
     ],
     breathingGuide: "Slow, calm diaphragmatic breathing throughout the hold.",
-    hormonalBenefit: "Builds muscular quad endurance without impact or joint shearing.",
   },
 
   knee_pushup: {
@@ -609,8 +572,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "10-12 controlled reps",
     equipment: "Yoga Mat",
     targetMuscles: ["Pectoralis Major", "Triceps Brachii", "Anterior Deltoids", "Core"],
-    frontVideoId: "WcIH0K4vW0o",
-    sideVideoId: "jWxvty2K7_k",
+    videoId: "lFR1GWy1Dcs",
     videoPoster: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Hands slightly wider than shoulders, elbows tracking back at 45 degrees like an arrow.",
     sideAngleCue: "Straight line from knees through hips to head; avoid sagging in hips or sticking glutes up.",
@@ -627,7 +589,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Arching lower back and letting belly sag.",
     ],
     breathingGuide: "Inhale lowering down with control; exhale pushing firmly back to top.",
-    hormonalBenefit: "Firms upper chest, sculpts triceps, and builds functional push strength.",
   },
 
   db_chest_press: {
@@ -640,8 +601,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "12-15 reps (with 2-5kg dumbbells)",
     equipment: "Pair of Light Dumbbells / Mat",
     targetMuscles: ["Pectoralis Major", "Anterior Deltoids", "Triceps"],
-    frontVideoId: "vthMCtgVtFw",
-    sideVideoId: "uUG86W_zY_0",
+    videoId: "vthMCtgVtFw",
     videoPoster: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Dumbbells centered over chest, palms facing forward or slightly angled inward.",
     sideAngleCue: "Upper arms tap the floor gently before pressing up, protecting shoulder rotators.",
@@ -658,7 +618,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Flaring elbows straight out in a 'T' shape.",
     ],
     breathingGuide: "Inhale lowering weights until triceps graze floor; exhale pressing up.",
-    hormonalBenefit: "Tones chest tissue and improves upper-body postural balance safely.",
   },
 
   lateral_raise: {
@@ -671,8 +630,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "12-15 reps (1-3kg dumbbells)",
     equipment: "Light Dumbbells",
     targetMuscles: ["Lateral Deltoids", "Upper Back", "Trapezius"],
-    frontVideoId: "3VcKaXpzqRo",
-    sideVideoId: "PzsMitRAqTU",
+    videoId: "3VcKaXpzqRo",
     videoPoster: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Soft bend in elbows, raise weights outward until arms reach shoulder level.",
     sideAngleCue: "Slight forward torso lean (5-10 deg); arms raise in the scapular plane slightly forward.",
@@ -689,7 +647,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Raising hands higher than shoulder level.",
     ],
     breathingGuide: "Exhale raising dumbbells outward; inhale lowering down under control.",
-    hormonalBenefit: "Creates feminine shoulder definition that gives an illusion of a smaller waistline.",
   },
 
   db_row: {
@@ -702,8 +659,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "12-15 reps",
     equipment: "Pair of Light Dumbbells",
     targetMuscles: ["Latissimus Dorsi", "Rhomboids", "Middle Trapezius", "Biceps"],
-    frontVideoId: "roCP6wCXPqo",
-    sideVideoId: "6TSz6sP7X7s",
+    videoId: "roCP6wCXPqo",
     videoPoster: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Feet hip-width apart, dumbbells hanging in front of shins with neutral grip.",
     sideAngleCue: "Hips hinged back at 45 degrees, spine straight; drive elbows back towards hip pockets.",
@@ -720,7 +676,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Yanking weights with body jerking.",
     ],
     breathingGuide: "Exhale rowing elbows up and back; inhale releasing slowly down.",
-    hormonalBenefit: "Counteracts phone slouch and desk posture, opening up the chest cavity for deeper breathing.",
   },
 
   superman: {
@@ -733,8 +688,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "10-12 reps with 2s hold",
     equipment: "Mat",
     targetMuscles: ["Erector Spinae", "Gluteus Maximus", "Posterior Deltoids"],
-    frontVideoId: "z6PJMT2y8GQ",
-    sideVideoId: "cc6UVRS7PW4",
+    videoId: "z6PJMT2y8GQ",
     videoPoster: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Lying prone on stomach, arms reached forward overhead, legs straight behind.",
     sideAngleCue: "Simultaneously peel chest and thighs 2-4 inches off mat, squeezing glutes and back.",
@@ -751,7 +705,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Jerking into the movement abruptly.",
     ],
     breathingGuide: "Exhale lifting chest and thighs; inhale returning down softly.",
-    hormonalBenefit: "Relieves lumbar pain caused by prolonged sitting and weak posterior chain.",
   },
 
   deadbug: {
@@ -764,8 +717,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "10 reps per side (alternating)",
     equipment: "Mat",
     targetMuscles: ["Transverse Abdominis", "Pelvic Floor", "Obliques"],
-    frontVideoId: "g_BYB0R-4Ws",
-    sideVideoId: "I5xbsA7OpuU",
+    videoId: "g_BYB0R-4Ws",
     videoPoster: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Arms extended straight up over shoulders, knees bent 90 degrees directly over hips.",
     sideAngleCue: "Lower back glued flat to the floor with zero gap; opposite arm and leg extend toward floor.",
@@ -782,7 +734,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Moving limbs too fast.",
     ],
     breathingGuide: "Inhale in starting position; exhale drawing core tight as opposite limbs extend.",
-    hormonalBenefit: "Tones the deep abdominal corset, flattening the lower belly without pelvic strain.",
   },
 
   bicycle_crunches: {
@@ -795,8 +746,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "16-20 slow alternating reps",
     equipment: "Mat",
     targetMuscles: ["Internal Obliques", "External Obliques", "Rectus Abdominis"],
-    frontVideoId: "9FGilxCbdz8",
-    sideVideoId: "1we3bh9uhqY",
+    videoId: "9FGilxCbdz8",
     videoPoster: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Fingertips lightly supporting back of head, elbows wide; rotate armpit toward opposite knee.",
     sideAngleCue: "Shoulder blades curled up off floor; extended leg hovers 6 inches above floor.",
@@ -813,7 +763,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Pedaling legs too rapidly.",
     ],
     breathingGuide: "Exhale on each cross-body twist; inhale transitioning through center.",
-    hormonalBenefit: "Sculpts waistline and enhances rotational abdominal stability.",
   },
 
   forearm_plank: {
@@ -826,8 +775,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "30-45 seconds solid hold",
     equipment: "Mat",
     targetMuscles: ["Transverse Abdominis", "Rectus Abdominis", "Shoulders", "Glutes"],
-    frontVideoId: "pSHjTRCQxIw",
-    sideVideoId: "ASdvN_XEl_c",
+    videoId: "pSHjTRCQxIw",
     videoPoster: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Elbows stacked directly below shoulder joints, forearms parallel.",
     sideAngleCue: "Straight unbroken line from crown of head to heels, glutes squeezed, hips not sagging.",
@@ -844,7 +792,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Holding breath.",
     ],
     breathingGuide: "Rhythmic, controlled nasal breathing throughout the hold.",
-    hormonalBenefit: "Protects lumbar disc health and builds endurance in deep core stabilizers.",
   },
 
   reverse_crunches: {
@@ -857,8 +804,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "12-15 slow curls",
     equipment: "Mat",
     targetMuscles: ["Lower Rectus Abdominis", "Transverse Abdominis"],
-    frontVideoId: "gAYte5C671U",
-    sideVideoId: "hyv14e2QDqI",
+    videoId: "ewrE2xDXClU",
     videoPoster: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Lie flat on back, arms pressed into mat beside hips for stability, knees bent at 90 degrees.",
     sideAngleCue: "Curl knees toward chest by tilting pelvis, lifting tailbone 2-3 inches off floor.",
@@ -875,7 +821,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Arching lower back when lowering feet down.",
     ],
     breathingGuide: "Exhale curling tailbone off mat; inhale lowering hips back down.",
-    hormonalBenefit: "Tones difficult-to-target lower abdominal muscle wall while keeping cervical neck relaxed.",
   },
 
   jumping_jacks: {
@@ -888,8 +833,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "45-60 seconds continuous flow",
     equipment: "Comfortable Shoes / Mat",
     targetMuscles: ["Full Body", "Calves", "Deltoids", "Cardiovascular System"],
-    frontVideoId: "2W4ZNSwoW_4",
-    sideVideoId: "iSSAk4XCsRA",
+    videoId: "2W4ZNSwoW_4",
     videoPoster: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "Step one foot out to the side while raising arms overhead, then return and alternate.",
     sideAngleCue: "Soft landing on balls of feet with knees slightly bent, no heavy stomping.",
@@ -906,7 +850,6 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Slumping shoulders.",
     ],
     breathingGuide: "Rhythmic breathing in cadence with your steps.",
-    hormonalBenefit: "Stimulates endorphin and dopamine release to counter low mood or afternoon lethargy.",
   },
 
   mountain_climbers: {
@@ -919,8 +862,7 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
     reps: "30-45 seconds paced tempo",
     equipment: "Mat",
     targetMuscles: ["Rectus Abdominis", "Hip Flexors", "Shoulders", "Cardiovascular System"],
-    frontVideoId: "zT-9L3CEcmk",
-    sideVideoId: "nmwgirgXLYM",
+    videoId: "zT-9L3CEcmk",
     videoPoster: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
     frontAngleCue: "High plank position, hands under shoulders, driving knees forward towards chest.",
     sideAngleCue: "Hips stay level and low, not bobbing up and down into the air.",
@@ -937,6 +879,5 @@ export const EXERCISE_VIDEO_LIBRARY: Record<string, DetailedExerciseVideo> = {
       "Shifting weight backwards away from wrists.",
     ],
     breathingGuide: "Breathe steadily with alternating knee drives.",
-    hormonalBenefit: "Elevates heart rate and tones lower abdomen without high-impact spinal pounding.",
   },
 };

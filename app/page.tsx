@@ -100,17 +100,17 @@ const PREVIEWS = {
 
   vitality: {
     tabId: "vitality",
-    badge: "🌸 Hormonal Movement & Symptom Care",
-    title: "Cycle-Adapted Fitness & Headache Relief",
-    description: "Smart movement calibrated to her 28-day hormonal rhythm, with guided headache stretches and morning supplement safety.",
+    badge: "🌸 Women's Movement & Fitness",
+    title: "Flexible Fitness & Movement",
+    description: "Flexible strength, stretching, and mobility ideas with guided exercise tutorials and optional symptom-aware adjustments.",
     component: (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-3.5 space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-500">Daily Movement</span>
-            <div className="text-xl font-black text-[var(--text-primary)]">185 / 300 kcal</div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-500">Movement Today</span>
+            <div className="text-xl font-black text-[var(--text-primary)]">15 / 30 min</div>
             <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-rose-500 to-pink-500 w-[62%]" />
+              <div className="h-full bg-gradient-to-r from-rose-500 to-pink-500 w-1/2" />
             </div>
           </div>
           <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-3.5 space-y-1">
@@ -126,8 +126,8 @@ const PREVIEWS = {
           <div className="flex items-center gap-2.5">
             <span className="text-xl">🍳</span>
             <div>
-              <p className="text-xs font-bold text-slate-900 dark:text-white">Morning Mineral Supplement</p>
-              <p className="text-[11px] text-slate-700 dark:text-slate-300">Taken with avocado toast — zero morning headache</p>
+              <p className="text-xs font-bold text-slate-900 dark:text-white">Morning Movement Break</p>
+              <p className="text-[11px] text-slate-700 dark:text-slate-300">A gentle stretch, adjusted to how you feel</p>
             </div>
           </div>
           <span className="rounded-full bg-emerald-600 text-white dark:bg-emerald-500/20 dark:text-emerald-300 px-2.5 py-1 text-[10px] font-bold">
@@ -140,7 +140,7 @@ const PREVIEWS = {
             <span className="text-lg">🧘‍♀️</span>
             <div>
               <span className="font-bold text-[var(--text-primary)]">Restorative Pelvic & Spine Flow</span>
-              <p className="text-[11px] text-[var(--text-secondary)]">12 mins • Multi-Angle Video Guide</p>
+              <p className="text-[11px] text-[var(--text-secondary)]">12 mins • Exercise tutorial</p>
             </div>
           </div>
           <span className="rounded-lg bg-violet-600 px-3 py-1 font-bold text-white text-[11px]">Play Guide</span>
@@ -225,7 +225,7 @@ const PREVIEWS = {
             Shared Grocery & Meal Note
           </span>
           <p className="text-sm font-medium text-[var(--text-primary)]">
-            🛒 Spinach, avocados, magnesium glycinate & electrolyte powder for cycle recovery.
+            🛒 Spinach, avocados, oats & fruit for shared meals.
           </p>
         </div>
       </div>
@@ -375,7 +375,7 @@ export default function HomePage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="max-w-xl text-sm sm:text-lg text-[var(--text-secondary)] leading-relaxed font-normal"
             >
-              Sync daily habits, mutual prayer routines, full 28-day hormonal fitness, headache prevention, and heartfelt accountability in one private, beautifully encrypted haven.
+              Sync daily habits, mutual prayer routines, flexible movement ideas, and heartfelt accountability in one private, beautifully encrypted haven.
             </motion.p>
 
             {/* Action Buttons */}
@@ -417,7 +417,7 @@ export default function HomePage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <Heart className="h-4 w-4 text-rose-500 fill-current" />
-                <span>Cycle-Adapted Wellness</span>
+                <span>Women&apos;s Wellness</span>
               </div>
             </motion.div>
           </div>
@@ -532,19 +532,19 @@ export default function HomePage() {
               <CalendarHeart className="h-7 w-7" />
             </div>
             <h3 className="text-xl font-bold text-[var(--text-primary)]">
-              Cycle-Synced Fitness & Relief
+              Movement, Fitness & Comfort
             </h3>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-              Adaptive workouts matched to her 4 hormonal phases (Menstrual, Follicular, Ovulatory, Luteal), with multi-angle form tutorials and headache prevention.
+              Flexible workouts, optional cycle-phase suggestions, symptom-aware movement ideas, and exercise tutorials. Choose intensity based on comfort and preference.
             </p>
             <ul className="space-y-2 pt-2 text-xs font-semibold text-[var(--text-secondary)]">
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>Front & side angle exercise form video guides</span>
+                <span>Exercise form tutorials for strength, stretching, and mobility</span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>Morning mineral supplement safety protocol</span>
+                <span>Optional movement ideas based on comfort and symptoms</span>
               </li>
             </ul>
           </div>

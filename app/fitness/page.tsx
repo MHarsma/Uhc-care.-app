@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { AppShell } from "@/components/layout/app-shell";
-import { periodApi, ActiveCycleSummary } from "@/lib/api/period";
+import { periodApi } from "@/lib/api/period";
 import { fitnessApi, FitnessGoals, FitnessLogEntry } from "@/lib/api/fitness";
 import {
   Dumbbell,
@@ -74,7 +74,6 @@ interface WorkoutItem {
   category: "Cycle Sync" | "Strength" | "Yoga & Relief" | "Pilates" | "Quick 10-Min";
   phase: CyclePhase | "all";
   durationMinutes: number;
-  calories: number;
   intensity: "Gentle (Restorative)" | "Moderate" | "Peak Vitality";
   equipment: string;
   targetMuscles: string[];
@@ -105,6 +104,7 @@ interface SymptomProtocol {
     durationMinutes: number;
     icon: string;
     tag: string;
+    exerciseId?: string;
   }[];
 }
 
@@ -115,9 +115,9 @@ interface SymptomProtocol {
 const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   childs_pose: {
     id: "childs_pose",
-    name: "Child's Pose with Abdominal Expansion",
+    name: "Child's Pose",
     durationSec: 90,
-    targetMuscles: ["Lower Back", "Pelvic Floor", "Hip Joints"],
+    targetMuscles: ["Hips", "Lower Back", "Shoulders"],
     equipment: "Yoga Mat / Soft Carpet",
     frontAngleCue: "Knees wide at mat width, big toes touching together, arms extended forward.",
     sideAngleCue: "Hips sink back towards heels, spine elongated, forehead gently resting on mat.",
@@ -138,10 +138,10 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   cat_cow: {
     id: "cat_cow",
-    name: "Cat-Cow Dynamic Spine Mobilization",
+    name: "Cat-Cow",
     durationSec: 60,
     reps: "10 rhythmic cycles",
-    targetMuscles: ["Thoracic Spine", "Cervical Spine", "Abdominal Wall"],
+    targetMuscles: ["Spine", "Trunk"],
     equipment: "No Equipment",
     frontAngleCue: "Wrists directly beneath shoulders, fingers spread evenly.",
     sideAngleCue: "Inhale arching gently with chest opening; exhale tucking tailbone and rounding upper back.",
@@ -162,9 +162,9 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   butterfly: {
     id: "butterfly",
-    name: "Reclined Butterfly (Supta Baddha Konasana)",
+    name: "Reclined Butterfly Stretch",
     durationSec: 120,
-    targetMuscles: ["Inner Thighs", "Pelvic Floor", "Groin Flexors"],
+    targetMuscles: ["Inner Thighs", "Hips"],
     equipment: "Cushion / Blanket (Optional)",
     frontAngleCue: "Soles of feet together, knees dropping open like wings with zero force.",
     sideAngleCue: "Lower back flat and relaxed against the mat, arms resting open beside hips.",
@@ -209,9 +209,9 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   legs_wall: {
     id: "legs_wall",
-    name: "Viparita Karani (Legs-Up-The-Wall Rest)",
+    name: "Legs-Up-the-Wall Rest",
     durationSec: 180,
-    targetMuscles: ["Hamstrings", "Lymphatic System", "Lower Back"],
+    targetMuscles: ["Hamstrings", "Hips", "Lower Back"],
     equipment: "Wall or Headboard",
     frontAngleCue: "Legs resting together vertically against wall, arms open at 45 degrees.",
     sideAngleCue: "Sit bones close to wall base, lumbar spine fully supported by mat.",
@@ -232,10 +232,10 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   chin_tuck: {
     id: "chin_tuck",
-    name: "Suboccipital Nerve Decompression Chin Tucks",
+    name: "Chin Tucks",
     durationSec: 60,
     reps: "12 reps",
-    targetMuscles: ["Deep Neck Flexors", "Suboccipital Base", "Upper Trapezius"],
+    targetMuscles: ["Deep Neck Flexors", "Upper Trapezius"],
     equipment: "No Equipment",
     frontAngleCue: "Head upright, eyes looking straight ahead, jaw relaxed.",
     sideAngleCue: "Draw head straight back like creating a double chin, lengthening back of neck.",
@@ -256,7 +256,7 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   trap_stretch: {
     id: "trap_stretch",
-    name: "Upper Trapezius & Levator Scapulae Stretch",
+    name: "Neck and Upper-Shoulder Stretch",
     durationSec: 120,
     targetMuscles: ["Upper Traps", "Scalenes", "Levator Scapulae"],
     equipment: "No Equipment",
@@ -327,7 +327,7 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   pilates_100: {
     id: "pilates_100",
-    name: "Pilates Hundred Deep Core Activation",
+    name: "Pilates Hundred",
     durationSec: 90,
     targetMuscles: ["Transverse Abdominis", "Pelvic Floor", "Intercostals"],
     equipment: "Mat",
@@ -350,7 +350,7 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   bird_dog: {
     id: "bird_dog",
-    name: "Bird-Dog Core & Posterior Stabilizer",
+    name: "Bird-Dog",
     durationSec: 90,
     reps: "10 reps per side",
     targetMuscles: ["Erector Spinae", "Gluteus Medius", "Deep Core"],
@@ -443,7 +443,7 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   walking_lunges: {
     id: "walking_lunges",
-    name: "Walking Lunges for Lean Legs",
+    name: "Walking Lunges",
     durationSec: 60,
     reps: "10-12 steps per leg",
     equipment: "Bodyweight / Light Dumbbells",
@@ -465,7 +465,7 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   sumo_squat: {
     id: "sumo_squat",
-    name: "Sumo Squat with Inner Thigh Pulses",
+    name: "Sumo Squat",
     durationSec: 60,
     reps: "12 reps + 3 pulses",
     targetMuscles: ["Adductors (Inner Thighs)", "Gluteus Maximus"],
@@ -687,10 +687,10 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
   },
   reverse_crunches: {
     id: "reverse_crunches",
-    name: "Reverse Crunches for Lower Abs",
+    name: "Reverse Crunches",
     durationSec: 60,
     reps: "12-15 reps",
-    targetMuscles: ["Lower Rectus Abdominis", "Transverse Core"],
+    targetMuscles: ["Abdominals", "Hip Flexors"],
     equipment: "Mat",
     frontAngleCue: "Palms pressed beside hips, knees bent 90 degrees.",
     sideAngleCue: "Pelvis curls upward lifting tailbone 2-3 inches off mat.",
@@ -712,7 +712,7 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
     name: "Low-Impact Cardio Jacks",
     durationSec: 60,
     reps: "45-60s flow",
-    targetMuscles: ["Full Body", "Cardiovascular", "Calves"],
+    targetMuscles: ["Full Body", "Calves"],
     equipment: "Mat / Shoes",
     frontAngleCue: "Step one foot out to side while arms swing overhead.",
     sideAngleCue: "Soft knees, light bouncy step without floor pounding.",
@@ -734,7 +734,7 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
     name: "Controlled Mountain Climbers",
     durationSec: 45,
     reps: "30-45s tempo",
-    targetMuscles: ["Core", "Cardiovascular", "Hip Flexors"],
+    targetMuscles: ["Core", "Shoulders", "Hip Flexors"],
     equipment: "Mat",
     frontAngleCue: "High plank with hands under shoulders, driving knees forward.",
     sideAngleCue: "Hips remain level with shoulders without bouncing high.",
@@ -756,24 +756,23 @@ const EXERCISE_LIBRARY: Record<string, ExerciseDetail> = {
 const WORKOUT_DATABASE: WorkoutItem[] = [
   {
     id: "w-cycle-menstrual",
-    title: "Menstrual Phase: Soothing Warmth & Pelvic Decompression",
+    title: "Menstrual phase: gentle comfort and mobility",
     category: "Cycle Sync",
     phase: "menstrual",
     durationMinutes: 12,
-    calories: 60,
     intensity: "Gentle (Restorative)",
     equipment: "Yoga Mat / Soft Carpet",
     targetMuscles: ["Lower Back", "Pelvic Floor", "Hips"],
     icon: "🩸",
     accentColor: "from-rose-500 to-pink-500",
-    description: "Ultra-gentle restorative flow tailored for Days 1–5 to soothe uterine cramps, decompress the lumbar spine, and restore parasympathetic calm.",
+    description: "A short, gentle sequence. Try only movements that feel comfortable; resting is also an option.",
     exercises: [
       EXERCISE_LIBRARY.childs_pose,
       EXERCISE_LIBRARY.butterfly,
       EXERCISE_LIBRARY.legs_wall,
       EXERCISE_LIBRARY.cat_cow,
     ],
-    targetSymptoms: ["Uterine Cramps", "Lower Back Pain", "Pelvic Fullness", "Morning Fatigue"],
+    targetSymptoms: ["Period cramps", "Lower-back tension", "Low energy"],
     energyLevel: "Gentle Restorative",
     energyPercent: 30,
     moodState: "Introspective & Tender • Needs Warmth",
@@ -782,29 +781,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Keep abdominal intra-cavity pressure minimal",
       "Pair with warm electrolyte water and herbal tea",
     ],
-    cycleDays: "Days 1–5",
-    hormonalContext: "Estrogen & Progesterone are at monthly baseline. Cellular rest & gentle pelvic circulation are primary.",
+    cycleDays: "Menstrual phase",
+    hormonalContext: "Optional cycle label; choose movement based on comfort.",
   },
   {
     id: "w-cycle-menstrual-walk",
-    title: "Menstrual Phase: Light Lymphatic Circulation & Mobility",
+    title: "Menstrual phase: light mobility",
     category: "Cycle Sync",
     phase: "menstrual",
     durationMinutes: 15,
-    calories: 75,
     intensity: "Gentle (Restorative)",
     equipment: "Comfortable Shoes / Mat",
     targetMuscles: ["Hamstrings", "Calves", "Thoracic Spine", "Pelvic Floor"],
     icon: "🌸",
     accentColor: "from-rose-400 to-amber-400",
-    description: "Gentle mobility and restorative walking rhythm for Days 3–5 as cramping tapers and fresh energy begins to stir.",
+    description: "Gentle spine and hip mobility with an easy walk if that feels right.",
     exercises: [
       EXERCISE_LIBRARY.cat_cow,
       EXERCISE_LIBRARY.butterfly,
       EXERCISE_LIBRARY.bridge,
       EXERCISE_LIBRARY.legs_wall,
     ],
-    targetSymptoms: ["Morning Stiffness", "Mild Cramping", "Sluggish Circulation", "Brain Fog"],
+    targetSymptoms: ["Stiffness", "Mild cramps", "Low energy"],
     energyLevel: "Gentle Awakening",
     energyPercent: 45,
     moodState: "Calming & Grounding • Gentle Re-entry",
@@ -813,29 +811,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Sip warm ginger or peppermint water",
       "Soft joint mobilization without heavy weights",
     ],
-    cycleDays: "Days 3–5",
-    hormonalContext: "Bleeding tapers, prostaglandins drop, and the body prepares for estrogen recovery.",
+    cycleDays: "Menstrual phase",
+    hormonalContext: "Optional cycle label; choose movement based on comfort.",
   },
   {
     id: "w-cycle-follicular",
-    title: "Follicular Phase: Rising Vitality Sculpt & Glute Tone",
+    title: "Follicular phase: optional full-body strength",
     category: "Cycle Sync",
     phase: "follicular",
     durationMinutes: 22,
-    calories: 160,
     intensity: "Moderate",
     equipment: "Dumbbells / Mat",
     targetMuscles: ["Glutes", "Hamstrings", "Core", "Quadriceps"],
     icon: "🌱",
     accentColor: "from-violet-500 to-indigo-500",
-    description: "Capitalize on rising estrogen during Days 6–10 to sculpt lean muscle tone, improve posture, and accelerate metabolism.",
+    description: "A strength option for days when you want to train. Choose a manageable load and progress gradually.",
     exercises: [
       EXERCISE_LIBRARY.squat,
       EXERCISE_LIBRARY.rdl,
       EXERCISE_LIBRARY.bridge,
       EXERCISE_LIBRARY.bird_dog,
     ],
-    targetSymptoms: ["Post-Period Sluggishness", "Postural Weakness", "Low Muscle Tone"],
+    targetSymptoms: ["General strength", "Posture"],
     energyLevel: "Rising Stamina & Power",
     energyPercent: 80,
     moodState: "Motivated & Upbeat • Creative Drive",
@@ -844,29 +841,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Prime window for progressive resistance overload",
       "Always take morning mineral supplements with breakfast",
     ],
-    cycleDays: "Days 6–10",
-    hormonalContext: "Developing follicles secrete rising estradiol, boosting glycogen storage and quick muscle recovery.",
+    cycleDays: "Follicular phase",
+    hormonalContext: "Optional cycle label; it does not predict strength or recovery.",
   },
   {
     id: "w-cycle-follicular-cardio",
-    title: "Follicular Phase: Dynamic Core & Cardio Ignition",
+    title: "Follicular phase: strength and core basics",
     category: "Cycle Sync",
     phase: "follicular",
     durationMinutes: 25,
-    calories: 190,
     intensity: "Moderate",
     equipment: "Mat / Optional Light Dumbbells",
     targetMuscles: ["Full Body", "Transverse Core", "Glutes", "Back"],
     icon: "⚡",
     accentColor: "from-indigo-500 to-cyan-500",
-    description: "High-tempo athletic movement for Days 11–13 as energy reaches near-peak before ovulation.",
+    description: "A brief strength and core session. Adjust pace and effort to your own comfort.",
     exercises: [
       EXERCISE_LIBRARY.squat,
       EXERCISE_LIBRARY.pilates_100,
       EXERCISE_LIBRARY.bird_dog,
       EXERCISE_LIBRARY.cat_cow,
     ],
-    targetSymptoms: ["Restless Energy", "Mental Cloudiness", "Metabolic Lag"],
+    targetSymptoms: ["General fitness", "Short movement break"],
     energyLevel: "High Momentum & Endurance",
     energyPercent: 88,
     moodState: "Social, Confident & Vibrant",
@@ -874,22 +870,21 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Highest glycogen burn efficiency of the month",
       "Maintain electrolyte hydration with 500ml water before workout",
     ],
-    cycleDays: "Days 11–13",
-    hormonalContext: "Estrogen reaching peak levels, giving elevated stamina and mental focus.",
+    cycleDays: "Follicular phase",
+    hormonalContext: "Optional cycle label; it does not predict strength or recovery.",
   },
   {
     id: "w-cycle-ovulation",
-    title: "Ovulatory Phase: Peak Power, Stamina & Full-Body Strength",
+    title: "Ovulatory phase: full-body strength option",
     category: "Cycle Sync",
     phase: "ovulation",
     durationMinutes: 28,
-    calories: 220,
-    intensity: "Peak Vitality",
+    intensity: "Moderate",
     equipment: "Dumbbells / Mat",
     targetMuscles: ["Full Body", "Glutes", "Core", "Posterior Chain"],
     icon: "🔥",
     accentColor: "from-emerald-500 to-teal-500",
-    description: "Peak metabolic efficiency and highest pain tolerance during Days 14–16. Great for personal strength bests.",
+    description: "A full-body strength option. Cycle timing does not predict performance; choose your usual comfortable intensity.",
     exercises: [
       EXERCISE_LIBRARY.squat,
       EXERCISE_LIBRARY.rdl,
@@ -897,7 +892,7 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       EXERCISE_LIBRARY.bird_dog,
       EXERCISE_LIBRARY.bridge,
     ],
-    targetSymptoms: ["Ovulatory Mittelschmerz Ache", "Mid-Cycle Restlessness", "Mild Breast Sensitivity"],
+    targetSymptoms: ["General strength", "Full-body movement"],
     energyLevel: "Peak Vitality & Maximum Output",
     energyPercent: 98,
     moodState: "Radiant, Bold & Magnetic • High Confidence",
@@ -905,29 +900,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Surging estrogen increases relaxin hormone: maintain strict joint alignment to protect knees and ankles",
       "Superior muscle recovery rate",
     ],
-    cycleDays: "Days 14–16",
-    hormonalContext: "Luteinizing Hormone (LH) and Estrogen peak simultaneously for maximum strength potential.",
+    cycleDays: "Ovulatory phase",
+    hormonalContext: "Optional cycle label; it does not predict strength or recovery.",
   },
   {
     id: "w-cycle-ovulation-pilates",
-    title: "Ovulatory Phase: High-Tone Power Pilates & Core Anchor",
+    title: "Ovulatory phase: Pilates and stability",
     category: "Cycle Sync",
     phase: "ovulation",
     durationMinutes: 20,
-    calories: 140,
-    intensity: "Peak Vitality",
+    intensity: "Moderate",
     equipment: "Mat",
     targetMuscles: ["Transverse Core", "Pelvic Diaphragm", "Glutes"],
     icon: "✨",
     accentColor: "from-teal-500 to-emerald-400",
-    description: "Precision neuromuscular core sculpting that harnesses peak ovulatory coordination for Days 15–17.",
+    description: "A low-impact core and mobility sequence. Modify or pause movements as needed.",
     exercises: [
       EXERCISE_LIBRARY.pilates_100,
       EXERCISE_LIBRARY.bridge,
       EXERCISE_LIBRARY.bird_dog,
       EXERCISE_LIBRARY.butterfly,
     ],
-    targetSymptoms: ["Core Laxity", "Postural Imbalance", "Energy Overflow"],
+    targetSymptoms: ["Core stability", "Posture"],
     energyLevel: "Dynamic Precision",
     energyPercent: 92,
     moodState: "Focused, Decisive & High Clarity",
@@ -935,29 +929,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Thorough pelvic ligament warm-up before dynamic pulses",
       "Hydrate well with balanced sodium and potassium",
     ],
-    cycleDays: "Days 15–17",
-    hormonalContext: "Transition into post-ovulation corpus luteum formation as progesterone begins rising.",
+    cycleDays: "Ovulatory phase",
+    hormonalContext: "Optional cycle label; it does not predict strength or recovery.",
   },
   {
     id: "w-cycle-luteal",
-    title: "Luteal Phase: Low-Impact Deep Core & Glute Pilates",
+    title: "Luteal phase: steady strength and mobility",
     category: "Cycle Sync",
     phase: "luteal",
     durationMinutes: 18,
-    calories: 110,
     intensity: "Moderate",
     equipment: "Mat",
     targetMuscles: ["Deep Transverse Core", "Glutes", "Inner Thighs"],
     icon: "🌙",
     accentColor: "from-indigo-500 to-purple-500",
-    description: "Controlled pilates movements that tone without elevating cortisol or straining joints during Days 18–24.",
+    description: "Controlled core and glute movements with rest breaks as needed.",
     exercises: [
       EXERCISE_LIBRARY.pilates_100,
       EXERCISE_LIBRARY.bridge,
       EXERCISE_LIBRARY.bird_dog,
       EXERCISE_LIBRARY.butterfly,
     ],
-    targetSymptoms: ["Water Retention & Bloating", "Elevated Body Temperature", "Lower Back Tension"],
+    targetSymptoms: ["Bloating", "Lower-back tension", "Gentle movement"],
     energyLevel: "Steady Endurance & Grounding",
     energyPercent: 65,
     moodState: "Focused, Detail-Oriented & Grounded",
@@ -965,29 +958,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Progesterone raises resting metabolic temperature: eat adequate protein and avoid overheating",
       "Avoid excessive HIIT to protect against cortisol spikes",
     ],
-    cycleDays: "Days 18–24",
-    hormonalContext: "Progesterone dominates, calming the uterine wall and stabilizing insulin response.",
+    cycleDays: "Luteal phase",
+    hormonalContext: "Optional cycle label; adapt to symptoms and preference.",
   },
   {
     id: "w-cycle-luteal-yin",
-    title: "Luteal Phase: Grounding Yin Recovery & Nervous System Calm",
+    title: "Luteal phase: gentle recovery and stretching",
     category: "Cycle Sync",
     phase: "luteal",
     durationMinutes: 16,
-    calories: 70,
     intensity: "Gentle (Restorative)",
     equipment: "Mat / Cushion",
     targetMuscles: ["Lower Back", "Hamstrings", "Neck & Trapezius"],
     icon: "🧘‍♀️",
     accentColor: "from-purple-500 to-rose-400",
-    description: "Deep restorative stretches designed for Days 25–28 to dissolve premenstrual tension, headaches, and irritability.",
+    description: "A restorative stretch sequence. Choose a comfortable range or rest if that feels better.",
     exercises: [
       EXERCISE_LIBRARY.childs_pose,
       EXERCISE_LIBRARY.butterfly,
       EXERCISE_LIBRARY.legs_wall,
       EXERCISE_LIBRARY.trap_stretch,
     ],
-    targetSymptoms: ["Premenstrual Irritability", "Tension Headaches", "Sleep Disturbances", "Lower Back Ache"],
+    targetSymptoms: ["Stress", "Neck or shoulder tension", "Lower-back tension"],
     energyLevel: "Restorative Calm & Sanctuary",
     energyPercent: 35,
     moodState: "Sensitive & Reflective • Seeking Quiet Sanctuary",
@@ -996,29 +988,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Avoid caffeine after 2:00 PM to protect REM sleep",
       "Lengthen exhales to 6 seconds to trigger parasympathetic vagus response",
     ],
-    cycleDays: "Days 25–28",
-    hormonalContext: "Both estrogen and progesterone naturally taper, signaling the uterine lining to prepare for cycle renewal.",
+    cycleDays: "Luteal phase",
+    hormonalContext: "Optional cycle label; adapt to symptoms and preference.",
   },
   {
     id: "w-headache-relief",
-    title: "Suboccipital & Cervical Headache Rapid Relief",
+    title: "Neck and shoulder mobility break",
     category: "Quick 10-Min",
     phase: "all",
     durationMinutes: 10,
-    calories: 40,
     intensity: "Gentle (Restorative)",
     equipment: "No Equipment",
     targetMuscles: ["Neck", "Base of Skull", "Upper Trapezius"],
     icon: "💆‍♀️",
     accentColor: "from-amber-500 to-orange-500",
-    description: "Rapid relief for morning tension headaches, neck tightness, screen strain, or empty-stomach supplement discomfort.",
+    description: "A brief neck and upper-back mobility break for people who find gentle movement comfortable.",
     exercises: [
       EXERCISE_LIBRARY.chin_tuck,
       EXERCISE_LIBRARY.trap_stretch,
       EXERCISE_LIBRARY.cat_cow,
       EXERCISE_LIBRARY.legs_wall,
     ],
-    targetSymptoms: ["Morning Tension Headache", "Empty Stomach Mineral Distress", "Neck Tightness", "Temple Throbbing"],
+    targetSymptoms: ["Neck tension", "Shoulder tension", "Headache with neck tightness"],
     energyLevel: "Restorative Comfort",
     energyPercent: 30,
     moodState: "Relief Seeking & Decompressing",
@@ -1026,22 +1017,21 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "CRITICAL: Always take morning Zinc, Iron, or Vitamin C with food (eggs, toast, avocado), never on an empty stomach",
       "Perform chin retractions without tilting head downward",
     ],
-    cycleDays: "All Days (1–28)",
-    hormonalContext: "Relieves cervical-vascular tension and decompresses occipital nerve roots across all phases.",
+    cycleDays: "Any phase",
+    hormonalContext: "Optional movement choice; not a headache treatment.",
   },
   {
     id: "w-restorative-flow",
-    title: "Restorative Pelvic & Spine Flow",
+    title: "Period comfort: restorative mobility",
     category: "Yoga & Relief",
     phase: "menstrual",
     durationMinutes: 12,
-    calories: 65,
     intensity: "Gentle (Restorative)",
     equipment: "Yoga Mat / Soft Carpet",
     targetMuscles: ["Lower Back", "Pelvic Floor", "Hips"],
     icon: "🧘‍♀️",
     accentColor: "from-rose-500 to-pink-500",
-    description: "Tailored for Days 1–5 to soothe uterine cramps, decompress the lumbar spine, and restore parasympathetic calm.",
+    description: "Gentle mobility ideas for period days. Stop if cramps or pain increase.",
     exercises: [
       EXERCISE_LIBRARY.childs_pose,
       EXERCISE_LIBRARY.cat_cow,
@@ -1049,34 +1039,33 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       EXERCISE_LIBRARY.bridge,
       EXERCISE_LIBRARY.legs_wall,
     ],
-    targetSymptoms: ["Uterine Cramps", "Lower Back Pain", "Pelvic Fullness"],
+    targetSymptoms: ["Period cramps", "Lower-back tension", "Low energy"],
     energyLevel: "Gentle Restorative",
     energyPercent: 30,
     moodState: "Introspective & Gentle",
     relatedConditions: ["Avoid abdominal compression", "Prioritize slow diaphragm breathing"],
-    cycleDays: "Days 1–5",
-    hormonalContext: "Pelvic decompression during baseline hormonal phase.",
+    cycleDays: "Menstrual phase",
+    hormonalContext: "Optional movement choice; comfort comes first.",
   },
   {
     id: "w-glutes-isolation",
-    title: "Peach Sculpt: Glute & Hip Single-Muscle Isolation",
+    title: "Lower-body strength: glutes and hips",
     category: "Strength",
     phase: "all",
     durationMinutes: 18,
-    calories: 140,
     intensity: "Moderate",
     equipment: "Mat / Couch / Optional Light Dumbbells",
     targetMuscles: ["Gluteus Maximus", "Gluteus Medius", "Hamstrings"],
     icon: "🍑",
     accentColor: "from-pink-500 to-rose-500",
-    description: "Targeted female bodybuilding isolation for rounded, lifted glutes and firm hips without quad bulk or lower back strain.",
+    description: "A lower-body strength session with hip-focused options and controlled repetitions.",
     exercises: [
       EXERCISE_LIBRARY.hip_thrust,
       EXERCISE_LIBRARY.glute_kickback,
       EXERCISE_LIBRARY.fire_hydrant,
       EXERCISE_LIBRARY.bridge,
     ],
-    targetSymptoms: ["Glute Amnesia from Sitting", "Pelvic Wobble", "Lower Back Fatigued"],
+    targetSymptoms: ["Hip and glute strength", "Lower-body stability"],
     energyLevel: "Focused & Sculpting",
     energyPercent: 70,
     moodState: "Confident, Determined & Empowered",
@@ -1084,29 +1073,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "No heavy barbells needed — light dumbbell or bodyweight achieves maximum peak contraction",
       "Pause for 1-2 seconds at the top of every repetition",
     ],
-    cycleDays: "All Days (Ideal Days 6–20)",
-    hormonalContext: "High neural recruitment during estrogen phases maximizes gluteus activation.",
+    cycleDays: "Any phase",
+    hormonalContext: "Choose the load and range that feel comfortable.",
   },
   {
     id: "w-thighs-sculpt",
-    title: "Lean Legs: Quad & Inner Thigh Tone",
+    title: "Lower-body strength: squats and lunges",
     category: "Strength",
     phase: "all",
     durationMinutes: 20,
-    calories: 155,
     intensity: "Moderate",
     equipment: "Mat / Wall / Optional Light Dumbbell",
     targetMuscles: ["Adductors (Inner Thighs)", "Quadriceps", "Glutes", "Calves"],
     icon: "🦵",
     accentColor: "from-amber-500 to-violet-500",
-    description: "Sculpts and leans the inner thighs and quadriceps using high-repetition sumo pulses, walking lunges, and isometric wall holds.",
+    description: "A practical mix of squat, lunge, and wall-sit variations. Use support if you need it.",
     exercises: [
       EXERCISE_LIBRARY.sumo_squat,
       EXERCISE_LIBRARY.walking_lunges,
       EXERCISE_LIBRARY.wall_sit,
       EXERCISE_LIBRARY.squat,
     ],
-    targetSymptoms: ["Thigh Heaviness", "Sluggish Circulation", "Knee Weakness"],
+    targetSymptoms: ["Leg strength", "Balance"],
     energyLevel: "Dynamic Muscle Burn",
     energyPercent: 75,
     moodState: "Energized & Motivated",
@@ -1114,29 +1102,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Keep knees tracking wide over toes in sumo squats",
       "Stay hydrated with water and electrolytes",
     ],
-    cycleDays: "Days 6–17",
-    hormonalContext: "Rising estradiol boosts muscular endurance and lactic acid clearance.",
+    cycleDays: "Any phase",
+    hormonalContext: "Choose the load and range that feel comfortable.",
   },
   {
     id: "w-hourglass-back-chest",
-    title: "Hourglass Upper Body: Back, Shoulders & Posture",
+    title: "Upper-body strength and posture",
     category: "Strength",
     phase: "all",
     durationMinutes: 18,
-    calories: 125,
     intensity: "Moderate",
     equipment: "Light Dumbbells (1-4kg) / Mat",
     targetMuscles: ["Lats", "Rhomboids", "Lateral Shoulders", "Upper Back"],
     icon: "⏳",
     accentColor: "from-violet-500 to-fuchsia-500",
-    description: "Feminine upper-body sculpting to build posture, reverse desk slouching, and create the illusion of a narrower waist.",
+    description: "Rowing and shoulder-strength options that train the upper back and arms.",
     exercises: [
       EXERCISE_LIBRARY.db_row,
       EXERCISE_LIBRARY.lateral_raise,
       EXERCISE_LIBRARY.superman,
       EXERCISE_LIBRARY.cat_cow,
     ],
-    targetSymptoms: ["Desk Slouch & Hunching", "Bra Line Tension", "Shoulder Stiffness"],
+    targetSymptoms: ["Upper-back stiffness", "Shoulder mobility", "Posture"],
     energyLevel: "Steady & Controlled",
     energyPercent: 65,
     moodState: "Poised, Elegant & Upright",
@@ -1144,29 +1131,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Use light weights to keep isolation strictly on back and deltoids without straining traps",
       "Never swing weights with momentum",
     ],
-    cycleDays: "All Days",
-    hormonalContext: "Strengthens back stabilizers against cycle postural laxity.",
+    cycleDays: "Any phase",
+    hormonalContext: "Choose the load and range that feel comfortable.",
   },
   {
     id: "w-female-chest-tone",
-    title: "Firm & Toned: Female Chest & Core Push",
+    title: "Upper-body push and core",
     category: "Strength",
     phase: "all",
     durationMinutes: 16,
-    calories: 110,
     intensity: "Moderate",
     equipment: "Mat / Light Dumbbells",
     targetMuscles: ["Pectoralis Major", "Triceps", "Front Deltoids", "Core"],
     icon: "✨",
     accentColor: "from-rose-500 to-indigo-500",
-    description: "Gentle yet firm chest and arm toning tailored for females with modified push-ups and floor presses with floor limiters.",
+    description: "Beginner-friendly push and core exercises with bodyweight or light-weight options.",
     exercises: [
       EXERCISE_LIBRARY.knee_pushup,
       EXERCISE_LIBRARY.db_chest_press,
       EXERCISE_LIBRARY.forearm_plank,
       EXERCISE_LIBRARY.lateral_raise,
     ],
-    targetSymptoms: ["Upper Body Weakness", "Arm Sluggishness", "Core Laxity"],
+    targetSymptoms: ["Upper-body strength", "Core stability"],
     energyLevel: "Active & Uplifting",
     energyPercent: 70,
     moodState: "Strong & Refreshed",
@@ -1174,29 +1160,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Elbows track at 45 degrees to protect delicate shoulder capsules",
       "Keep ribs anchored down during floor presses",
     ],
-    cycleDays: "Days 6–22",
-    hormonalContext: "Enhances push power and pectoral tone safely.",
+    cycleDays: "Any phase",
+    hormonalContext: "Choose the load and range that feel comfortable.",
   },
   {
     id: "w-waist-core-crunches",
-    title: "Flat Core & Waist Sculpt: 12-Min Sit-Up & Crunch Protocol",
+    title: "Core stability and Pilates",
     category: "Pilates",
     phase: "all",
     durationMinutes: 12,
-    calories: 85,
     intensity: "Moderate",
     equipment: "Mat",
     targetMuscles: ["Transverse Core", "Internal & External Obliques", "Lower Abs"],
     icon: "🧘‍♀️",
     accentColor: "from-indigo-500 to-teal-400",
-    description: "Comprehensive female core protocol targeting the deep abdominal girdle with bicycle crunches, reverse crunches, and deadbugs with zero neck strain.",
+    description: "Core stability movements with easier options. Skip any exercise that causes pain or pressure.",
     exercises: [
       EXERCISE_LIBRARY.deadbug,
       EXERCISE_LIBRARY.bicycle_crunches,
       EXERCISE_LIBRARY.reverse_crunches,
       EXERCISE_LIBRARY.pilates_100,
     ],
-    targetSymptoms: ["Lower Belly Pouch", "Bloating Sensation", "Core Disconnection"],
+    targetSymptoms: ["Core stability", "Trunk control"],
     energyLevel: "Concentrated Core Burn",
     energyPercent: 68,
     moodState: "Focused, Grounded & Centered",
@@ -1204,29 +1189,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Always keep lower back glued flush to the mat",
       "Exhale fully with each contraction to activate deep transverse abdominis",
     ],
-    cycleDays: "Days 6–24",
-    hormonalContext: "Low impact, high deep muscle fiber recruitment that does not spike cortisol.",
+    cycleDays: "Any phase",
+    hormonalContext: "Choose the range and pace that feel comfortable.",
   },
   {
     id: "w-yoga-pms-relief",
-    title: "Somatic Yoga: Cramp Dissolving & Pelvic Reset",
+    title: "Gentle mobility and breathing",
     category: "Yoga & Relief",
     phase: "all",
     durationMinutes: 15,
-    calories: 55,
     intensity: "Gentle (Restorative)",
     equipment: "Yoga Mat / Soft Blanket",
     targetMuscles: ["Pelvic Diaphragm", "Lower Lumbar", "Sacroiliac Joint"],
     icon: "🌸",
     accentColor: "from-rose-400 to-pink-500",
-    description: "Deep somatic flow designed to dissolve uterine cramps, release trapped emotional tension, and soothe the pelvic nervous system.",
+    description: "Slow, comfortable mobility. It may be a relaxing option but is not a treatment for pain.",
     exercises: [
       EXERCISE_LIBRARY.childs_pose,
       EXERCISE_LIBRARY.butterfly,
       EXERCISE_LIBRARY.legs_wall,
       EXERCISE_LIBRARY.cat_cow,
     ],
-    targetSymptoms: ["Uterine Spasms & Cramps", "Pelvic Heaviness", "Lower Back Aches", "Emotional Tension"],
+    targetSymptoms: ["Period cramps", "Pelvic discomfort", "Lower-back tension"],
     energyLevel: "Deep Rest & Nurturing",
     energyPercent: 25,
     moodState: "Tender, Sensitive & Nurturing • Seeking Quiet",
@@ -1234,29 +1218,28 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Surrender fully into gravity without forcing stretches",
       "Sip warm herbal chamomile or ginger tea after flow",
     ],
-    cycleDays: "Days 1–5 & Days 25–28",
-    hormonalContext: "Low estrogen/progesterone window where parasympathetic healing is highest priority.",
+    cycleDays: "Any phase",
+    hormonalContext: "Optional movement choice; adapt to comfort.",
   },
   {
     id: "w-mood-cardio-burst",
-    title: "10-Min Dopamine Rush: Low-Impact Cardio Burst",
+    title: "10-minute low-impact circuit",
     category: "Quick 10-Min",
     phase: "all",
     durationMinutes: 10,
-    calories: 80,
     intensity: "Moderate",
     equipment: "Mat / Comfortable Shoes",
     targetMuscles: ["Full Body", "Cardiovascular", "Calves", "Core"],
     icon: "⚡",
     accentColor: "from-amber-400 to-rose-500",
-    description: "Quick 10-minute low-impact cardio blast designed to lift low mood, release natural endorphins, and break through afternoon fatigue.",
+    description: "A short circuit that can be adjusted to a low-impact pace or paused as needed.",
     exercises: [
       EXERCISE_LIBRARY.jumping_jacks,
       EXERCISE_LIBRARY.mountain_climbers,
       EXERCISE_LIBRARY.walking_lunges,
       EXERCISE_LIBRARY.cat_cow,
     ],
-    targetSymptoms: ["Afternoon Slump", "Low Dopamine & Moody Blues", "Stagnant Circulation"],
+    targetSymptoms: ["Low energy", "Short movement break"],
     energyLevel: "Quick Energy Lift",
     energyPercent: 75,
     moodState: "Lethargic to Bright & Uplifted",
@@ -1264,171 +1247,212 @@ const WORKOUT_DATABASE: WorkoutItem[] = [
       "Low impact step-out variations preserve joints while elevating heart rate",
       "Drink a cold glass of lemon water immediately after",
     ],
-    cycleDays: "All Days",
-    hormonalContext: "Fast neurotransmitter reset through rhythmic movement without high-cortisol exhaustion.",
+    cycleDays: "Any phase",
+    hormonalContext: "Choose the pace and range that feel comfortable.",
   },
   {
     id: "w-quick-glute-pump",
-    title: "10-Min Rapid Glute Pump & Wake-Up",
+    title: "10-minute hip and glute strength",
     category: "Quick 10-Min",
     phase: "all",
     durationMinutes: 10,
-    calories: 70,
     intensity: "Moderate",
     equipment: "Mat",
     targetMuscles: ["Gluteus Maximus", "Gluteus Medius", "Hamstrings"],
     icon: "🍑",
     accentColor: "from-pink-500 to-violet-500",
-    description: "Fast 10-minute glute wake-up routine to activate dormant hips after hours of sitting.",
+    description: "A short hip and glute routine with controlled repetitions and rest breaks.",
     exercises: [
       EXERCISE_LIBRARY.bridge,
       EXERCISE_LIBRARY.glute_kickback,
       EXERCISE_LIBRARY.fire_hydrant,
       EXERCISE_LIBRARY.wall_sit,
     ],
-    targetSymptoms: ["Glute Deadness from Sitting", "Hip Flexor Tightness"],
+    targetSymptoms: ["Hip stiffness", "Glute strength"],
     energyLevel: "Snappy & Awakening",
     energyPercent: 65,
     moodState: "Alert & Energized",
     relatedConditions: ["Focus on peak 2-second squeeze on every repetition"],
-    cycleDays: "All Days",
-    hormonalContext: "Restores neuromotor hip drive quickly.",
+    cycleDays: "Any phase",
+    hormonalContext: "Choose the pace and range that feel comfortable.",
   },
 ];
 
 const SYMPTOM_PROTOCOLS: SymptomProtocol[] = [
   {
     id: "headache",
-    name: "Morning or Tension Headache",
+    name: "Neck or shoulder tension",
     icon: "💆‍♀️",
     colorClass: "text-amber-600 dark:text-amber-400",
     bgClass: "bg-amber-500/10 dark:bg-amber-500/15",
     borderClass: "border-amber-500/30",
-    quickNote: "Commonly triggered by taking mineral supplements on an empty stomach, dehydration, or suboccipital neck tightness.",
+    quickNote: "For mild tightness only; headaches can have many causes and movement is not a treatment.",
     steps: [
       {
-        title: "Immediate Electrolyte Hydration",
-        desc: "Drink 500ml of room-temperature water with a pinch of mineral salt or lemon to rebalance cellular fluid volume.",
-        durationMinutes: 1,
-        icon: "💧",
-        tag: "Hydration",
-      },
-      {
-        title: "Buffer with Gentle Breakfast",
-        desc: "Eat a slice of whole-grain toast, an egg, or a handful of almonds to soothe gastric lining irritation.",
-        durationMinutes: 3,
-        icon: "🥑",
-        tag: "Nutrition",
-      },
-      {
-        title: "Suboccipital Chin Tucks",
-        desc: "Perform 12 gentle chin tucks to immediately release compression on the greater occipital nerve.",
+        title: "Easy chin tucks",
+        desc: "Try a few small, pain-free repetitions. Keep your eyes level and stop if symptoms increase.",
         durationMinutes: 2,
         icon: "🧘‍♀️",
-        tag: "Movement",
+        tag: "Mobility",
+        exerciseId: "chin_tuck",
       },
       {
-        title: "Temples & Forehead Cool Compress",
-        desc: "Apply a cool damp cloth to forehead while lightly massaging temples in slow outward circles.",
-        durationMinutes: 3,
-        icon: "🧊",
-        tag: "Relief",
+        title: "Gentle side-neck stretch",
+        desc: "Keep the shoulders relaxed and use no pulling force. Switch sides only if it feels comfortable.",
+        durationMinutes: 2,
+        icon: "↔️",
+        tag: "Stretch",
+        exerciseId: "trap_stretch",
       },
     ],
   },
   {
-    id: "nausea",
-    name: "Morning Nausea & Stomach Distress",
-    icon: "🤢",
+    id: "bloating",
+    name: "Bloating or stiffness",
+    icon: "🌿",
     colorClass: "text-emerald-600 dark:text-emerald-400",
     bgClass: "bg-emerald-500/10 dark:bg-emerald-500/15",
     borderClass: "border-emerald-500/30",
-    quickNote: "Taking Zinc, Iron, or Vitamin C without food directly irritates gastric mucosa, creating nausea and cramping.",
+    quickNote: "A relaxed walk or comfortable mobility may feel good; avoid anything that increases pressure or discomfort.",
     steps: [
       {
-        title: "Sip Warm Ginger or Mint Tea",
-        desc: "Gingerol compounds naturally relax stomach smooth-muscle contractions within minutes.",
-        durationMinutes: 3,
-        icon: "🍵",
-        tag: "Herbal",
+        title: "Cat-cow mobility",
+        desc: "Move slowly with your breath through a small, comfortable range.",
+        durationMinutes: 2,
+        icon: "🐈",
+        tag: "Mobility",
+        exerciseId: "cat_cow",
       },
       {
-        title: "Starch & Complex Carb Buffer",
-        desc: "Eat 2-3 plain crackers, half a banana, or a bowl of warm oats to neutralize stomach acids.",
+        title: "Supported child's pose",
+        desc: "Use a pillow or folded blanket for support and come out of the pose if it feels uncomfortable.",
         durationMinutes: 3,
-        icon: "🍌",
-        tag: "Food",
-      },
-      {
-        title: "Adjust Supplement Timing",
-        desc: "Always take morning minerals halfway through breakfast, never on an empty stomach.",
-        durationMinutes: 1,
-        icon: "💊",
-        tag: "Routine",
+        icon: "🧘",
+        tag: "Stretch",
+        exerciseId: "childs_pose",
       },
     ],
   },
   {
     id: "cramps",
-    name: "Uterine & Lower Back Cramps",
+    name: "Period cramps",
     icon: "🩸",
     colorClass: "text-rose-600 dark:text-rose-400",
     bgClass: "bg-rose-500/10 dark:bg-rose-500/15",
     borderClass: "border-rose-500/30",
-    quickNote: "Prostaglandin-mediated contractions are most effectively relieved by localized warmth and pelvic decompression.",
+    quickNote: "Gentle exercise may help some people with period pain. Rest or stop if movement worsens symptoms.",
     steps: [
       {
-        title: "Targeted Heat Therapy",
-        desc: "Place a warm heating pad or hot water bottle across the lower abdomen or sacrum.",
-        durationMinutes: 10,
-        icon: "🔥",
-        tag: "Therapy",
+        title: "Easy walk or rest",
+        desc: "Choose a short, relaxed walk only if it feels comfortable. You can skip exercise and rest.",
+        durationMinutes: 5,
+        icon: "🚶‍♀️",
+        tag: "Low impact",
       },
       {
-        title: "Child's Pose Breathing",
-        desc: "Sink into Child's Pose with wide knees and breathe deeply to loosen pelvic floor muscles.",
-        durationMinutes: 4,
+        title: "Supported child's pose",
+        desc: "Use pillows under the chest or hips and breathe naturally; do not force the stretch.",
+        durationMinutes: 3,
         icon: "🧘‍♀️",
         tag: "Stretch",
+        exerciseId: "childs_pose",
       },
       {
-        title: "Evening Magnesium Glycinate",
-        desc: "Take 200–300mg Magnesium Glycinate before bed to naturally relax smooth muscle tissue.",
-        durationMinutes: 1,
-        icon: "🌙",
-        tag: "Mineral",
+        title: "Cat-cow mobility",
+        desc: "Try a few gentle repetitions and stop if cramping or pain increases.",
+        durationMinutes: 2,
+        icon: "🐈",
+        tag: "Mobility",
+        exerciseId: "cat_cow",
       },
     ],
   },
   {
     id: "fatigue",
-    name: "Low Energy & Hormonal Brain Fog",
+    name: "Low energy",
     icon: "😴",
     colorClass: "text-violet-600 dark:text-violet-400",
     bgClass: "bg-violet-500/10 dark:bg-violet-500/15",
     borderClass: "border-violet-500/30",
-    quickNote: "Common in Luteal and Menstrual phases due to progesterone elevation and iron loss.",
+    quickNote: "Keep the effort easy. Rest, hydration, and reducing the session are all valid choices.",
     steps: [
       {
-        title: "Natural Morning Sunlight Exposure",
-        desc: "Spend 5–10 minutes near a sunlit window or outdoors to naturally stimulate cortisol & alertness.",
-        durationMinutes: 5,
-        icon: "☀️",
-        tag: "Circadian",
-      },
-      {
-        title: "Electrolytes & B-Complex Boost",
-        desc: "Recharge cellular energy pathways without caffeine spikes and energy crashes.",
+        title: "Short movement break",
+        desc: "Try two minutes of gentle spinal movement; stop if you feel unwell.",
         durationMinutes: 2,
-        icon: "⚡",
-        tag: "Nutrients",
+        icon: "🐈",
+        tag: "Mobility",
+        exerciseId: "cat_cow",
       },
       {
-        title: "Gentle Incline Walk or Mobility",
-        desc: "A relaxed 10-minute walk boosts cerebral circulation and lifts mental fog.",
-        durationMinutes: 10,
-        icon: "🚶‍♀️",
-        tag: "Pacing",
+        title: "Supported glute bridge",
+        desc: "Use a small range and a few slow repetitions, or choose rest instead.",
+        durationMinutes: 2,
+        icon: "🌉",
+        tag: "Strength",
+        exerciseId: "bridge",
+      },
+    ],
+  },
+  {
+    id: "back",
+    name: "Lower-back tension",
+    icon: "🌱",
+    colorClass: "text-cyan-600 dark:text-cyan-400",
+    bgClass: "bg-cyan-500/10 dark:bg-cyan-500/15",
+    borderClass: "border-cyan-500/30",
+    quickNote: "Use comfortable, gentle movement. Stop and seek advice if pain is severe, worsening, or radiates down a leg.",
+    steps: [
+      {
+        title: "Cat-cow mobility",
+        desc: "Move slowly within a comfortable range; avoid forcing your spine into an end position.",
+        durationMinutes: 2,
+        icon: "🐈",
+        tag: "Mobility",
+        exerciseId: "cat_cow",
+      },
+      {
+        title: "Bird-dog",
+        desc: "Keep the movement small and your trunk steady. Stop if pain increases.",
+        durationMinutes: 3,
+        icon: "🐦",
+        tag: "Stability",
+        exerciseId: "bird_dog",
+      },
+      {
+        title: "Supported child's pose",
+        desc: "Use support and stay only while the position feels comfortable.",
+        durationMinutes: 2,
+        icon: "🧘",
+        tag: "Stretch",
+        exerciseId: "childs_pose",
+      },
+    ],
+  },
+  {
+    id: "stress",
+    name: "Stress or needing a reset",
+    icon: "🌼",
+    colorClass: "text-violet-600 dark:text-violet-400",
+    bgClass: "bg-violet-500/10 dark:bg-violet-500/15",
+    borderClass: "border-violet-500/30",
+    quickNote: "Slow, comfortable movement can be a break in your day; it is not a substitute for mental health care.",
+    steps: [
+      {
+        title: "Child's pose",
+        desc: "Support your body with cushions and let your breathing stay easy.",
+        durationMinutes: 3,
+        icon: "🧘",
+        tag: "Restorative",
+        exerciseId: "childs_pose",
+      },
+      {
+        title: "Reclined butterfly",
+        desc: "Support your thighs with pillows and let the position be fully comfortable.",
+        durationMinutes: 3,
+        icon: "🦋",
+        tag: "Stretch",
+        exerciseId: "butterfly",
       },
     ],
   },
@@ -1565,10 +1589,6 @@ function ExerciseIllustration({
 // ============================================================================
 
 export default function MovementAndVitalityPage() {
-  const [cycleData, setCycleData] = React.useState<ActiveCycleSummary | null>(null);
-  const [isLoadingCycle, setIsLoadingCycle] = React.useState(true);
-  const [cycleDay, setCycleDay] = React.useState<number>(8);
-
   // Activity Ring Metric States — fetched from API
   const [activeCalories, setActiveCalories] = React.useState(0);
   const [exerciseMinutes, setExerciseMinutes] = React.useState(0);
@@ -1586,19 +1606,11 @@ export default function MovementAndVitalityPage() {
   const [draftGoals, setDraftGoals] = React.useState({ target_calories: 300, target_exercise_minutes: 30, target_mindful_minutes: 15, target_water_glasses: 8 });
   const [isSavingGoals, setIsSavingGoals] = React.useState(false);
 
-  // Morning Supplement Safety Checklist
-  const [tookSupplementWithFood, setTookSupplementWithFood] = React.useState(false);
-  const [eveningMagnesiumEnabled, setEveningMagnesiumEnabled] = React.useState(true);
-  const [supplementToast, setSupplementToast] = React.useState<string | null>(null);
-
   // Symptom Protocol State
   const [activeSymptom, setActiveSymptom] = React.useState<SymptomProtocol | null>(null);
 
   // Exercise Detail / Tutorial Modal State
   const [tutorialExercise, setTutorialExercise] = React.useState<ExerciseDetail | null>(null);
-  const [tutorialAngle, setTutorialAngle] = React.useState<"front" | "side">("front");
-  const [isPlayingTutorial, setIsPlayingTutorial] = React.useState(true);
-  const [tutorialTimer, setTutorialTimer] = React.useState(0);
 
   // Workout Session State
   const [selectedWorkout, setSelectedWorkout] = React.useState<WorkoutItem | null>(null);
@@ -1616,37 +1628,14 @@ export default function MovementAndVitalityPage() {
   React.useEffect(() => {
     async function loadCycle() {
       try {
-        setIsLoadingCycle(true);
         const res = await periodApi.getPeriods();
         if (typeof res?.is_female === "boolean") {
           setIsFemale(res.is_female);
         }
         setIsPartnerView(Boolean(res?.is_partner_view));
         setTargetName(res?.target_name || "");
-        const summary = res?.active_summary;
-        let day: number | null = summary?.cycle_day ?? summary?.current_cycle_day ?? null;
-
-        // If backend summary didn't calculate day, calculate using UTC difference from latest period
-        if (!day && res?.periods && res.periods.length > 0) {
-          const latest = res.periods[0];
-          if (latest?.start_date) {
-            const [y, m, d] = latest.start_date.split("-").map(Number);
-            const startMs = Date.UTC(y, m - 1, d);
-            const now = new Date();
-            const nowMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-            const diffDays = Math.round((nowMs - startMs) / 86400000) + 1;
-            if (diffDays >= 1) {
-              day = ((diffDays - 1) % 28) + 1;
-            }
-          }
-        }
-
-        setCycleDay(day || 1);
-        setCycleData(summary || null);
       } catch (err) {
         console.error("Failed to load cycle data:", err);
-      } finally {
-        setIsLoadingCycle(false);
       }
     }
     loadCycle();
@@ -1682,163 +1671,6 @@ export default function MovementAndVitalityPage() {
     loadFitness();
   }, []);
 
-  // Load supplement checklist from localStorage
-  React.useEffect(() => {
-    try {
-      const todayKey = new Date().toISOString().slice(0, 10);
-      const savedTook = localStorage.getItem(`uhc_supp_taken_${todayKey}`);
-      if (savedTook !== null) {
-        setTookSupplementWithFood(savedTook === "true");
-      }
-      const savedMag = localStorage.getItem("uhc_magnesium_enabled");
-      if (savedMag !== null) {
-        setEveningMagnesiumEnabled(savedMag === "true");
-      }
-    } catch {}
-  }, []);
-
-  const handleToggleTookWithFood = () => {
-    const next = !tookSupplementWithFood;
-    setTookSupplementWithFood(next);
-    try {
-      const todayKey = new Date().toISOString().slice(0, 10);
-      localStorage.setItem(`uhc_supp_taken_${todayKey}`, String(next));
-    } catch {}
-    if (next) {
-      setSupplementToast("Logged! Morning stomach protected with breakfast 🍳");
-      setTimeout(() => setSupplementToast(null), 3500);
-    }
-  };
-
-  const handleToggleMagnesium = () => {
-    const next = !eveningMagnesiumEnabled;
-    setEveningMagnesiumEnabled(next);
-    try {
-      localStorage.setItem("uhc_magnesium_enabled", String(next));
-    } catch {}
-    setSupplementToast(
-      next
-        ? "Evening Magnesium reminder active for 8:00 PM 🌙"
-        : "Evening Magnesium reminder disabled"
-    );
-    setTimeout(() => setSupplementToast(null), 3500);
-  };
-
-  // Compute Hormonal Phase
-  const currentPhase: CyclePhase = React.useMemo(() => {
-    if (cycleDay >= 1 && cycleDay <= 5) return "menstrual";
-    if (cycleDay >= 6 && cycleDay <= 13) return "follicular";
-    if (cycleDay >= 14 && cycleDay <= 17) return "ovulation";
-    return "luteal";
-  }, [cycleDay]);
-
-  // Dynamic Daily Energy Readiness based on precise cycleDay progression
-  const dailyReadiness = React.useMemo(() => {
-    let score = 80;
-    let title = "Rising Vitality & Progressive Tone";
-    let phaseTitle = "Follicular Phase";
-    let advice = "Your energy and hormonal rhythm are in balance.";
-    let color = "text-violet-500";
-    let badgeBg = "bg-violet-500/15 border-violet-500/30 text-violet-600 dark:text-violet-400";
-    let recommendedWorkoutId = "w-follicular-sculpt";
-
-    if (cycleDay >= 1 && cycleDay <= 5) {
-      phaseTitle = "Menstrual Phase";
-      color = "text-rose-500";
-      badgeBg = "bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400";
-      recommendedWorkoutId = "w-restorative-flow";
-      if (cycleDay === 1) {
-        score = 52;
-        title = "Restorative Pacing & Baseline Rest";
-        advice = "Estrogen & progesterone are at baseline. Prioritize warm hydration, low-impact mobility, and restorative decompression.";
-      } else if (cycleDay === 2) {
-        score = 55;
-        title = "Gentle Decompression & Pelvic Relief";
-        advice = "Peak flow relief. Keep workouts very gentle: restorative stretching, magnesium, and restorative breathing.";
-      } else if (cycleDay === 3) {
-        score = 58;
-        title = "Flow Easing & Gentle Walking";
-        advice = "Cramping naturally tapers. Low-stress 15-minute gentle walks and gentle spinal twists enhance circulation.";
-      } else if (cycleDay === 4) {
-        score = 63;
-        title = "Light Re-awakening & Mobility";
-        advice = "Energy begins gentle upward trend. Joint mobility, gentle core activation, and mineral hydration.";
-      } else {
-        score = 68;
-        title = "Menstrual Tail & Fresh Vitality";
-        advice = "Bleeding ends. Clean renewal of energy and cellular stamina preparing for the follicular rise.";
-      }
-    } else if (cycleDay >= 6 && cycleDay <= 13) {
-      phaseTitle = "Follicular Phase";
-      color = "text-violet-500";
-      badgeBg = "bg-violet-500/15 border-violet-500/30 text-violet-600 dark:text-violet-400";
-      recommendedWorkoutId = "w-follicular-sculpt";
-      if (cycleDay <= 8) {
-        score = 75 + (cycleDay - 6) * 4;
-        title = "Rising Vitality & Progressive Tone";
-        advice = "Rising estrogen enhances insulin sensitivity and stamina. Ideal for progressive strength and sculpting.";
-      } else if (cycleDay <= 11) {
-        score = 85 + (cycleDay - 9) * 3;
-        title = "High Energy & Dynamic Resistance";
-        advice = "Strong cellular resilience and mental clarity. Push resistance training, glute sculpting, and brisk power cardio.";
-      } else {
-        score = 93 + (cycleDay - 12) * 2;
-        title = "Pre-Ovulation Energy Surge";
-        advice = "Estrogen reaches near peak levels. High muscle recruitment, fast recovery, and superior coordination.";
-      }
-    } else if (cycleDay >= 14 && cycleDay <= 17) {
-      phaseTitle = "Ovulatory Phase";
-      color = "text-emerald-500";
-      badgeBg = "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400";
-      recommendedWorkoutId = "w-follicular-sculpt";
-      if (cycleDay === 14) {
-        score = 98;
-        title = "Peak Ovulatory Power & Stamina";
-        advice = "Peak metabolic efficiency and highest pain tolerance of the month. Great for power intervals and peak personal bests.";
-      } else if (cycleDay === 15) {
-        score = 95;
-        title = "Sustained Peak Vitality";
-        advice = "High muscular coordination and strength. Keep heart rate elevated and maintain consistent electrolytes.";
-      } else if (cycleDay === 16) {
-        score = 90;
-        title = "Active Ovulation Transition";
-        advice = "Ovulation completes. Transition into controlled strength, core stability, and antioxidant-rich meals.";
-      } else {
-        score = 86;
-        title = "Post-Ovulation Pacing";
-        advice = "Early progesterone begins rising. Focus on steady resistance and pelvic floor endurance.";
-      }
-    } else {
-      phaseTitle = "Luteal Phase";
-      color = "text-indigo-500";
-      badgeBg = "bg-indigo-500/15 border-indigo-500/30 text-indigo-600 dark:text-indigo-400";
-      recommendedWorkoutId = "w-luteal-pilates";
-      if (cycleDay <= 21) {
-        score = 80 - (cycleDay - 18) * 3;
-        title = "Early Luteal Tone & Steady Pacing";
-        advice = "Progesterone is climbing. Choose steady resistance, controlled pilates, and avoid over-exhaustion.";
-      } else if (cycleDay <= 24) {
-        score = 70 - (cycleDay - 22) * 3;
-        title = "Mid-Luteal Core & Gentle Recovery";
-        advice = "Body temperature is higher. Slower cadence, pelvic stabilization, and magnesium-rich evening recovery.";
-      } else {
-        score = 62 - (cycleDay - 25) * 2;
-        title = "Pre-Menstrual Calm & Deep Stretch";
-        advice = "Hormones preparing for next cycle. Gentle yin yoga, lower back decompression, and restorative pacing.";
-      }
-    }
-
-    return {
-      score,
-      title,
-      phaseTitle,
-      advice,
-      color,
-      badgeBg,
-      recommendedWorkoutId,
-    };
-  }, [cycleDay]);
-
   // Filtered Workout List
   const filteredWorkouts = React.useMemo(() => {
     let list = WORKOUT_DATABASE;
@@ -1862,30 +1694,17 @@ export default function MovementAndVitalityPage() {
       );
     }
 
-    // Sort to prioritize today's active phase at top
-    if (workoutCategoryFilter === "Cycle Sync" && cyclePhaseFilter === "all") {
-      list = [...list].sort((a, b) => {
-        if (a.phase === currentPhase && b.phase !== currentPhase) return -1;
-        if (b.phase === currentPhase && a.phase !== currentPhase) return 1;
-        return 0;
-      });
-    }
-
     return list;
-  }, [workoutCategoryFilter, cyclePhaseFilter, selectedSymptomFilter, currentPhase]);
+  }, [workoutCategoryFilter, cyclePhaseFilter, selectedSymptomFilter]);
 
   const handleQuickLogWorkout = (workout: WorkoutItem) => {
-    setActiveCalories((prev) => {
-      const next = prev + workout.calories;
-      persistLog({ active_calories: next });
-      return next;
-    });
     setExerciseMinutes((prev) => {
       const next = prev + workout.durationMinutes;
       persistLog({ exercise_minutes: next });
       return next;
     });
-    setGoalsSavedToast(`Logged ${workout.title}! +${workout.durationMinutes}m & +${workout.calories} kcal added to daily vitality rings! ✨`);
+
+    setGoalsSavedToast(`Logged ${workout.title}! +${workout.durationMinutes} minutes of movement.`);
     setTimeout(() => setGoalsSavedToast(null), 4000);
   };
 
@@ -1981,11 +1800,9 @@ export default function MovementAndVitalityPage() {
   // Complete Workout Session — persisted
   const handleFinishWorkout = () => {
     if (selectedWorkout) {
-      const newCal = activeCalories + selectedWorkout.calories;
       const newMin = exerciseMinutes + selectedWorkout.durationMinutes;
-      setActiveCalories(newCal);
       setExerciseMinutes(newMin);
-      persistLog({ active_calories: newCal, exercise_minutes: newMin });
+      persistLog({ exercise_minutes: newMin });
     }
     setIsWorkoutActive(false);
     setSelectedWorkout(null);
@@ -2017,7 +1834,7 @@ export default function MovementAndVitalityPage() {
     <AppShell>
       <div className="mx-auto max-w-7xl space-y-8 pb-16 pt-2">
         {/* ==================================================================== */}
-        {/* POLISHED HERO HEADER & ENERGY READINESS BAR */}
+        {/* Movement and cycle context */}
         {/* ==================================================================== */}
         <div className="relative overflow-hidden rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-8 shadow-xs transition-colors">
           <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl" />
@@ -2036,33 +1853,22 @@ export default function MovementAndVitalityPage() {
 
               <p className="max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
                 {isPartnerView
-                  ? `Keep track of ${targetName || "her"} hormonal phase, energy levels, hydration, and instant recovery protocols so you can support her effortlessly.`
-                  : "Personalized daily movement, energy pacing, hydration, and soothing relief tailored to your daily rhythm."}
+                  ? `Explore flexible movement ideas for ${targetName || "her"}, guided by comfort and preference.`
+                  : "Choose movement, stretching, and recovery options that fit how you feel today."}
               </p>
             </div>
 
-            {/* Daily Energy & Readiness Dial Card */}
+            {/* Cycle context is optional and not a workout-readiness prediction */}
             {(isFemale || isPartnerView) && (
-              <div className="flex items-center gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 shadow-sm">
-                <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-rose-500 text-white shadow-md shadow-violet-500/20">
-                  <div className="flex flex-col items-center leading-none">
-                    <span className="text-xl font-black">{dailyReadiness.score}%</span>
-                    <span className="text-[9px] uppercase font-bold opacity-90 tracking-wider">Readiness</span>
-                  </div>
+              <div className="max-w-sm rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 shadow-sm">
+                <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
+                  <CalendarHeart className="h-4 w-4 text-violet-500" />
+                  Optional cycle context
                 </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", dailyReadiness.badgeBg)}>
-                      {dailyReadiness.phaseTitle}
-                    </span>
-                    <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                      Day {cycleDay} of 28
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold text-[var(--text-primary)]">{dailyReadiness.title}</h4>
-                  <p className="text-xs text-[var(--text-secondary)] line-clamp-1">{dailyReadiness.advice}</p>
-                </div>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                  Phase timing and symptoms vary. This page does not predict
+                  readiness; choose movement based on comfort and preference.
+                </p>
               </div>
             )}
           </div>
@@ -2373,94 +2179,16 @@ export default function MovementAndVitalityPage() {
           </button>
         </div>
 
-        {/* ==================================================================== */}
-        {/* POLISHED MORNING MINERAL SUPPLEMENT SAFETY ALERT (SUITABLE DARK) */}
-        {/* ==================================================================== */}
-        <div className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#1c1824] via-[#14121d] to-[#0d0d14] p-6 sm:p-7 shadow-2xl backdrop-blur-xl transition-all">
-          {/* Ambient Lighting Accents */}
-          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl" />
-          <div className="pointer-events-none absolute -left-16 -bottom-16 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" />
-
-          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-4 flex-1 min-w-0">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-500/40 bg-amber-500/20 text-amber-400 shadow-inner">
-                <AlertTriangle className="h-6 w-6" />
-              </div>
-              <div className="space-y-2 flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-amber-500/40 bg-amber-500/20 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
-                    Morning Supplement Protocol
-                  </span>
-                  <span className="text-xs font-semibold text-amber-300/90">
-                    Headache & Nausea Prevention
-                  </span>
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-                  Take Morning Minerals With Food — Never on an Empty Stomach 🍳
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-                  Taking minerals (such as Zinc, Iron, or Vitamin C) first thing in the morning without food irritates the gastric lining, causing stomach distress and rebound morning tension headaches.
-                  <strong className="font-semibold text-amber-300"> Recommendation:</strong> Take morning minerals with eggs, toast, or avocado. Shift <strong className="font-semibold text-violet-400">Magnesium Glycinate to 8:00 PM</strong> to naturally relax muscles, relieve tension headaches, and deepen sleep!
-                </p>
-
-                {supplementToast && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-xs font-semibold text-emerald-300"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                    <span>{supplementToast}</span>
-                  </motion.div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={handleToggleTookWithFood}
-                className={cn(
-                  "w-full sm:w-[220px] flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all border shadow-xs select-none",
-                  tookSupplementWithFood
-                    ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/60 shadow-emerald-500/20"
-                    : "bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-500/40"
-                )}
-              >
-                {tookSupplementWithFood ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" /> : <Plus className="h-4 w-4 shrink-0" />}
-                <span className="truncate">{tookSupplementWithFood ? "Logged: With Food" : "Log: Taken With Food"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleToggleMagnesium}
-                className={cn(
-                  "w-full sm:w-[230px] flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all border shadow-xs select-none",
-                  eveningMagnesiumEnabled
-                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-violet-500/50 shadow-md shadow-violet-500/30 hover:opacity-95"
-                    : "bg-white/10 hover:bg-white/15 text-slate-200 border-white/15"
-                )}
-              >
-                <Moon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{eveningMagnesiumEnabled ? "Evening Magnesium (8 PM)" : "Enable Evening Magnesium"}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ==================================================================== */}
-        {/* POLISHED REAL-TIME SYMPTOM TACTICAL RELIEF PROTOCOLS */}
-        {/* ==================================================================== */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-[var(--text-primary)]">
-                Instant Symptom Relief Protocols 💡
+                Movement options for common symptoms
               </h2>
               <p className="text-xs text-[var(--text-secondary)]">
                 {isPartnerView
-                  ? `Tap whatever ${targetName || "she"} is experiencing right now for rapid 3-minute guided recovery steps.`
-                  : "Tap whatever you are experiencing right now for rapid 3-minute guided recovery steps."}
+                  ? `Explore comfortable movement options for ${targetName || "her"} symptoms.`
+                  : "Explore comfortable movement options; stop if symptoms worsen."}
               </p>
             </div>
           </div>
@@ -2482,7 +2210,7 @@ export default function MovementAndVitalityPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-2xl">{proto.icon}</span>
                     <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", proto.bgClass, proto.colorClass, proto.borderClass)}>
-                      Instant Protocol
+                      Comfort option
                     </span>
                   </div>
 
@@ -2492,7 +2220,7 @@ export default function MovementAndVitalityPage() {
                   </div>
 
                   <div className="mt-4 flex items-center gap-1 text-xs font-bold text-violet-600 dark:text-violet-400">
-                    {isSelected ? "Close Protocol" : "View Relief Steps"} <ChevronRight className="h-3.5 w-3.5" />
+                    {isSelected ? "Close options" : "View movement options"} <ChevronRight className="h-3.5 w-3.5" />
                   </div>
                 </button>
               );
@@ -2515,7 +2243,7 @@ export default function MovementAndVitalityPage() {
                     <span className="text-3xl">{activeSymptom.icon}</span>
                     <div>
                       <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                        {activeSymptom.name} — Step-by-Step Relief Plan
+                        {activeSymptom.name} — movement options
                       </h3>
                       <p className="text-xs text-[var(--text-secondary)]">{activeSymptom.quickNote}</p>
                     </div>
@@ -2542,6 +2270,15 @@ export default function MovementAndVitalityPage() {
                       </div>
                       <h4 className="text-sm font-bold text-[var(--text-primary)]">{step.title}</h4>
                       <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{step.desc}</p>
+                      {step.exerciseId && EXERCISE_LIBRARY[step.exerciseId] && (
+                        <button
+                          type="button"
+                          onClick={() => setTutorialExercise(EXERCISE_LIBRARY[step.exerciseId!])}
+                          className="pt-1 text-xs font-bold text-violet-600 hover:text-violet-500 dark:text-violet-300"
+                        >
+                          Watch exercise tutorial
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -2558,10 +2295,10 @@ export default function MovementAndVitalityPage() {
             <div>
               <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <Dumbbell className="h-5 w-5 text-violet-400" />
-                Cycle-Adapted Movement Library
+                Cycle-aware movement library
               </h2>
               <p className="text-xs text-[var(--text-secondary)]">
-                Dedicated exercises customized with symptoms, energy levels, and hormonal safety cues.
+                Phase labels are optional ideas. Choose routines by comfort, symptoms, and preference.
               </p>
             </div>
 
@@ -2594,30 +2331,29 @@ export default function MovementAndVitalityPage() {
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-violet-400" />
                   <span className="text-xs font-bold text-[var(--text-primary)]">
-                    Filter by Hormonal Phase & Days
+                    Optional cycle-phase filter
                   </span>
                 </div>
                 <span className="text-[11px] text-[var(--text-tertiary)]">
-                  Today: Day {cycleDay} of 28 ({dailyReadiness.phaseTitle})
+                  Cycle phase and timing vary. Choose a phase manually or browse all routines.
                 </span>
               </div>
 
               {/* Phase Buttons */}
               <div className="flex flex-wrap gap-2">
                 {[
-                  { id: "all", label: "✨ All 4 Phases (Days 1–28)", phase: null },
-                  { id: "menstrual", label: "🩸 Menstrual (Days 1–5)", phase: "menstrual" },
-                  { id: "follicular", label: "🌱 Follicular (Days 6–13)", phase: "follicular" },
-                  { id: "ovulation", label: "🔥 Ovulatory (Days 14–17)", phase: "ovulation" },
-                  { id: "luteal", label: "🌙 Luteal (Days 18–28)", phase: "luteal" },
+                  { id: "all", label: "✨ All phase ideas" },
+                  { id: "menstrual", label: "🩸 Menstrual" },
+                  { id: "follicular", label: "🌱 Follicular" },
+                  { id: "ovulation", label: "🔥 Ovulatory" },
+                  { id: "luteal", label: "🌙 Luteal" },
                 ].map((item) => {
-                  const isCurrent = item.phase === currentPhase;
                   const isSelected = cyclePhaseFilter === item.id;
                   return (
                     <button
                       key={item.id}
                       onClick={() => {
-                        setCyclePhaseFilter(item.id as any);
+                        setCyclePhaseFilter(item.id as CyclePhase | "all");
                         setTimeout(() => document.getElementById("workouts-section")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
                       }}
                       className={cn(
@@ -2628,11 +2364,6 @@ export default function MovementAndVitalityPage() {
                       )}
                     >
                       <span>{item.label}</span>
-                      {isCurrent && (
-                        <span className="rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-extrabold px-1.5 py-0.2 border border-emerald-500/40">
-                          Today
-                        </span>
-                      )}
                     </button>
                   );
                 })}
@@ -2641,14 +2372,14 @@ export default function MovementAndVitalityPage() {
               {/* Symptom Quick Filter Filter Chips */}
               <div className="pt-2 border-t border-[var(--glass-border)] flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
                 <span className="text-[10px] uppercase font-bold text-[var(--text-tertiary)] shrink-0">
-                  Target Symptoms:
+                  Movement options for:
                 </span>
                 {[
                   { id: "all", label: "All Symptoms" },
                   { id: "cramp", label: "Cramps & Pelvic" },
                   { id: "headache", label: "Tension Headaches" },
                   { id: "bloat", label: "Bloating" },
-                  { id: "fatigue", label: "Fatigue & Sluggishness" },
+                  { id: "energy", label: "Low energy" },
                   { id: "back", label: "Lower Back Tension" },
                 ].map((s) => (
                   <button
@@ -2671,15 +2402,12 @@ export default function MovementAndVitalityPage() {
           {/* Workouts Grid */}
           <div className="grid gap-6 md:grid-cols-2">
             {filteredWorkouts.map((workout) => {
-              const isTodayPhase = workout.phase === currentPhase;
               return (
                 <div
                   key={workout.id}
                   className={cn(
                     "group relative flex flex-col justify-between overflow-hidden rounded-3xl border p-6 shadow-xs transition-all hover:shadow-xl",
-                    isTodayPhase && workoutCategoryFilter === "Cycle Sync"
-                      ? "border-violet-500/50 bg-gradient-to-b from-violet-500/[0.07] via-[var(--bg-card)] to-[var(--bg-card)] shadow-violet-500/5"
-                      : "border-[var(--glass-border)] bg-[var(--bg-card)] hover:border-violet-500/40"
+                    "border-[var(--glass-border)] bg-[var(--bg-card)] hover:border-violet-500/40"
                   )}
                 >
                   <div className="space-y-4">
@@ -2687,13 +2415,8 @@ export default function MovementAndVitalityPage() {
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-3xl">{workout.icon}</span>
                       <div className="flex flex-wrap items-center justify-end gap-1.5">
-                        {isTodayPhase && (
-                          <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 animate-pulse">
-                            🌟 Today's Active Phase
-                          </span>
-                        )}
                         <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 text-[10px] font-bold text-violet-300">
-                          {workout.cycleDays}
+                          {workout.phase === "all" ? "Any phase" : `Optional ${workout.phase} idea`}
                         </span>
                         <span className="rounded-full border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--text-secondary)]">
                           {workout.intensity}
@@ -2710,37 +2433,10 @@ export default function MovementAndVitalityPage() {
                       </p>
                     </div>
 
-                    {/* Dedicated Energy & Mood Badges */}
-                    <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
-                      <div className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2.5 space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-amber-400">
-                          ⚡ Energy Pacing
-                        </span>
-                        <p className="text-xs font-semibold text-white">
-                          {workout.energyLevel} ({workout.energyPercent}%)
-                        </p>
-                        <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-emerald-400"
-                            style={{ width: `${workout.energyPercent}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2.5 space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-rose-400">
-                          🌸 Matched Mood
-                        </span>
-                        <p className="text-xs font-semibold text-white line-clamp-2">
-                          {workout.moodState}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Target Symptoms Relieved */}
+                    {/* Symptom associations are options, not treatment claims */}
                     <div className="space-y-1.5 pt-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                        Target Symptoms Relieved:
+                        Movement options for:
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {workout.targetSymptoms?.map((symptom) => (
@@ -2751,18 +2447,6 @@ export default function MovementAndVitalityPage() {
                             🩺 {symptom}
                           </span>
                         ))}
-                      </div>
-                    </div>
-
-                    {/* Hormonal & Related Conditions Card */}
-                    <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-3 space-y-1 text-xs">
-                      <div className="flex items-center gap-1.5 font-bold text-violet-300">
-                        <Sparkles className="h-3.5 w-3.5 text-violet-400 shrink-0" />
-                        <span>Hormonal Rhythm: {workout.hormonalContext}</span>
-                      </div>
-                      <div className="text-[11px] text-amber-300/90 leading-relaxed pt-1 border-t border-violet-500/15">
-                        <span className="font-bold">⚠️ Safety & Related Conditions: </span>
-                        {workout.relatedConditions?.join(" • ")}
                       </div>
                     </div>
 
@@ -2777,11 +2461,8 @@ export default function MovementAndVitalityPage() {
                           <button
                             key={ex.id}
                             onClick={() => {
-                              setTutorialExercise(ex);
-                              setTutorialAngle("front");
-                              setTutorialTimer(ex.durationSec);
-                              setIsPlayingTutorial(true);
-                            }}
+                                setTutorialExercise(ex);
+                              }}
                             className="flex items-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2 text-left hover:border-violet-500/50 hover:bg-violet-500/5 transition-colors group/item cursor-pointer"
                           >
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
@@ -2809,8 +2490,8 @@ export default function MovementAndVitalityPage() {
                         {workout.durationMinutes} min
                       </span>
                       <span className="flex items-center gap-1">
-                        <Flame className="h-3.5 w-3.5 text-rose-500" />
-                        {workout.calories} kcal
+                        <Dumbbell className="h-3.5 w-3.5 text-violet-400" />
+                        {workout.equipment}
                       </span>
                     </div>
 
@@ -2849,6 +2530,7 @@ export default function MovementAndVitalityPage() {
         {/* ==================================================================== */}
         {tutorialExercise && (
           <ExerciseVideoModal
+            key={tutorialExercise.id}
             exerciseId={tutorialExercise.id}
             onClose={() => setTutorialExercise(null)}
           />
@@ -2878,7 +2560,7 @@ export default function MovementAndVitalityPage() {
                     <div>
                       <h3 className="text-lg font-bold text-[var(--text-primary)]">{selectedWorkout.title}</h3>
                       <p className="text-xs text-[var(--text-secondary)]">
-                        {selectedWorkout.durationMinutes} mins • {selectedWorkout.calories} kcal • {selectedWorkout.equipment}
+                        {selectedWorkout.durationMinutes} mins • {selectedWorkout.equipment}
                       </p>
                     </div>
                   </div>
@@ -2949,7 +2631,6 @@ export default function MovementAndVitalityPage() {
                           <button
                             onClick={() => {
                               setTutorialExercise(ex);
-                              setTutorialAngle("front");
                             }}
                             className="flex items-center gap-1 rounded-lg border border-[var(--glass-border)] bg-[var(--bg-card)] px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:text-violet-300 hover:bg-violet-500/10"
                           >
