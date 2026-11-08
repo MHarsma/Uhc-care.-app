@@ -12,6 +12,7 @@ import {
   HelpCircle,
   Loader2,
 } from "lucide-react";
+import { periodApi, PeriodsResponse } from "@/lib/api/period";
 import { cn } from "@/lib/utils";
 
 interface ChatMessage {
@@ -32,6 +33,30 @@ export function CareAIChatDrawer() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const [userContext, setUserContext] = React.useState<{
+    phase?: string;
+    cycleDay?: number | string;
+    partnerName?: string;
+  }>({});
+
+  React.useEffect(() => {
+    periodApi
+      .getPeriods()
+      .then((res: PeriodsResponse) => {
+        if (res?.active_summary) {
+          const day =
+            res.active_summary.current_cycle_day ??
+            res.active_summary.cycle_day ??
+            (res.active_summary.is_active ? "Day 1 (Period)" : "Cycle active");
+          setUserContext({
+            cycleDay: day,
+            phase: res.active_summary.is_active ? "Menstrual" : "Active cycle",
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [messages, setMessages] = React.useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -82,6 +107,7 @@ export function CareAIChatDrawer() {
             role: m.role,
             content: m.content,
           })),
+          userContext,
         }),
       });
 
