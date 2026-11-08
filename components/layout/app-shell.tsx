@@ -33,6 +33,7 @@ import { QuickAddTaskDialog } from "@/components/routine-library/quick-add-task-
 import { RoutineLibraryModal } from "@/components/routine-library/routine-library-modal";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { NotificationCenter } from "@/components/notifications/notification-center";
+import { CareAIChatDrawer } from "@/components/ai/care-ai-chat-drawer";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -734,6 +735,9 @@ export function AppShell({
         onOpenChange={setIsQuickAddOpen}
         onTaskCreated={handleRefetch}
       />
+
+      {/* Care AI Floating Companion Drawer */}
+      <CareAIChatDrawer />
     </div>
   );
 }
