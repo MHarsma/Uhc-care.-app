@@ -45,6 +45,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ExerciseVideoModal } from "@/components/fitness/exercise-video-modal";
+import { EXERCISE_VIDEO_LIBRARY } from "@/lib/data/exercise-videos";
 
 // ============================================================================
 // DATA MODELS & INTERFACES
@@ -2270,6 +2271,16 @@ export default function MovementAndVitalityPage() {
                       </div>
                       <h4 className="text-sm font-bold text-[var(--text-primary)]">{step.title}</h4>
                       <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{step.desc}</p>
+                      {step.exerciseId && EXERCISE_VIDEO_LIBRARY[step.exerciseId]?.videoPoster && (
+                        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-[var(--bg-card)] mt-2">
+                          <img
+                            src={EXERCISE_VIDEO_LIBRARY[step.exerciseId].videoPoster}
+                            alt={step.title}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
                       {step.exerciseId && EXERCISE_LIBRARY[step.exerciseId] && (
                         <button
                           type="button"
@@ -2457,27 +2468,41 @@ export default function MovementAndVitalityPage() {
                       </span>
 
                       <div className="grid grid-cols-2 gap-2">
-                        {workout.exercises.map((ex) => (
-                          <button
-                            key={ex.id}
-                            onClick={() => {
+                        {workout.exercises.map((ex) => {
+                          const poster = EXERCISE_VIDEO_LIBRARY[ex.id]?.videoPoster;
+                          return (
+                            <button
+                              key={ex.id}
+                              onClick={() => {
                                 setTutorialExercise(ex);
                               }}
-                            className="flex items-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2 text-left hover:border-violet-500/50 hover:bg-violet-500/5 transition-colors group/item cursor-pointer"
-                          >
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
-                              <Video className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-xs font-semibold text-[var(--text-primary)] group-hover/item:text-violet-400">
-                                {ex.name}
-                              </p>
-                              <span className="text-[10px] text-[var(--text-secondary)]">
-                                {ex.reps || `${ex.durationSec}s`} • See Form
-                              </span>
-                            </div>
-                          </button>
-                        ))}
+                              className="flex items-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-2 text-left hover:border-violet-500/50 hover:bg-violet-500/5 transition-colors group/item cursor-pointer"
+                            >
+                              <div className="relative h-9 w-11 shrink-0 overflow-hidden rounded-lg bg-[var(--bg-secondary)]">
+                                {poster ? (
+                                  <img
+                                    src={poster}
+                                    alt={ex.name}
+                                    className="h-full w-full object-cover transition group-hover/item:scale-105"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center bg-violet-500/10 text-violet-400">
+                                    <Video className="h-4 w-4" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-xs font-semibold text-[var(--text-primary)] group-hover/item:text-violet-400">
+                                  {ex.name}
+                                </p>
+                                <span className="text-[10px] text-[var(--text-secondary)]">
+                                  {ex.reps || `${ex.durationSec}s`} • See Form
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -2621,6 +2646,15 @@ export default function MovementAndVitalityPage() {
                           >
                             {isDone ? <Check className="h-4 w-4 stroke-[3]" /> : <span className="text-xs">{idx + 1}</span>}
                           </div>
+                          {EXERCISE_VIDEO_LIBRARY[ex.id]?.videoPoster && (
+                            <div className="relative h-10 w-12 shrink-0 overflow-hidden rounded-lg bg-[var(--bg-secondary)] hidden sm:block">
+                              <img
+                                src={EXERCISE_VIDEO_LIBRARY[ex.id].videoPoster}
+                                alt={ex.name}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
                           <div>
                             <p className="text-sm font-bold text-[var(--text-primary)]">{ex.name}</p>
                             <p className="text-xs text-[var(--text-secondary)]">{ex.targetMuscles.join(", ")}</p>
