@@ -417,7 +417,8 @@ export default function SettingsPage() {
             </div>
           </div>
         ) : (
-          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-5 xl:grid-cols-2 xl:gap-6">
+          <div className="space-y-6">
+            <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-5 xl:grid-cols-2 xl:gap-6">
             {/* ============================================================ */}
             {/* COLUMN 1: PROFILE & COUPLE PAIRING                          */}
             {/* ============================================================ */}
@@ -998,28 +999,6 @@ export default function SettingsPage() {
                   </p>
                 )}
               </div>
-
-              {/* Sign Out Section */}
-              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 sm:p-5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/15 text-rose-500">
-                      <LogOut className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-[var(--text-primary)]">Sign Out</h3>
-                      <p className="text-[11px] text-[var(--text-tertiary)]">Sign out of your account on this device</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowSignoutModal(true)}
-                    className="rounded-xl bg-rose-500/10 border border-rose-500/30 px-4 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              </div>
               </div>
             </section>
 
@@ -1245,6 +1224,31 @@ export default function SettingsPage() {
               <InstallAppCard />
             </div>
             </section>
+          </div>
+
+          {/* Sign Out Section at the end of the page */}
+          <div className="pt-6 border-t border-[var(--glass-border)]">
+            <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/15 text-rose-500 shrink-0">
+                    <LogOut className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[var(--text-primary)]">Sign Out</h3>
+                    <p className="text-[11px] text-[var(--text-tertiary)]">Sign out of your account on this device</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSignoutModal(true)}
+                  className="w-full sm:w-auto rounded-xl bg-rose-500/10 border border-rose-500/30 px-5 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all text-center"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
           </div>
         )}
       </div>
