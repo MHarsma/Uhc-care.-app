@@ -3,16 +3,25 @@
 import * as React from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { ExerciseVideoModal } from "@/components/fitness/exercise-video-modal";
+import { periodApi } from "@/lib/api/period";
+import { fitnessApi } from "@/lib/api/fitness";
 import {
   Activity,
-  ArrowUpRight,
+  ArrowRight,
+  CheckCircle2,
   Clock3,
   Dumbbell,
+  Filter,
+  Flame,
   Heart,
+  Play,
   Search,
-  ShieldCheck,
   Sparkles,
+  Target,
+  Timer,
+  Trophy,
   X,
+  Zap,
 } from "lucide-react";
 import {
   DetailedExerciseVideo,
@@ -20,31 +29,36 @@ import {
 } from "@/lib/data/exercise-videos";
 import { cn } from "@/lib/utils";
 
-type ExerciseCategory =
-  | "Bodyweight"
-  | "Light weights"
-  | "Stretching"
-  | "Mobility"
-  | "Core & Pilates"
-  | "Cardio & conditioning";
+/* ================================================================== */
+/* TYPES                                                               */
+/* ================================================================== */
 
-type CyclePhase = "menstrual" | "follicular" | "ovulation" | "luteal";
+type WorkoutCategory =
+  | "All"
+  | "Bodyweight"
+  | "Strength"
+  | "Stretching"
+  | "Core"
+  | "Cardio"
+  | "Mobility";
+
+type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 
 interface WorkoutPlan {
   id: string;
   title: string;
-  duration: string;
-  equipment: string;
   description: string;
+  durationMin: number;
+  difficulty: Difficulty;
+  category: Exclude<WorkoutCategory, "All">;
   exerciseIds: string[];
-  category: ExerciseCategory;
+  icon: string;
+  color: string;
 }
 
-interface MovementGuide {
-  title: string;
-  summary: string;
-  exerciseIds: string[];
-}
+/* ================================================================== */
+/* EXERCISE CATEGORISATION (derived from shared library)               */
+/* ================================================================== */
 
 const STRETCH_IDS = new Set([
   "childs_pose",
@@ -52,7 +66,9 @@ const STRETCH_IDS = new Set([
   "legs_wall",
   "chin_tuck",
   "trap_stretch",
+  "cat_cow",
 ]);
+
 const CORE_IDS = new Set([
   "pilates_100",
   "bird_dog",
@@ -61,115 +77,116 @@ const CORE_IDS = new Set([
   "forearm_plank",
   "reverse_crunches",
 ]);
+
 const CARDIO_IDS = new Set(["jumping_jacks", "mountain_climbers"]);
 
-const SYMPTOM_GUIDES: Record<string, MovementGuide> = {
-  cramps: {
-    title: "Period cramps",
-    summary:
-      "If gentle movement feels comfortable, try a short mobility break. Stop if it makes the pain worse; rest and warmth are also reasonable options.",
-    exerciseIds: ["childs_pose", "cat_cow", "bridge", "legs_wall"],
-  },
-  back: {
-    title: "Lower-back tension",
-    summary:
-      "Try a small, comfortable range of spinal movement and light hip strength. Skip any movement that increases pain or radiating symptoms.",
-    exerciseIds: ["cat_cow", "bridge", "bird_dog", "childs_pose"],
-  },
-  neck: {
-    title: "Neck and shoulder tension",
-    summary:
-      "Use gentle, pain-free neck and shoulder movement. Do not pull hard on your head or force a stretch.",
-    exerciseIds: ["trap_stretch", "chin_tuck", "cat_cow"],
-  },
-  lowEnergy: {
-    title: "Low energy",
-    summary:
-      "A few minutes of easy mobility may be enough, and taking a rest day is okay. Build up gradually when you feel ready.",
-    exerciseIds: ["cat_cow", "bridge", "childs_pose"],
-  },
-  stress: {
-    title: "Stress or needing a reset",
-    summary:
-      "Choose slow, comfortable movements and relaxed breathing. These are general movement ideas, not treatment for a health condition.",
-    exerciseIds: ["childs_pose", "butterfly", "cat_cow", "trap_stretch"],
-  },
-  bloating: {
-    title: "Bloating or feeling stiff",
-    summary:
-      "A relaxed walk or gentle mobility can be a comfortable option. Avoid movements that add pressure or discomfort.",
-    exerciseIds: ["cat_cow", "childs_pose", "bridge"],
-  },
+const STRENGTH_IDS = new Set([
+  "rdl",
+  "db_chest_press",
+  "lateral_raise",
+  "db_row",
+]);
+
+const MOBILITY_IDS = new Set(["cat_cow", "childs_pose"]);
+
+function getWorkoutCategory(
+  exercise: DetailedExerciseVideo,
+): Exclude<WorkoutCategory, "All"> {
+  if (STRETCH_IDS.has(exercise.id)) return "Stretching";
+  if (CORE_IDS.has(exercise.id)) return "Core";
+  if (CARDIO_IDS.has(exercise.id)) return "Cardio";
+  if (STRENGTH_IDS.has(exercise.id)) return "Strength";
+  if (MOBILITY_IDS.has(exercise.id)) return "Mobility";
+  return "Bodyweight";
+}
+
+/* Build exercises from the shared library so they stay in sync */
+const ALL_EXERCISES = Object.values(EXERCISE_VIDEO_LIBRARY).map((ex) => ({
+  ...ex,
+  workoutCategory: getWorkoutCategory(ex),
+}));
+
+/* ================================================================== */
+/* CATEGORY METADATA                                                   */
+/* ================================================================== */
+
+const CATEGORY_META: Record<
+  Exclude<WorkoutCategory, "All">,
+  { icon: string; color: string; label: string }
+> = {
+  Bodyweight: { icon: "💪", color: "violet", label: "Bodyweight" },
+  Strength: { icon: "🏋️", color: "rose", label: "Strength" },
+  Stretching: { icon: "🧘", color: "emerald", label: "Stretching" },
+  Core: { icon: "🎯", color: "amber", label: "Core" },
+  Cardio: { icon: "🔥", color: "orange", label: "Cardio" },
+  Mobility: { icon: "🤸", color: "cyan", label: "Mobility" },
 };
 
-const PHASE_GUIDES: Record<CyclePhase, MovementGuide> = {
-  menstrual: {
-    title: "Menstrual phase",
-    summary:
-      "If you have cramps or fatigue, choose gentle movement or rest according to comfort. There is no need to avoid strength training if it feels okay.",
-    exerciseIds: ["childs_pose", "cat_cow", "bridge", "legs_wall"],
-  },
-  follicular: {
-    title: "Follicular phase",
-    summary:
-      "If you feel well, this can be a convenient time for any routine you enjoy. Cycle phase alone does not determine your strength or readiness.",
-    exerciseIds: ["squat", "rdl", "knee_pushup", "db_row"],
-  },
-  ovulation: {
-    title: "Around ovulation",
-    summary:
-      "Choose your usual comfortable intensity; you do not need to push harder because of cycle timing. Adjust if you notice pain or other symptoms.",
-    exerciseIds: ["squat", "walking_lunges", "db_chest_press", "bird_dog"],
-  },
-  luteal: {
-    title: "Luteal phase",
-    summary:
-      "Symptoms and energy can vary. Keep your usual routine if it feels good, or shorten it and choose mobility when you prefer.",
-    exerciseIds: ["bridge", "deadbug", "cat_cow", "wall_sit"],
-  },
-};
-
-const CYCLE_PHASES: { id: CyclePhase; label: string }[] = [
-  { id: "menstrual", label: "Menstrual" },
-  { id: "follicular", label: "Follicular" },
-  { id: "ovulation", label: "Ovulatory" },
-  { id: "luteal", label: "Luteal" },
+const CATEGORIES: WorkoutCategory[] = [
+  "All",
+  "Bodyweight",
+  "Strength",
+  "Stretching",
+  "Core",
+  "Cardio",
+  "Mobility",
 ];
+
+/* ================================================================== */
+/* WORKOUT PLANS                                                       */
+/* ================================================================== */
 
 const WORKOUT_PLANS: WorkoutPlan[] = [
   {
-    id: "beginner",
-    title: "Beginner full body",
-    duration: "About 15 min",
-    equipment: "No equipment",
+    id: "full-body-beginner",
+    title: "Full Body Starter",
     description:
-      "A simple starting point with controlled bodyweight movements and easy-to-scale options.",
-    exerciseIds: ["squat", "knee_pushup", "bridge", "bird_dog", "cat_cow"],
+      "Bodyweight movements to build a foundation. Great for beginners.",
+    durationMin: 15,
+    difficulty: "Beginner",
     category: "Bodyweight",
+    exerciseIds: ["squat", "knee_pushup", "bridge", "bird_dog", "cat_cow"],
+    icon: "🌱",
+    color: "emerald",
   },
   {
-    id: "light-weights",
-    title: "Light-weight strength",
-    duration: "About 20 min",
-    equipment: "Light dumbbells or household weights",
+    id: "stretch-recovery",
+    title: "Stretch & Recovery",
     description:
-      "A balanced strength circuit for legs, chest, back, and shoulders. Start with a load you can control.",
+      "Gentle stretches to release tension, improve flexibility, and recover.",
+    durationMin: 12,
+    difficulty: "Beginner",
+    category: "Stretching",
     exerciseIds: [
-      "squat",
-      "rdl",
-      "db_row",
-      "db_chest_press",
-      "lateral_raise",
+      "childs_pose",
+      "cat_cow",
+      "butterfly",
+      "trap_stretch",
+      "legs_wall",
     ],
-    category: "Light weights",
+    icon: "🧘",
+    color: "teal",
   },
   {
-    id: "lower-body",
-    title: "Lower-body strength",
-    duration: "About 15 min",
-    equipment: "Bodyweight; optional light dumbbell",
+    id: "light-strength",
+    title: "Light Strength Circuit",
     description:
-      "Squat, hinge, and hip-strength options. Use a smaller range or hold a chair for balance if helpful.",
+      "Balanced strength circuit for legs, chest, back, and shoulders.",
+    durationMin: 20,
+    difficulty: "Intermediate",
+    category: "Strength",
+    exerciseIds: ["squat", "rdl", "db_row", "db_chest_press", "lateral_raise"],
+    icon: "🏋️",
+    color: "rose",
+  },
+  {
+    id: "lower-body-burn",
+    title: "Lower Body Burn",
+    description:
+      "Target glutes, quads, and hamstrings with progressive overload.",
+    durationMin: 18,
+    difficulty: "Intermediate",
+    category: "Bodyweight",
     exerciseIds: [
       "squat",
       "walking_lunges",
@@ -177,330 +194,565 @@ const WORKOUT_PLANS: WorkoutPlan[] = [
       "glute_kickback",
       "wall_sit",
     ],
-    category: "Bodyweight",
+    icon: "🦵",
+    color: "violet",
   },
   {
-    id: "core",
-    title: "Core & Pilates basics",
-    duration: "About 12 min",
-    equipment: "Mat or carpet",
+    id: "core-pilates",
+    title: "Core & Pilates Basics",
     description:
-      "Steady core and stability movements. Use the easier variation or skip a move if it causes discomfort.",
-    exerciseIds: ["deadbug", "bird_dog", "bridge", "forearm_plank", "pilates_100"],
-    category: "Core & Pilates",
+      "Steady core stability work. Great for posture and spinal health.",
+    durationMin: 12,
+    difficulty: "Beginner",
+    category: "Core",
+    exerciseIds: [
+      "deadbug",
+      "bird_dog",
+      "bridge",
+      "forearm_plank",
+      "pilates_100",
+    ],
+    icon: "🎯",
+    color: "amber",
   },
   {
-    id: "mobility",
-    title: "Stretch & mobility reset",
-    duration: "About 10 min",
-    equipment: "Mat or comfortable floor space",
+    id: "cardio-burst",
+    title: "Quick Cardio Burst",
     description:
-      "Gentle, unhurried stretches and spinal mobility. No bouncing or forcing end ranges.",
-    exerciseIds: ["cat_cow", "childs_pose", "trap_stretch", "butterfly", "legs_wall"],
+      "Short, high-energy circuit to get your heart rate up fast.",
+    durationMin: 10,
+    difficulty: "Intermediate",
+    category: "Cardio",
+    exerciseIds: [
+      "jumping_jacks",
+      "mountain_climbers",
+      "squat",
+      "bicycle_crunches",
+    ],
+    icon: "🔥",
+    color: "orange",
+  },
+  {
+    id: "upper-body-tone",
+    title: "Upper Body Tone",
+    description:
+      "Push, pull, and shoulder work for balanced upper-body strength.",
+    durationMin: 15,
+    difficulty: "Intermediate",
+    category: "Strength",
+    exerciseIds: [
+      "knee_pushup",
+      "db_chest_press",
+      "db_row",
+      "lateral_raise",
+      "superman",
+    ],
+    icon: "💪",
+    color: "rose",
+  },
+  {
+    id: "neck-shoulder-relief",
+    title: "Neck & Shoulder Relief",
+    description:
+      "Gentle stretches for desk workers and tension headaches.",
+    durationMin: 8,
+    difficulty: "Beginner",
     category: "Stretching",
+    exerciseIds: ["chin_tuck", "trap_stretch", "cat_cow", "childs_pose"],
+    icon: "🌿",
+    color: "emerald",
   },
   {
-    id: "low-impact",
-    title: "Low-impact movement",
-    duration: "About 10 min",
-    equipment: "No equipment",
+    id: "mobility-flow",
+    title: "Mobility Flow",
     description:
-      "A short, adjustable circuit. Use step-outs instead of jumping and pause whenever needed.",
-    exerciseIds: ["jumping_jacks", "squat", "bridge", "cat_cow"],
+      "Unhurried spinal mobility and hip openers. No forcing.",
+    durationMin: 10,
+    difficulty: "Beginner",
+    category: "Mobility",
+    exerciseIds: ["cat_cow", "childs_pose", "butterfly", "bridge", "legs_wall"],
+    icon: "🤸",
+    color: "cyan",
+  },
+  {
+    id: "advanced-full-body",
+    title: "Advanced Full Body",
+    description:
+      "Compound movements at higher intensity for experienced users.",
+    durationMin: 25,
+    difficulty: "Advanced",
     category: "Bodyweight",
+    exerciseIds: [
+      "squat",
+      "walking_lunges",
+      "mountain_climbers",
+      "forearm_plank",
+      "bicycle_crunches",
+      "superman",
+    ],
+    icon: "⚡",
+    color: "violet",
   },
 ];
 
-function getExerciseCategory(exercise: DetailedExerciseVideo): ExerciseCategory {
-  if (STRETCH_IDS.has(exercise.id)) {
-    return "Stretching";
-  }
+/* ================================================================== */
+/* WORKOUT SESSION COMPONENT                                           */
+/* ================================================================== */
 
-  if (exercise.id === "cat_cow") {
-    return "Mobility";
-  }
+function WorkoutSession({
+  plan,
+  onComplete,
+  onClose,
+  onShowTutorial,
+}: {
+  plan: WorkoutPlan;
+  onComplete: (durationMin: number) => void;
+  onClose: () => void;
+  onShowTutorial: (id: string) => void;
+}) {
+  const [completed, setCompleted] = React.useState<Set<string>>(new Set());
+  const [elapsed, setElapsed] = React.useState(0);
+  const [isRunning, setIsRunning] = React.useState(true);
 
-  if (CORE_IDS.has(exercise.id)) {
-    return "Core & Pilates";
-  }
+  React.useEffect(() => {
+    if (!isRunning) return;
+    const timer = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, [isRunning]);
 
-  if (CARDIO_IDS.has(exercise.id)) {
-    return "Cardio & conditioning";
-  }
+  const toggleExercise = (id: string) => {
+    setCompleted((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
-  if (
-    ["rdl", "db_chest_press", "lateral_raise", "db_row"].includes(exercise.id)
-  ) {
-    return "Light weights";
-  }
+  const progress = Math.round(
+    (completed.size / plan.exerciseIds.length) * 100,
+  );
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
 
-  return "Bodyweight";
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-lg rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-[var(--glass-border)] p-5">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{plan.icon}</span>
+            <div>
+              <h3 className="font-bold text-[var(--text-primary)]">
+                {plan.title}
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {completed.size}/{plan.exerciseIds.length} exercises
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl p-2 text-[var(--text-tertiary)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Timer & Progress */}
+        <div className="flex items-center gap-4 px-5 py-4 border-b border-[var(--glass-border)] bg-[var(--bg-secondary)]/50">
+          <div className="flex items-center gap-2 text-sm font-mono font-bold text-[var(--text-primary)]">
+            <Timer className="h-4 w-4 text-violet-500" />
+            {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
+          </div>
+          <div className="flex-1">
+            <div className="h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-rose-500 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+          <span className="text-xs font-bold text-violet-500">{progress}%</span>
+          <button
+            type="button"
+            onClick={() => setIsRunning(!isRunning)}
+            className="rounded-lg p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition"
+          >
+            {isRunning ? (
+              <span className="text-xs font-semibold">⏸</span>
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
+
+        {/* Exercise List */}
+        <div className="max-h-[50vh] overflow-y-auto p-4 space-y-2">
+          {plan.exerciseIds.map((id) => {
+            const exercise = EXERCISE_VIDEO_LIBRARY[id];
+            if (!exercise) return null;
+            const isDone = completed.has(id);
+
+            return (
+              <div
+                key={id}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl border p-3 transition",
+                  isDone
+                    ? "border-emerald-500/30 bg-emerald-500/5"
+                    : "border-[var(--glass-border)] bg-[var(--bg-card)]",
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleExercise(id)}
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition",
+                    isDone
+                      ? "border-emerald-500 bg-emerald-500 text-white"
+                      : "border-[var(--glass-border)] text-transparent hover:border-violet-500/50",
+                  )}
+                >
+                  {isDone && <CheckCircle2 className="h-4 w-4" />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={cn(
+                      "text-sm font-semibold truncate",
+                      isDone
+                        ? "text-emerald-600 dark:text-emerald-400 line-through"
+                        : "text-[var(--text-primary)]",
+                    )}
+                  >
+                    {exercise.name}
+                  </p>
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    {exercise.reps || `${exercise.durationSec}s`} ·{" "}
+                    {exercise.targetMuscles.slice(0, 2).join(", ")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onShowTutorial(id)}
+                  className="shrink-0 rounded-lg bg-violet-500/10 px-2.5 py-1 text-[10px] font-bold text-violet-500 transition hover:bg-violet-500/20"
+                >
+                  Tutorial
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-[var(--glass-border)] p-4">
+          <button
+            type="button"
+            onClick={() => {
+              setIsRunning(false);
+              onComplete(Math.max(1, Math.round(elapsed / 60)));
+            }}
+            disabled={completed.size === 0}
+            className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-rose-500 py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-40"
+          >
+            <Trophy className="inline h-4 w-4 mr-2" />
+            Complete Workout ({completed.size}/{plan.exerciseIds.length})
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-const EXERCISES = Object.values(EXERCISE_VIDEO_LIBRARY).map((exercise) => ({
-  ...exercise,
-  workoutCategory: getExerciseCategory(exercise),
-}));
-
-const EXERCISE_CATEGORIES: ("All" | ExerciseCategory)[] = [
-  "All",
-  "Bodyweight",
-  "Light weights",
-  "Stretching",
-  "Mobility",
-  "Core & Pilates",
-  "Cardio & conditioning",
-];
+/* ================================================================== */
+/* MAIN PAGE                                                           */
+/* ================================================================== */
 
 export default function WorkoutPage() {
+  /* ---------- state ---------- */
   const [search, setSearch] = React.useState("");
-  const [category, setCategory] = React.useState<"All" | ExerciseCategory>(
-    "All",
-  );
-  const [selectedSymptom, setSelectedSymptom] = React.useState<string | null>(
-    null,
-  );
-  const [selectedPhase, setSelectedPhase] = React.useState<CyclePhase | null>(
-    null,
-  );
+  const [category, setCategory] = React.useState<WorkoutCategory>("All");
   const [tutorialExerciseId, setTutorialExerciseId] = React.useState<
     string | null
   >(null);
+  const [activePlan, setActivePlan] = React.useState<WorkoutPlan | null>(null);
+  const [loggedToast, setLoggedToast] = React.useState(false);
 
-  const symptomGuide = selectedSymptom
-    ? SYMPTOM_GUIDES[selectedSymptom]
-    : null;
-  const phaseGuide = selectedPhase ? PHASE_GUIDES[selectedPhase] : null;
-  const filteredExercises = EXERCISES.filter((exercise) => {
-    const matchesSearch =
+  /* ---------- dynamic data ---------- */
+  const [exerciseMinutes, setExerciseMinutes] = React.useState(0);
+  const [activeCalories, setActiveCalories] = React.useState(0);
+
+  React.useEffect(() => {
+    fitnessApi
+      .getData()
+      .then((data) => {
+        setExerciseMinutes(data.log.exercise_minutes);
+        setActiveCalories(data.log.active_calories);
+      })
+      .catch(() => {});
+  }, []);
+
+  /* ---------- derived ---------- */
+  const filteredExercises = ALL_EXERCISES.filter((ex) => {
+    const matchSearch =
       !search ||
-      `${exercise.name} ${exercise.targetMuscles.join(" ")} ${exercise.equipment}`
+      `${ex.name} ${ex.targetMuscles.join(" ")} ${ex.equipment}`
         .toLowerCase()
         .includes(search.toLowerCase());
-    const matchesCategory =
-      category === "All" || exercise.workoutCategory === category;
-    const matchesSymptom =
-      !symptomGuide || symptomGuide.exerciseIds.includes(exercise.id);
-
-    return matchesSearch && matchesCategory && matchesSymptom;
+    const matchCat =
+      category === "All" || ex.workoutCategory === category;
+    return matchSearch && matchCat;
   });
 
-  const getExercise = (id: string) => EXERCISE_VIDEO_LIBRARY[id];
+  const filteredPlans =
+    category === "All"
+      ? WORKOUT_PLANS
+      : WORKOUT_PLANS.filter((p) => p.category === category);
 
+  const categoryCounts = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const ex of ALL_EXERCISES) {
+      map[ex.workoutCategory] = (map[ex.workoutCategory] || 0) + 1;
+    }
+    return map;
+  }, []);
+
+  /* ---------- handlers ---------- */
+  const handleCompleteWorkout = async (durationMin: number) => {
+    try {
+      const calsBurned = durationMin * 7;
+      await fitnessApi.updateLog({
+        exercise_minutes: exerciseMinutes + durationMin,
+        active_calories: activeCalories + calsBurned,
+      });
+      setExerciseMinutes((m) => m + durationMin);
+      setActiveCalories((c) => c + calsBurned);
+      setLoggedToast(true);
+      setTimeout(() => setLoggedToast(false), 3000);
+    } catch {
+      /* silently fail */
+    }
+    setActivePlan(null);
+  };
+
+  const difficultyColor = (d: Difficulty) => {
+    if (d === "Beginner") return "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
+    if (d === "Intermediate") return "text-amber-500 bg-amber-500/10 border-amber-500/20";
+    return "text-rose-500 bg-rose-500/10 border-rose-500/20";
+  };
+
+  /* ================================================================== */
+  /* RENDER                                                              */
+  /* ================================================================== */
   return (
     <AppShell>
-      <div className="mx-auto max-w-7xl space-y-8 pb-16">
-        <section className="relative overflow-hidden rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 shadow-xs sm:p-8">
-          <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-rose-500/10 blur-3xl" />
+      <div className="mx-auto max-w-7xl space-y-8 pb-20">
+        {/* ── HERO HEADER ─────────────────────────────────────── */}
+        <section className="relative overflow-hidden rounded-3xl border border-[var(--glass-border)] bg-gradient-to-br from-[var(--bg-card)] to-violet-500/5 p-6 sm:p-8">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-violet-500/8 blur-3xl" />
+          <div className="pointer-events-none absolute -left-12 bottom-0 h-48 w-48 rounded-full bg-rose-500/6 blur-3xl" />
+
           <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl space-y-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300">
-                <Sparkles className="h-3.5 w-3.5" />
-                At-home movement library
+            <div className="max-w-2xl space-y-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-600 dark:text-violet-300">
+                <Dumbbell className="h-3.5 w-3.5" />
+                Workout Library
               </span>
               <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
-                Move in a way that feels right
+                Your Workout Space
               </h1>
               <p className="text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base">
-                Browse bodyweight and light-weight strength, stretching,
-                mobility, core, and low-impact routines. Every exercise has a
-                tutorial video and simple form cues.
+                Browse {ALL_EXERCISES.length} exercises across{" "}
+                {Object.keys(CATEGORY_META).length} categories. Pick a ready-made
+                plan or explore individual exercises with video tutorials.
               </p>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4">
-              <div className="rounded-xl bg-violet-500/10 p-3 text-violet-500">
-                <Dumbbell className="h-5 w-5" />
+
+            {/* Quick stats */}
+            <div className="flex gap-3">
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4">
+                <div className="rounded-xl bg-rose-500/10 p-2.5 text-rose-500">
+                  <Flame className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-[var(--text-primary)]">
+                    {activeCalories}
+                  </p>
+                  <p className="text-[10px] font-medium text-[var(--text-tertiary)]">
+                    Calories today
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold text-[var(--text-primary)]">
-                  {EXERCISES.length} guided exercises
-                </p>
-                <p className="text-xs text-[var(--text-secondary)]">
-                  Start gently; progress at your pace
-                </p>
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4">
+                <div className="rounded-xl bg-emerald-500/10 p-2.5 text-emerald-500">
+                  <Activity className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-[var(--text-primary)]">
+                    {exerciseMinutes}m
+                  </p>
+                  <p className="text-[10px] font-medium text-[var(--text-tertiary)]">
+                    Active today
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-xl font-bold text-[var(--text-primary)]">
-              Choose a quick routine
-            </h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              These are flexible menus, not prescriptions. Open any movement
-              for its tutorial.
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {WORKOUT_PLANS.map((plan) => (
-              <article
-                key={plan.id}
-                className="flex flex-col gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs"
+        {/* ── CATEGORY FILTER BAR ─────────────────────────────── */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {CATEGORIES.map((cat) => {
+            const isActive = category === cat;
+            const meta = cat !== "All" ? CATEGORY_META[cat] : null;
+            const count =
+              cat === "All" ? ALL_EXERCISES.length : categoryCounts[cat] || 0;
+
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategory(cat)}
+                className={cn(
+                  "shrink-0 flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition",
+                  isActive
+                    ? "border-violet-500 bg-violet-600 text-white shadow-lg shadow-violet-500/20"
+                    : "border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-violet-500/30 hover:text-[var(--text-primary)]",
+                )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <h3 className="font-bold text-[var(--text-primary)]">
-                      {plan.title}
-                    </h3>
-                    <p className="text-xs text-[var(--text-secondary)]">
-                      {plan.duration} · {plan.equipment}
-                    </p>
+                {meta && <span>{meta.icon}</span>}
+                {cat === "All" ? "All" : meta?.label}
+                <span
+                  className={cn(
+                    "ml-0.5 rounded-full px-1.5 py-0.5 text-[10px]",
+                    isActive
+                      ? "bg-white/20"
+                      : "bg-[var(--bg-secondary)]",
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── WORKOUT PLANS ──────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                {category === "All"
+                  ? "Ready-Made Plans"
+                  : `${CATEGORY_META[category as Exclude<WorkoutCategory, "All">]?.label ?? ""} Plans`}
+              </h2>
+              <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                Tap a plan to start a guided session with progress tracking.
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
+              <Target className="h-3.5 w-3.5" />
+              {filteredPlans.length} plans
+            </div>
+          </div>
+
+          {filteredPlans.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredPlans.map((plan) => (
+                <article
+                  key={plan.id}
+                  className="group flex flex-col rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-sm transition hover:border-violet-500/30 hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-lg">
+                        {plan.icon}
+                      </span>
+                      <div>
+                        <h3 className="font-bold text-[var(--text-primary)] leading-tight">
+                          {plan.title}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)]">
+                            <Clock3 className="h-3 w-3" />
+                            {plan.durationMin} min
+                          </span>
+                          <span
+                            className={cn(
+                              "rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                              difficultyColor(plan.difficulty),
+                            )}
+                          >
+                            {plan.difficulty}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <span className="rounded-xl bg-violet-500/10 p-2 text-violet-500">
-                    {plan.category === "Light weights" ? (
-                      <Dumbbell className="h-4 w-4" />
-                    ) : (
-                      <Activity className="h-4 w-4" />
-                    )}
-                  </span>
-                </div>
-                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-                  {plan.description}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {plan.exerciseIds.map((id) => {
-                    const exercise = getExercise(id);
-                    if (!exercise) {
-                      return null;
-                    }
 
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setTutorialExerciseId(id)}
-                        className="rounded-full border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2.5 py-1 text-left text-xs font-medium text-[var(--text-secondary)] transition hover:border-violet-500/40 hover:text-violet-500"
-                      >
-                        {exercise.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+                  <p className="text-xs leading-relaxed text-[var(--text-secondary)] mb-4">
+                    {plan.description}
+                  </p>
 
-        <section className="grid gap-5 lg:grid-cols-2">
-          <div className="space-y-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5">
-            <div className="flex items-center gap-2">
-              <Heart className="h-4 w-4 text-rose-500" />
-              <h2 className="font-bold text-[var(--text-primary)]">
-                Find a comfortable option
-              </h2>
-            </div>
-            <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-              These are general movement ideas for common symptoms, not
-              diagnosis or treatment. Choose only what feels comfortable.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(SYMPTOM_GUIDES).map(([id, guide]) => (
-                <button
-                  key={id}
-                  type="button"
-                  aria-pressed={selectedSymptom === id}
-                  onClick={() =>
-                    setSelectedSymptom(selectedSymptom === id ? null : id)
-                  }
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                    selectedSymptom === id
-                      ? "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-300"
-                      : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
-                  )}
-                >
-                  {guide.title}
-                </button>
+                  {/* Exercise chips */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {plan.exerciseIds.map((id) => {
+                      const ex = EXERCISE_VIDEO_LIBRARY[id];
+                      if (!ex) return null;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setTutorialExerciseId(id)}
+                          className="rounded-lg border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2 py-1 text-[10px] font-medium text-[var(--text-secondary)] transition hover:border-violet-500/40 hover:text-violet-500"
+                        >
+                          {ex.name.length > 25
+                            ? ex.name.slice(0, 22) + "…"
+                            : ex.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActivePlan(plan)}
+                    className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                  >
+                    <Play className="h-4 w-4" />
+                    Start Workout
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </article>
               ))}
             </div>
-            {symptomGuide && (
-              <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3">
-                <p className="text-sm font-semibold text-[var(--text-primary)]">
-                  {symptomGuide.title}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">
-                  {symptomGuide.summary}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-violet-500" />
-              <h2 className="font-bold text-[var(--text-primary)]">
-                Optional cycle-aware ideas
-              </h2>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[var(--glass-border)] bg-[var(--bg-card)] p-8 text-center">
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                No plans in this category yet.
+              </p>
+              <button
+                type="button"
+                onClick={() => setCategory("All")}
+                className="mt-2 text-xs font-semibold text-violet-500"
+              >
+                View all plans
+              </button>
             </div>
-            <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-              Cycle length, ovulation timing, symptoms, and energy vary. Phase
-              labels are not a readiness score or a rule about what you can do.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {CYCLE_PHASES.map((phase) => (
-                <button
-                  key={phase.id}
-                  type="button"
-                  aria-pressed={selectedPhase === phase.id}
-                  onClick={() =>
-                    setSelectedPhase(
-                      selectedPhase === phase.id ? null : phase.id,
-                    )
-                  }
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                    selectedPhase === phase.id
-                      ? "border-violet-500/40 bg-violet-500/10 text-violet-600 dark:text-violet-300"
-                      : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
-                  )}
-                >
-                  {phase.label}
-                </button>
-              ))}
-            </div>
-            {phaseGuide && (
-              <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
-                <p className="text-sm font-semibold text-[var(--text-primary)]">
-                  {phaseGuide.title}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">
-                  {phaseGuide.summary}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {phaseGuide.exerciseIds.map((id) => {
-                    const exercise = getExercise(id);
-                    if (!exercise) {
-                      return null;
-                    }
-
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setTutorialExerciseId(id)}
-                        className="rounded-full border border-violet-500/20 bg-[var(--bg-card)] px-2.5 py-1 text-xs font-medium text-violet-600 dark:text-violet-300"
-                      >
-                        {exercise.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </section>
 
+        {/* ── EXERCISE LIBRARY ───────────────────────────────── */}
         <section className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-xl font-bold text-[var(--text-primary)]">
-                Exercise library
+                Exercise Library
               </h2>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Select a category or search by exercise, equipment, or muscle
-                group.
+              <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                Each exercise has a video tutorial, form cues, and breathing
+                guide.
               </p>
             </div>
             <label className="relative block w-full sm:max-w-xs">
@@ -508,110 +760,80 @@ export default function WorkoutPage() {
               <input
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search exercises"
-                className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] py-2.5 pl-9 pr-3 text-sm text-[var(--text-primary)] outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/15"
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, muscle, or equipment…"
+                className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] py-2.5 pl-9 pr-3 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-tertiary)] focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/15"
               />
             </label>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {EXERCISE_CATEGORIES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                aria-pressed={category === item}
-                onClick={() => setCategory(item)}
-                className={cn(
-                  "shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                  category === item
-                    ? "border-violet-500 bg-violet-600 text-white"
-                    : "border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
-                )}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-
-          {selectedSymptom && (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/20 bg-rose-500/5 px-3 py-2 text-xs text-[var(--text-secondary)]">
-              <span>
-                Showing comfortable options for {symptomGuide?.title.toLowerCase()}.
-              </span>
-              <button
-                type="button"
-                onClick={() => setSelectedSymptom(null)}
-                className="inline-flex shrink-0 items-center gap-1 font-semibold text-rose-600 dark:text-rose-300"
-              >
-                Clear <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-
           {filteredExercises.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredExercises.map((exercise) => (
-                <article
-                  key={exercise.id}
-                  className="flex flex-col gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-xs transition hover:border-violet-500/30"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-2">
-                      <span className="inline-flex rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[10px] font-bold text-violet-600 dark:text-violet-300">
-                        {exercise.workoutCategory}
-                      </span>
-                      <h3 className="font-bold leading-snug text-[var(--text-primary)]">
-                        {exercise.name}
-                      </h3>
-                    </div>
-                    <span className="rounded-xl bg-rose-500/10 p-2 text-rose-500">
-                      <Dumbbell className="h-4 w-4" />
-                    </span>
-                  </div>
-                  <div className="space-y-2 text-xs text-[var(--text-secondary)]">
-                    <p className="flex items-center gap-2">
-                      <Clock3 className="h-3.5 w-3.5 shrink-0 text-violet-500" />
-                      {exercise.reps || `${exercise.durationSec} seconds`}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-[var(--text-primary)]">
-                        Equipment:
-                      </span>{" "}
-                      {exercise.equipment}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-[var(--text-primary)]">
-                        Focus:
-                      </span>{" "}
-                      {exercise.targetMuscles.join(", ")}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setTutorialExerciseId(exercise.id)}
-                    className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+              {filteredExercises.map((exercise) => {
+                const catMeta =
+                  CATEGORY_META[
+                    exercise.workoutCategory as Exclude<WorkoutCategory, "All">
+                  ];
+
+                return (
+                  <article
+                    key={exercise.id}
+                    className="group flex flex-col rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 shadow-sm transition hover:border-violet-500/30 hover:shadow-md"
                   >
-                    <Activity className="h-4 w-4" />
-                    Watch tutorial
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </button>
-                </article>
-              ))}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="space-y-1.5">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-600 dark:text-violet-300">
+                          {catMeta?.icon} {exercise.workoutCategory}
+                        </span>
+                        <h3 className="font-bold leading-snug text-[var(--text-primary)]">
+                          {exercise.name}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 text-xs text-[var(--text-secondary)] mb-4">
+                      <p className="flex items-center gap-2">
+                        <Clock3 className="h-3.5 w-3.5 shrink-0 text-violet-500" />
+                        {exercise.reps || `${exercise.durationSec} seconds`}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-[var(--text-primary)]">
+                          Equipment:
+                        </span>{" "}
+                        {exercise.equipment}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-[var(--text-primary)]">
+                          Focus:
+                        </span>{" "}
+                        {exercise.targetMuscles.join(", ")}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setTutorialExerciseId(exercise.id)}
+                      className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                    >
+                      <Play className="h-4 w-4" />
+                      Watch Tutorial
+                    </button>
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-[var(--glass-border)] bg-[var(--bg-card)] p-10 text-center">
               <p className="font-semibold text-[var(--text-primary)]">
-                No exercises match those filters.
+                No exercises match your search.
               </p>
               <button
                 type="button"
                 onClick={() => {
                   setSearch("");
                   setCategory("All");
-                  setSelectedSymptom(null);
                 }}
-                className="mt-3 text-sm font-semibold text-violet-600 dark:text-violet-300"
+                className="mt-3 text-sm font-semibold text-violet-500"
               >
                 Clear filters
               </button>
@@ -619,47 +841,38 @@ export default function WorkoutPage() {
           )}
         </section>
 
-        <section className="grid gap-4 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-5 sm:grid-cols-[auto_1fr] sm:items-start">
-          <div className="rounded-xl bg-amber-500/10 p-2.5 text-amber-600 dark:text-amber-300">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="font-bold text-[var(--text-primary)]">
-              Train safely and flexibly
-            </h2>
-            <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-              Use a load and range you can control, breathe normally, and stop
-              if you feel sharp or worsening pain, dizziness, chest pain, or
-              unusual shortness of breath. For severe or unusual period pain,
-              seek medical advice. This library is general education, not
-              medical care; pregnancy, postpartum recovery, injury, or a health
-              condition may require individualized guidance.
-            </p>
-            <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-              As a general benchmark, adults can work toward 150 minutes of
-              moderate activity per week and strength training on at least 2
-              days, adjusted to ability and health.{" "}
-              <a
-                href="https://www.cdc.gov/physical-activity-basics/guidelines/adults.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-violet-600 underline decoration-violet-500/40 underline-offset-2 dark:text-violet-300"
-              >
-                CDC adult activity guidance
-              </a>
-            </p>
-          </div>
-        </section>
-
+        {/* ── ACCESSIBILITY LIVE REGION ────────────────────────── */}
         <div className="sr-only" aria-live="polite">
           {filteredExercises.length} exercises shown
         </div>
 
+        {/* ── LOGGED TOAST ────────────────────────────────────── */}
+        {loggedToast && (
+          <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-2.5 shadow-xl backdrop-blur-xl">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                Workout logged!
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODALS ──────────────────────────────────────────── */}
         {tutorialExerciseId && (
           <ExerciseVideoModal
             key={tutorialExerciseId}
             exerciseId={tutorialExerciseId}
             onClose={() => setTutorialExerciseId(null)}
+          />
+        )}
+
+        {activePlan && (
+          <WorkoutSession
+            plan={activePlan}
+            onComplete={handleCompleteWorkout}
+            onClose={() => setActivePlan(null)}
+            onShowTutorial={(id) => setTutorialExerciseId(id)}
           />
         )}
       </div>

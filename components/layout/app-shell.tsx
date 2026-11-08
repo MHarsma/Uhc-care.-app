@@ -671,7 +671,6 @@ export function AppShell({
             }
 
             items.push({ id: "fitness", label: "Fitness", href: "/fitness", icon: Dumbbell });
-            items.push({ id: "workout", label: "Workout", href: "/workout", icon: Activity });
             items.push({
               id: "partner",
               label: "Partner",
