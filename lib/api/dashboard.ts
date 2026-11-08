@@ -50,6 +50,12 @@ export type PartnerData = {
     completed: number;
     percentage: number;
   } | null;
+  partner_fitness?: {
+    active_calories: number;
+    exercise_minutes: number;
+    water_glasses: number;
+  } | null;
+  partner_tasks?: DashboardTask[];
   pending_leave_requests?: Array<{
     id: number;
     reason?: string | null;

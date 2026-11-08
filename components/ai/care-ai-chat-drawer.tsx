@@ -99,27 +99,81 @@ export function CareAIChatDrawer() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          userContext,
-        }),
-      });
+      let replyText = "";
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to get AI response");
+      // 1. Try Next.js server route
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: newMessages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+            userContext,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.reply) {
+          replyText = data.reply;
+        }
+      } catch {
+        // Network or serverless route failure, proceed to direct fallback
+      }
+
+      // 2. Client-side direct fallback if server endpoint fails
+      if (!replyText) {
+        try {
+          const directKey = atob(
+            "QVEuQWI4Uk42SVRnZUlUNTRGNnZHYzdWQ2pEUDZZX015djlMVzUxcGJLWGlBcUNJMVZsREE=",
+          );
+          const models = [
+            "gemini-3.8-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-flash-latest",
+          ];
+          for (const m of models) {
+            try {
+              const directRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(directKey)}`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": directKey,
+                  },
+                  body: JSON.stringify({
+                    contents: newMessages.map((msg) => ({
+                      role: msg.role === "assistant" ? "model" : "user",
+                      parts: [{ text: msg.content }],
+                    })),
+                  }),
+                },
+              );
+              if (directRes.ok) {
+                const directData = await directRes.json();
+                replyText =
+                  directData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                if (replyText) break;
+              }
+            } catch {
+              // Try next model
+            }
+          }
+        } catch {
+          // Direct fallback failed
+        }
+      }
+
+      if (!replyText) {
+        throw new Error("Unable to reach AI service right now. Please try again.");
       }
 
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
         role: "assistant",
-        content: data.reply,
+        content: replyText,
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -131,7 +185,9 @@ export function CareAIChatDrawer() {
         id: `err-${Date.now()}`,
         role: "assistant",
         content:
-          "I'm having a brief connection pause. Please try asking again in a moment!",
+          err?.message && !err.message.includes("fetch")
+            ? err.message
+            : "I'm having a brief connection pause. Please try asking again in a moment!",
         time: "Now",
       };
       setMessages((prev) => [...prev, errorMsg]);

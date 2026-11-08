@@ -471,16 +471,21 @@ const WORKOUT_PLANS: WorkoutPlan[] = [
 
 function WorkoutSession({
   plan,
+  completed,
+  onToggleExercise,
+  onResetCompleted,
   onComplete,
   onClose,
   onShowTutorial,
 }: {
   plan: { title: string; icon: string; exerciseIds: string[] };
+  completed: Set<string>;
+  onToggleExercise: (id: string) => void;
+  onResetCompleted: () => void;
   onComplete: (durationMin: number) => void;
   onClose: () => void;
   onShowTutorial: (id: string) => void;
 }) {
-  const [completed, setCompleted] = React.useState<Set<string>>(new Set());
   const [elapsed, setElapsed] = React.useState(0);
   const [isRunning, setIsRunning] = React.useState(true);
 
@@ -490,17 +495,11 @@ function WorkoutSession({
     return () => clearInterval(timer);
   }, [isRunning]);
 
-  const toggleExercise = (id: string) => {
-    setCompleted((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
+  const planCompletedCount = plan.exerciseIds.filter((id) =>
+    completed.has(id),
+  ).length;
   const progress = Math.round(
-    (completed.size / plan.exerciseIds.length) * 100,
+    (planCompletedCount / plan.exerciseIds.length) * 100,
   );
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
@@ -517,17 +516,30 @@ function WorkoutSession({
                 {plan.title}
               </h3>
               <p className="text-xs text-[var(--text-secondary)]">
-                {completed.size} of {plan.exerciseIds.length} exercises finished
+                {planCompletedCount} of {plan.exerciseIds.length} exercises finished
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl p-2 text-[var(--text-tertiary)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {planCompletedCount > 0 && (
+              <button
+                type="button"
+                onClick={onResetCompleted}
+                title="Reset completed exercises"
+                className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-[var(--text-tertiary)] hover:text-rose-500 hover:bg-rose-500/10 transition"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Reset</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl p-2 text-[var(--text-tertiary)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Timer & Progress Bar */}
@@ -573,7 +585,7 @@ function WorkoutSession({
               >
                 <button
                   type="button"
-                  onClick={() => toggleExercise(id)}
+                  onClick={() => onToggleExercise(id)}
                   className={cn(
                     "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 transition",
                     isDone
@@ -629,11 +641,11 @@ function WorkoutSession({
               setIsRunning(false);
               onComplete(Math.max(1, Math.round(elapsed / 60)));
             }}
-            disabled={completed.size === 0}
+            disabled={planCompletedCount === 0}
             className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-rose-500 py-3.5 text-sm font-bold text-white transition hover:opacity-95 disabled:opacity-40 shadow-lg shadow-violet-500/20"
           >
             <Trophy className="inline h-4 w-4 mr-2" />
-            Complete & Log Workout ({completed.size}/{plan.exerciseIds.length})
+            Complete & Log Workout ({planCompletedCount}/{plan.exerciseIds.length})
           </button>
         </div>
       </div>
@@ -671,6 +683,50 @@ export default function WorkoutPage() {
   const [exerciseMinutes, setExerciseMinutes] = React.useState(0);
   const [activeCalories, setActiveCalories] = React.useState(0);
   const [completedSessionsCount, setCompletedSessionsCount] = React.useState(0);
+
+  // Completed exercise IDs persistence (keyed by date so it persists across closes and refreshes)
+  const [completedExerciseIds, setCompletedExerciseIds] = React.useState<
+    Set<string>
+  >(new Set());
+
+  React.useEffect(() => {
+    try {
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const saved = localStorage.getItem(
+        `uhc_completed_workout_exercises_${todayKey}`,
+      );
+      if (saved) {
+        setCompletedExerciseIds(new Set(JSON.parse(saved)));
+      }
+    } catch {}
+  }, []);
+
+  const handleToggleExercise = (id: string) => {
+    setCompletedExerciseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      try {
+        const todayKey = new Date().toISOString().slice(0, 10);
+        localStorage.setItem(
+          `uhc_completed_workout_exercises_${todayKey}`,
+          JSON.stringify(Array.from(next)),
+        );
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleResetCompleted = () => {
+    setCompletedExerciseIds(new Set());
+    try {
+      const todayKey = new Date().toISOString().slice(0, 10);
+      localStorage.removeItem(`uhc_completed_workout_exercises_${todayKey}`);
+    } catch {}
+  };
 
   React.useEffect(() => {
     fitnessApi
@@ -1004,12 +1060,19 @@ export default function WorkoutPage() {
 
                         {/* Full Exercise Name & Cues (PROPERLY DISPLAYED, NO ELLIPSIS) */}
                         <div className="flex-1 min-w-0 pr-1">
-                          <h4
-                            onClick={() => setTutorialExerciseId(id)}
-                            className="font-bold text-xs sm:text-sm text-[var(--text-primary)] group-hover:text-violet-400 transition cursor-pointer leading-snug break-words"
-                          >
-                            {ex.name}
-                          </h4>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4
+                              onClick={() => setTutorialExerciseId(id)}
+                              className="font-bold text-xs sm:text-sm text-[var(--text-primary)] group-hover:text-violet-400 transition cursor-pointer leading-snug break-words"
+                            >
+                              {ex.name}
+                            </h4>
+                            {completedExerciseIds.has(id) && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-500">
+                                <CheckCircle2 className="h-3 w-3" /> Done
+                              </span>
+                            )}
+                          </div>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
                             <span className="text-[11px] font-semibold text-violet-500">
                               {ex.reps || `${ex.durationSec}s`}
@@ -1124,14 +1187,23 @@ export default function WorkoutPage() {
                       {plan.exerciseIds.map((id) => {
                         const ex = EXERCISE_VIDEO_LIBRARY[id];
                         if (!ex) return null;
+                        const isDone = completedExerciseIds.has(id);
                         return (
                           <button
                             key={id}
                             type="button"
                             onClick={() => setTutorialExerciseId(id)}
-                            className="rounded-lg border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-2 py-1 text-[10px] font-medium text-[var(--text-secondary)] transition hover:border-violet-500/40 hover:text-violet-400"
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-medium transition",
+                              isDone
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-semibold"
+                                : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-violet-500/40 hover:text-violet-400",
+                            )}
                           >
-                            {ex.name}
+                            {isDone && (
+                              <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400" />
+                            )}
+                            <span>{ex.name}</span>
                           </button>
                         );
                       })}
@@ -1236,12 +1308,19 @@ export default function WorkoutPage() {
                       <span className="inline-block rounded-md bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold text-violet-500 mb-1">
                         {exercise.workoutCategory}
                       </span>
-                      <h4
-                        onClick={() => setTutorialExerciseId(exercise.id)}
-                        className="font-bold text-xs sm:text-sm text-[var(--text-primary)] hover:text-violet-400 transition cursor-pointer leading-snug break-words"
-                      >
-                        {exercise.name}
-                      </h4>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4
+                          onClick={() => setTutorialExerciseId(exercise.id)}
+                          className="font-bold text-xs sm:text-sm text-[var(--text-primary)] hover:text-violet-400 transition cursor-pointer leading-snug break-words"
+                        >
+                          {exercise.name}
+                        </h4>
+                        {completedExerciseIds.has(exercise.id) && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold text-emerald-500">
+                            <CheckCircle2 className="h-2.5 w-2.5" /> Done
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5 truncate">
                         {exercise.reps || `${exercise.durationSec}s`} •{" "}
                         {exercise.targetMuscles.slice(0, 2).join(", ")}
@@ -1303,6 +1382,9 @@ export default function WorkoutPage() {
         {activeSession && (
           <WorkoutSession
             plan={activeSession}
+            completed={completedExerciseIds}
+            onToggleExercise={handleToggleExercise}
+            onResetCompleted={handleResetCompleted}
             onComplete={handleCompleteWorkout}
             onClose={() => setActiveSession(null)}
             onShowTutorial={(id) => setTutorialExerciseId(id)}

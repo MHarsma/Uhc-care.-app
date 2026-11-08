@@ -1624,6 +1624,12 @@ export default function MovementAndVitalityPage() {
   const [isFemale, setIsFemale] = React.useState<boolean>(true);
   const [isPartnerView, setIsPartnerView] = React.useState<boolean>(false);
   const [targetName, setTargetName] = React.useState<string>("");
+  const [partnerLog, setPartnerLog] = React.useState<{
+    partner_name: string;
+    active_calories: number;
+    exercise_minutes: number;
+    water_glasses: number;
+  } | null>(null);
 
   // Load Cycle Information
   React.useEffect(() => {
@@ -1664,6 +1670,9 @@ export default function MovementAndVitalityPage() {
           setExerciseMinutes(res.log.exercise_minutes);
           setMindfulMinutes(res.log.mindful_minutes);
           setWaterGlasses(res.log.water_glasses);
+        }
+        if (res.partner_log) {
+          setPartnerLog(res.partner_log);
         }
       } catch (err) {
         console.error("Failed to load fitness data:", err);
@@ -2179,6 +2188,60 @@ export default function MovementAndVitalityPage() {
             Customize My Goals
           </button>
         </div>
+
+        {/* Partner Live Fitness Card */}
+        {partnerLog && (
+          <div className="rounded-3xl border border-rose-500/25 bg-gradient-to-br from-rose-500/10 via-purple-500/5 to-transparent p-5 sm:p-6 shadow-sm glass-card space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-rose-500 to-pink-500 text-white font-bold text-sm shadow-xs">
+                  {partnerLog.partner_name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                    {partnerLog.partner_name}&apos;s Live Fitness Today 💕
+                  </h3>
+                  <p className="text-[11px] text-[var(--text-tertiary)]">
+                    Live mutual tracking of workouts, active calories, and water
+                  </p>
+                </div>
+              </div>
+              <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-500 flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live Synced
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)]/50 p-3 sm:p-4">
+                <div className="flex items-center justify-center gap-1.5 text-base sm:text-lg font-extrabold text-amber-500">
+                  <Flame className="h-4 w-4" />
+                  <span>{partnerLog.active_calories}</span>
+                </div>
+                <p className="text-xs font-semibold text-[var(--text-primary)] mt-1">Calories</p>
+                <p className="text-[10px] text-[var(--text-tertiary)]">Burned today</p>
+              </div>
+
+              <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)]/50 p-3 sm:p-4">
+                <div className="flex items-center justify-center gap-1.5 text-base sm:text-lg font-extrabold text-emerald-500">
+                  <Activity className="h-4 w-4" />
+                  <span>{partnerLog.exercise_minutes}m</span>
+                </div>
+                <p className="text-xs font-semibold text-[var(--text-primary)] mt-1">Movement</p>
+                <p className="text-[10px] text-[var(--text-tertiary)]">Active minutes</p>
+              </div>
+
+              <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)]/50 p-3 sm:p-4">
+                <div className="flex items-center justify-center gap-1.5 text-base sm:text-lg font-extrabold text-sky-400">
+                  <Droplets className="h-4 w-4" />
+                  <span>{partnerLog.water_glasses}</span>
+                </div>
+                <p className="text-xs font-semibold text-[var(--text-primary)] mt-1">Hydration</p>
+                <p className="text-[10px] text-[var(--text-tertiary)]">{partnerLog.water_glasses * 250} ml</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">

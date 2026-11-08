@@ -37,6 +37,8 @@ import {
   AlertTriangle,
   Target,
   Quote,
+  Activity,
+  Droplets,
 } from "lucide-react";
 import {
   Dialog,
@@ -803,6 +805,63 @@ export function DashboardShell() {
                   />
                 </div>
               </div>
+
+              {/* Partner Daily Fitness Stats */}
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)]/60 p-2">
+                  <div className="flex items-center justify-center gap-1 text-xs font-bold text-amber-500">
+                    <Flame className="h-3.5 w-3.5" />
+                    <span>{partnerData?.partner_fitness?.active_calories ?? 0}</span>
+                  </div>
+                  <span className="text-[10px] text-[var(--text-tertiary)] font-medium">kcal burn</span>
+                </div>
+                <div className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)]/60 p-2">
+                  <div className="flex items-center justify-center gap-1 text-xs font-bold text-emerald-500">
+                    <Activity className="h-3.5 w-3.5" />
+                    <span>{partnerData?.partner_fitness?.exercise_minutes ?? 0}m</span>
+                  </div>
+                  <span className="text-[10px] text-[var(--text-tertiary)] font-medium">exercise</span>
+                </div>
+                <div className="rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)]/60 p-2">
+                  <div className="flex items-center justify-center gap-1 text-xs font-bold text-sky-400">
+                    <Droplets className="h-3.5 w-3.5" />
+                    <span>{partnerData?.partner_fitness?.water_glasses ?? 0}</span>
+                  </div>
+                  <span className="text-[10px] text-[var(--text-tertiary)] font-medium">glasses</span>
+                </div>
+              </div>
+
+              {/* Partner Completed Routines Today */}
+              {partnerData?.partner_tasks && partnerData.partner_tasks.filter((t) => t.done).length > 0 && (
+                <div className="mt-3.5 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {partner.name}&apos;s Completed Routines
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-500">
+                      {partnerData.partner_tasks.filter((t) => t.done).length} done
+                    </span>
+                  </div>
+                  <div className="max-h-28 overflow-y-auto space-y-1.5 pr-0.5">
+                    {partnerData.partner_tasks
+                      .filter((t) => t.done)
+                      .slice(0, 4)
+                      .map((t) => (
+                        <div
+                          key={t.id}
+                          className="flex items-center justify-between text-[11px] py-1.5 px-2.5 rounded-xl bg-[var(--bg-secondary)]/40 border border-[var(--glass-border)]"
+                        >
+                          <span className="truncate text-[var(--text-primary)] font-medium">
+                            {t.title}
+                          </span>
+                          <span className="text-[10px] text-emerald-500 font-bold shrink-0 ml-1.5 flex items-center gap-0.5">
+                            <Check className="h-3 w-3" /> Done
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {/* Nudge Action */}
               <button

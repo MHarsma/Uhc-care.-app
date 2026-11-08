@@ -20,6 +20,10 @@ import {
   ShieldCheck,
   AlertTriangle,
   RefreshCw,
+  Flame,
+  Activity,
+  Droplets,
+  Dumbbell,
 } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { periodApi, PeriodsResponse } from "@/lib/api/period";
@@ -38,6 +42,11 @@ type PartnerData = {
   partner: { id?: number; name: string } | null;
   stats: { total: number; completed: number; percentage: number } | null;
   partner_tasks?: PartnerTask[];
+  partner_fitness?: {
+    active_calories: number;
+    exercise_minutes: number;
+    water_glasses: number;
+  } | null;
   pending_leave_requests: Array<{
     id: number;
     reason: string | null;
@@ -276,6 +285,58 @@ export default function PartnerPage() {
                   className="h-full rounded-full bg-white transition-all duration-500 shadow-sm"
                   style={{ width: `${percentage}%` }}
                 />
+              </div>
+            </div>
+
+            {/* Partner's Live Daily Movement & Fitness Card */}
+            <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-5 sm:p-6 shadow-sm glass-card space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15 text-violet-500">
+                    <Dumbbell className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                      {partner.name}&apos;s Daily Movement & Fitness
+                    </h3>
+                    <p className="text-[11px] text-[var(--text-tertiary)]">
+                      Live sync of workouts, active calories, and hydration
+                    </p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-500 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Sync
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)]/50 p-3 sm:p-4">
+                  <div className="flex items-center justify-center gap-1.5 text-base sm:text-lg font-extrabold text-amber-500">
+                    <Flame className="h-4 w-4" />
+                    <span>{data?.partner_fitness?.active_calories ?? 0}</span>
+                  </div>
+                  <p className="text-xs font-semibold text-[var(--text-primary)] mt-1">Calories</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Active kcal burned</p>
+                </div>
+
+                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)]/50 p-3 sm:p-4">
+                  <div className="flex items-center justify-center gap-1.5 text-base sm:text-lg font-extrabold text-emerald-500">
+                    <Activity className="h-4 w-4" />
+                    <span>{data?.partner_fitness?.exercise_minutes ?? 0}m</span>
+                  </div>
+                  <p className="text-xs font-semibold text-[var(--text-primary)] mt-1">Movement</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Exercise minutes</p>
+                </div>
+
+                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)]/50 p-3 sm:p-4">
+                  <div className="flex items-center justify-center gap-1.5 text-base sm:text-lg font-extrabold text-sky-400">
+                    <Droplets className="h-4 w-4" />
+                    <span>{data?.partner_fitness?.water_glasses ?? 0}</span>
+                  </div>
+                  <p className="text-xs font-semibold text-[var(--text-primary)] mt-1">Hydration</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Glasses of water</p>
+                </div>
               </div>
             </div>
 

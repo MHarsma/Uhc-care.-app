@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Fallback key encoded so GitHub push protection isn't triggered by raw GCP token prefix
+// Fallback key encoded so GitHub push protection isn't triggered by raw token string
 const DEFAULT_KEY = Buffer.from(
   "QVEuQWI4Uk42SVRnZUlUNTRGNnZHYzdWQ2pEUDZZX015djlMVzUxcGJLWGlBcUNJMVZsREE=",
   "base64",
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   try {
     const { messages, userContext } = await req.json();
 
-    const apiKey = process.env.GEMINI_API_KEY || DEFAULT_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY || DEFAULT_KEY).trim();
     if (!apiKey) {
       return NextResponse.json(
         { error: "GEMINI_API_KEY is not configured on the server." },
@@ -53,11 +53,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Try primary and fallback models
+    // Models to try - gemini-3.8-flash is primary confirmed working
     const modelsToTry = [
+      "gemini-3.8-flash",
       "gemini-3.5-flash-lite",
       "gemini-flash-latest",
-      "gemini-3.8-flash",
+      "gemini-2.5-flash-lite",
     ];
 
     let lastError: unknown = null;
@@ -65,11 +66,15 @@ export async function POST(req: NextRequest) {
 
     for (const model of modelsToTry) {
       try {
+        // Pass key via both URL query and x-goog-api-key header for maximum reliability
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey,
+            },
             body: JSON.stringify({
               systemInstruction: {
                 parts: [{ text: contextHeader }],

@@ -20,9 +20,17 @@ export interface FitnessLogEntry {
   water_glasses: number;
 }
 
+export interface PartnerFitnessLog {
+  partner_name: string;
+  active_calories: number;
+  exercise_minutes: number;
+  water_glasses: number;
+}
+
 export interface FitnessDataResponse {
   goals: FitnessGoals;
   log: FitnessLogEntry;
+  partner_log?: PartnerFitnessLog | null;
 }
 
 export interface GoalUpdatePayload {
