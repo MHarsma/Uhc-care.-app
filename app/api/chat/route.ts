@@ -53,12 +53,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Models to try - gemini-3.8-flash is primary confirmed working
+    // Ultra-reliable high-speed models in order of stability and responsiveness
     const modelsToTry = [
-      "gemini-3.8-flash",
       "gemini-3.5-flash-lite",
-      "gemini-flash-latest",
-      "gemini-2.5-flash-lite",
+      "gemini-3.1-flash-lite",
+      "gemini-3.5-flash",
+      "gemini-3.8-flash",
     ];
 
     let lastError: unknown = null;
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     for (const model of modelsToTry) {
       try {
-        // Pass key via both URL query and x-goog-api-key header for maximum reliability
+        // Pass key via both URL query and x-goog-api-key header for maximum reliability with 6s timeout
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
           {
@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
               "Content-Type": "application/json",
               "x-goog-api-key": apiKey,
             },
+            signal: AbortSignal.timeout(6000),
             body: JSON.stringify({
               systemInstruction: {
                 parts: [{ text: contextHeader }],

@@ -129,9 +129,10 @@ export function CareAIChatDrawer() {
             "QVEuQWI4Uk42SVRnZUlUNTRGNnZHYzdWQ2pEUDZZX015djlMVzUxcGJLWGlBcUNJMVZsREE=",
           );
           const models = [
-            "gemini-3.8-flash",
             "gemini-3.5-flash-lite",
-            "gemini-flash-latest",
+            "gemini-3.1-flash-lite",
+            "gemini-3.5-flash",
+            "gemini-3.8-flash",
           ];
           for (const m of models) {
             try {
@@ -143,6 +144,7 @@ export function CareAIChatDrawer() {
                     "Content-Type": "application/json",
                     "x-goog-api-key": directKey,
                   },
+                  signal: AbortSignal.timeout(6000),
                   body: JSON.stringify({
                     contents: newMessages.map((msg) => ({
                       role: msg.role === "assistant" ? "model" : "user",
