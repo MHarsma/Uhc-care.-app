@@ -65,9 +65,10 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <>
-            {/* 1. Hero Streak & Stats Bar */}
-            <div className="rounded-3xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-700 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden">
-              <div className="absolute -right-20 -top-20 h-44 w-44 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+            {/* 1. Hero Streak & Stats Bar with High-Contrast Workout Glow */}
+            <div className="rounded-3xl bg-gradient-to-br from-violet-600 via-purple-600 to-rose-600 p-6 sm:p-8 text-white shadow-xl shadow-violet-500/20 relative overflow-hidden border border-white/20">
+              <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
+              <div className="pointer-events-none absolute -left-12 bottom-0 h-44 w-44 rounded-full bg-rose-500/25 blur-3xl" />
               <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-6 items-center">
                 {/* Streak */}
                 <div className="space-y-1">

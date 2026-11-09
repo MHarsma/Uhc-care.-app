@@ -10,10 +10,12 @@ import {
   Calendar,
   CheckCircle2,
   Clock3,
+  Droplets,
   Dumbbell,
   Flame,
   Layers,
   Play,
+  Plus,
   RotateCcw,
   Search,
   Sparkles,
@@ -37,12 +39,11 @@ type ActiveTab = "muscle-focus" | "plans" | "library";
 
 type WorkoutCategory =
   | "All"
-  | "Stretching"
+  | "Mobility & Stretch"
   | "Bodyweight"
   | "Strength"
   | "Core"
-  | "Cardio"
-  | "Mobility";
+  | "Cardio";
 
 type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 
@@ -75,10 +76,10 @@ interface WorkoutPlan {
 }
 
 /* ================================================================== */
-/* EXERCISE CATEGORISATION                                             */
+/* EXERCISE CATEGORISATION (CLEAN MERGED PILLARS)                      */
 /* ================================================================== */
 
-const STRETCH_IDS = new Set([
+const MOBILITY_STRETCH_IDS = new Set([
   "childs_pose",
   "cat_cow",
   "butterfly",
@@ -115,22 +116,13 @@ const STRENGTH_IDS = new Set([
   "db_row",
 ]);
 
-const MOBILITY_IDS = new Set([
-  "cat_cow",
-  "childs_pose",
-  "pigeon_pose",
-  "downward_dog",
-  "side_lunge",
-]);
-
 function getWorkoutCategory(
   exercise: DetailedExerciseVideo,
 ): Exclude<WorkoutCategory, "All"> {
-  if (STRETCH_IDS.has(exercise.id)) return "Stretching";
+  if (MOBILITY_STRETCH_IDS.has(exercise.id)) return "Mobility & Stretch";
   if (CORE_IDS.has(exercise.id)) return "Core";
   if (CARDIO_IDS.has(exercise.id)) return "Cardio";
   if (STRENGTH_IDS.has(exercise.id)) return "Strength";
-  if (MOBILITY_IDS.has(exercise.id)) return "Mobility";
   return "Bodyweight";
 }
 
@@ -141,12 +133,11 @@ const ALL_EXERCISES = Object.values(EXERCISE_VIDEO_LIBRARY).map((ex) => ({
 
 const CATEGORIES: WorkoutCategory[] = [
   "All",
-  "Stretching",
+  "Mobility & Stretch",
   "Bodyweight",
   "Strength",
   "Core",
   "Cardio",
-  "Mobility",
 ];
 
 /* ================================================================== */
@@ -373,7 +364,7 @@ const WORKOUT_PLANS: WorkoutPlan[] = [
       "Reclined and gentle yoga postures to relieve back tightness, tight hips, and fatigue.",
     durationMin: 18,
     difficulty: "Beginner",
-    category: "Stretching",
+    category: "Mobility & Stretch",
     exerciseIds: [
       "childs_pose",
       "cat_cow",
@@ -457,7 +448,7 @@ const WORKOUT_PLANS: WorkoutPlan[] = [
       "Designed specifically for desk posture, tension headaches, and neck stiffness.",
     durationMin: 10,
     difficulty: "Beginner",
-    category: "Stretching",
+    category: "Mobility & Stretch",
     exerciseIds: ["chin_tuck", "trap_stretch", "cat_cow", "childs_pose"],
     icon: "🌿",
     coverImage:
@@ -682,6 +673,13 @@ export default function WorkoutPage() {
   // Dynamic user data from API
   const [exerciseMinutes, setExerciseMinutes] = React.useState(0);
   const [activeCalories, setActiveCalories] = React.useState(0);
+  const [waterGlasses, setWaterGlasses] = React.useState(0);
+  const [partnerLog, setPartnerLog] = React.useState<{
+    partner_name: string;
+    active_calories: number;
+    exercise_minutes: number;
+    water_glasses: number;
+  } | null>(null);
   const [completedSessionsCount, setCompletedSessionsCount] = React.useState(0);
 
   // Completed exercise IDs persistence (keyed by date so it persists across closes and refreshes)
@@ -734,9 +732,23 @@ export default function WorkoutPage() {
       .then((data) => {
         setExerciseMinutes(data.log?.exercise_minutes || 0);
         setActiveCalories(data.log?.active_calories || 0);
+        setWaterGlasses(data.log?.water_glasses || 0);
+        if (data.partner_log) {
+          setPartnerLog(data.partner_log);
+        }
       })
       .catch(() => {});
   }, []);
+
+  const handleAddWater = async () => {
+    const nextGlasses = waterGlasses + 1;
+    setWaterGlasses(nextGlasses);
+    try {
+      await fitnessApi.updateLog({ water_glasses: nextGlasses });
+    } catch {
+      /* fallback */
+    }
+  };
 
   // Today's specific split
   const activeDaySplit = React.useMemo(() => {
@@ -748,18 +760,64 @@ export default function WorkoutPage() {
 
   const isTodaySelected = selectedDayNumber === currentDayIndex;
 
-  // Filtered exercises for Vault
+  // Muscle synonym mapping for intelligent search
+  const MUSCLE_SYNONYMS: Record<string, string[]> = React.useMemo(
+    () => ({
+      chest: ["pectorals", "chest", "anterior deltoids", "pushup"],
+      pecs: ["pectorals", "chest"],
+      abs: ["core", "rectus abdominis", "obliques", "abdominals"],
+      core: ["core", "rectus abdominis", "obliques", "abdominals", "plank"],
+      glutes: ["gluteus maximus", "gluteus medius", "glutes", "hips", "squat", "butt"],
+      butt: ["gluteus maximus", "glutes", "hips"],
+      legs: ["quadriceps", "hamstrings", "glutes", "calves", "adductors", "squat", "lunge"],
+      quads: ["quadriceps", "legs", "squat"],
+      hamstrings: ["hamstrings", "posterior chain", "rdl"],
+      back: ["latissimus dorsi", "rhomboids", "trapezius", "lower back", "spine", "wings"],
+      lats: ["latissimus dorsi", "back", "wings"],
+      shoulders: ["deltoids", "anterior deltoids", "lateral deltoids", "rear delts", "shoulders"],
+      delts: ["deltoids", "shoulders"],
+      arms: ["triceps", "biceps", "forearms"],
+      triceps: ["triceps brachii", "triceps"],
+      biceps: ["biceps brachii", "biceps"],
+      neck: ["cervical spine", "neck", "trapezius", "trap stretch"],
+      hips: ["hips", "adductors", "hip flexors", "glutes", "butterfly", "pigeon"],
+      spine: ["spine", "trunk", "lower back", "cat cow"],
+    }),
+    [],
+  );
+
+  // Filtered exercises for Vault with intelligent muscle search
   const filteredExercises = React.useMemo(() => {
+    const rawQuery = search.trim().toLowerCase();
+    if (!rawQuery) {
+      return ALL_EXERCISES.filter(
+        (ex) => category === "All" || ex.workoutCategory === category,
+      );
+    }
+
+    const searchTokens = rawQuery.split(/\s+/).filter(Boolean);
+    const expandedTokens = new Set<string>(searchTokens);
+
+    for (const token of searchTokens) {
+      if (MUSCLE_SYNONYMS[token]) {
+        for (const syn of MUSCLE_SYNONYMS[token]) {
+          expandedTokens.add(syn);
+        }
+      }
+    }
+
     return ALL_EXERCISES.filter((ex) => {
-      const matchSearch =
-        !search ||
-        `${ex.name} ${ex.targetMuscles.join(" ")} ${ex.equipment}`
-          .toLowerCase()
-          .includes(search.toLowerCase());
       const matchCat = category === "All" || ex.workoutCategory === category;
-      return matchSearch && matchCat;
+      if (!matchCat) return false;
+
+      const searchableText =
+        `${ex.name} ${ex.targetMuscles.join(" ")} ${ex.equipment} ${ex.workoutCategory}`.toLowerCase();
+
+      return Array.from(expandedTokens).some((token) =>
+        searchableText.includes(token),
+      );
     });
-  }, [search, category]);
+  }, [search, category, MUSCLE_SYNONYMS]);
 
   // Handlers
   const handleCompleteWorkout = async (durationMin: number) => {
@@ -809,42 +867,79 @@ export default function WorkoutPage() {
                 Personalized 1–2 muscle daily splits, push-up progressions, deep
                 stretches, and full exercise tutorials.
               </p>
+
+              {/* Partner Live Activity Pill if paired */}
+              {partnerLog && (
+                <div className="inline-flex items-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs text-[var(--text-primary)]">
+                  <span className="text-rose-400 font-bold">💕 {partnerLog.partner_name}&apos;s Today:</span>
+                  <span className="text-[var(--text-secondary)]">
+                    {partnerLog.active_calories} kcal • {partnerLog.exercise_minutes}m active • {partnerLog.water_glasses} glasses
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Dynamic Activity Metrics */}
-            <div className="flex gap-2.5 sm:gap-3">
-              <div className="flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)]/90 backdrop-blur-md px-4 py-3 shadow-xs">
-                <div className="rounded-xl bg-rose-500/15 p-2 text-rose-500">
+            {/* Dynamic Activity & Hydration Metrics */}
+            <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)]/90 backdrop-blur-md px-3 sm:px-4 py-2.5 sm:py-3 shadow-xs">
+                <div className="rounded-xl bg-rose-500/15 p-1.5 sm:p-2 text-rose-500 shrink-0">
                   <Flame className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div>
-                  <p className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">
+                  <p className="text-base sm:text-xl font-bold text-[var(--text-primary)]">
                     {activeCalories}{" "}
                     <span className="text-[10px] font-normal text-[var(--text-tertiary)]">
                       kcal
                     </span>
                   </p>
                   <p className="text-[10px] font-medium text-[var(--text-tertiary)]">
-                    Burned Today
+                    Burned
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)]/90 backdrop-blur-md px-4 py-3 shadow-xs">
-                <div className="rounded-xl bg-emerald-500/15 p-2 text-emerald-500">
+              <div className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)]/90 backdrop-blur-md px-3 sm:px-4 py-2.5 sm:py-3 shadow-xs">
+                <div className="rounded-xl bg-emerald-500/15 p-1.5 sm:p-2 text-emerald-500 shrink-0">
                   <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div>
-                  <p className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">
+                  <p className="text-base sm:text-xl font-bold text-[var(--text-primary)]">
                     {exerciseMinutes}{" "}
                     <span className="text-[10px] font-normal text-[var(--text-tertiary)]">
                       min
                     </span>
                   </p>
                   <p className="text-[10px] font-medium text-[var(--text-tertiary)]">
-                    Active Time
+                    Active
                   </p>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-1 sm:gap-2.5 rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)]/90 backdrop-blur-md px-3 sm:px-4 py-2.5 sm:py-3 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-xl bg-sky-500/15 p-1.5 sm:p-2 text-sky-400 shrink-0">
+                    <Droplets className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </div>
+                  <div>
+                    <p className="text-base sm:text-xl font-bold text-[var(--text-primary)]">
+                      {waterGlasses}{" "}
+                      <span className="text-[10px] font-normal text-[var(--text-tertiary)]">
+                        gls
+                      </span>
+                    </p>
+                    <p className="text-[10px] font-medium text-[var(--text-tertiary)]">
+                      Water
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddWater}
+                  title="Add 1 glass of water"
+                  className="rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 p-1 transition active:scale-95 shrink-0"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           </div>
@@ -1067,24 +1162,35 @@ export default function WorkoutPage() {
                             >
                               {ex.name}
                             </h4>
-                            {completedExerciseIds.has(id) && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-500">
-                                <CheckCircle2 className="h-3 w-3" /> Done
-                              </span>
-                            )}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
                             <span className="text-[11px] font-semibold text-violet-500">
                               {ex.reps || `${ex.durationSec}s`}
                             </span>
                             <span className="text-[10px] text-[var(--text-tertiary)] hidden xs:inline">
-                              •
-                            </span>
-                            <span className="text-[11px] text-[var(--text-tertiary)] truncate">
-                              {ex.targetMuscles.slice(0, 2).join(", ")}
+                              • {ex.targetMuscles.slice(0, 2).join(", ")}
                             </span>
                           </div>
                         </div>
+
+                        {/* Direct Toggle Done Action */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleExercise(id)}
+                          title={
+                            completedExerciseIds.has(id)
+                              ? "Mark incomplete"
+                              : "Mark complete"
+                          }
+                          className={cn(
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition active:scale-95",
+                            completedExerciseIds.has(id)
+                              ? "border-emerald-500 bg-emerald-500 text-white shadow-xs"
+                              : "border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-tertiary)] hover:border-emerald-500/50 hover:text-emerald-500",
+                          )}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </button>
 
                         {/* Direct Watch Tutorial Button */}
                         <button
@@ -1254,7 +1360,7 @@ export default function WorkoutPage() {
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search pushup, squat, abs..."
+                  placeholder="Search by exercise or muscle (chest, glutes, abs...)"
                   className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] py-2.5 pl-9 pr-3 text-xs sm:text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-tertiary)] focus:border-violet-500/50"
                 />
               </label>
@@ -1327,13 +1433,32 @@ export default function WorkoutPage() {
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setTutorialExerciseId(exercise.id)}
-                      className="shrink-0 rounded-xl bg-violet-500/10 hover:bg-violet-600 hover:text-white px-3 py-2 text-xs font-bold text-violet-500 transition"
-                    >
-                      Form
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleExercise(exercise.id)}
+                        title={
+                          completedExerciseIds.has(exercise.id)
+                            ? "Mark incomplete"
+                            : "Mark complete"
+                        }
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-xl border transition active:scale-95",
+                          completedExerciseIds.has(exercise.id)
+                            ? "border-emerald-500 bg-emerald-500 text-white shadow-xs"
+                            : "border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-tertiary)] hover:border-emerald-500/50 hover:text-emerald-500",
+                        )}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTutorialExerciseId(exercise.id)}
+                        className="rounded-xl bg-violet-500/10 hover:bg-violet-600 hover:text-white px-2.5 py-1.5 text-xs font-bold text-violet-500 transition"
+                      >
+                        Form
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>

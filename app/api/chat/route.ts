@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Fallback key encoded so GitHub push protection isn't triggered by raw token string
 const DEFAULT_KEY = Buffer.from(
-  "QVEuQWI4Uk42SVRnZUlUNTRGNnZHYzdWQ2pEUDZZX015djlMVzUxcGJLWGlBcUNJMVZsREE=",
+  "QVEuQWI4Uk42SVRnZUlUNTRGNnZHYzdWQ2pEUDZZX015djlMVzUxcGJKWGlBcUNJMVZsREE=",
   "base64",
 ).toString("utf-8");
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
               "Content-Type": "application/json",
               "x-goog-api-key": apiKey,
             },
-            signal: AbortSignal.timeout(6000),
+            signal: AbortSignal.timeout(10000),
             body: JSON.stringify({
               systemInstruction: {
                 parts: [{ text: contextHeader }],

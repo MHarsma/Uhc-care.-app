@@ -199,18 +199,11 @@ export function AppShell({
       badge: dashboard?.cycle_status?.is_active ? "Active" : undefined,
     },
     {
-      id: "fitness",
-      label: "Fitness & Health",
-      shortLabel: "Fitness",
-      href: "/fitness",
-      icon: Dumbbell,
-    },
-    {
       id: "workout",
-      label: "Workout",
+      label: "Workout & Fitness",
       shortLabel: "Workout",
       href: "/workout",
-      icon: Activity,
+      icon: Dumbbell,
     },
     {
       id: "analytics",
@@ -671,7 +664,7 @@ export function AppShell({
               });
             }
 
-            items.push({ id: "fitness", label: "Fitness", href: "/fitness", icon: Dumbbell });
+            items.push({ id: "workout", label: "Workout", href: "/workout", icon: Dumbbell });
             items.push({
               id: "partner",
               label: "Partner",

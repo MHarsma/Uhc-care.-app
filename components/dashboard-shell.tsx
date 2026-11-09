@@ -422,12 +422,6 @@ export function DashboardShell() {
                     ? "Add your first routine to start building habits together."
                     : `${totalTasks - completedTasks} routines remaining today. Keep going!`}
                 </p>
-
-                {/* Atomic Habits Quote - hidden on tiny screens to save height */}
-                <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-tertiary)] italic pt-0.5">
-                  <Quote className="h-3 w-3 shrink-0 opacity-70" />
-                  <span className="truncate">&ldquo;You fall to the level of your systems.&rdquo;</span>
-                </div>
               </div>
 
               {/* Circular Gauge */}
@@ -610,6 +604,36 @@ export function DashboardShell() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Section Header with Quick Add & Templates actions */}
+          <div className="flex items-center justify-between px-1 pt-1">
+            <div>
+              <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                Today&apos;s Habits ({filteredTasks.length})
+              </h3>
+              <p className="text-[11px] text-[var(--text-tertiary)]">
+                Tap to complete, or manage your routine schedule
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsQuickAddOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>New Routine</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsLibraryOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] px-3 py-1.5 text-xs font-bold text-[var(--text-secondary)] transition-all active:scale-95"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                <span className="hidden xs:inline">Templates</span>
+              </button>
+            </div>
           </div>
 
           {/* Routine Task List */}
