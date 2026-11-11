@@ -55,10 +55,10 @@ export async function POST(req: NextRequest) {
 
     // Ultra-reliable high-speed models in order of stability and responsiveness
     const modelsToTry = [
+      "gemini-flash-lite-latest",
       "gemini-3.5-flash-lite",
-      "gemini-3.1-flash-lite",
+      "gemini-flash-latest",
       "gemini-3.5-flash",
-      "gemini-3.8-flash",
     ];
 
     let lastError: unknown = null;
