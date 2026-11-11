@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
 import { CycleDietSection } from "@/components/period/cycle-diet-section";
 
 // ============================================================================
-// FLO-INSPIRED CYCLE PHASE DEFINITIONS & METADATA
+// CYCLE PHASE DEFINITIONS & METADATA
 // ============================================================================
 type PhaseType = "menstrual" | "follicular" | "ovulation" | "luteal";
 
@@ -248,7 +248,7 @@ export default function PeriodTrackingPage() {
   const [modalError, setModalError] = React.useState<string | null>(null);
   const [cycleLogsFilter, setCycleLogsFilter] = React.useState<"all" | "month">("all");
 
-  // Symptoms & Mood Sheet (Flo Daily Log)
+  // Symptoms & Mood Sheet (Daily Log)
   const [isSymptomDrawerOpen, setIsSymptomDrawerOpen] = React.useState(false);
   const [dailySymptomsMap, setDailySymptomsMap] = React.useState<Record<string, {
     flow?: string;
@@ -279,12 +279,18 @@ export default function PeriodTrackingPage() {
         const res = await symptomApi.getToday(selectedDayDate);
         if (res?.symptom && !isCancelled) {
           const s = res.symptom;
+          const parsedSymptoms = Array.isArray(s.symptoms)
+            ? s.symptoms
+            : typeof s.symptoms === "string"
+            ? JSON.parse(s.symptoms || "[]")
+            : [];
+
           setDailySymptomsMap((prev) => ({
             ...prev,
             [selectedDayDate]: {
               flow: s.flow_level ? s.flow_level.charAt(0).toUpperCase() + s.flow_level.slice(1) : undefined,
               mood: s.mood ? s.mood.charAt(0).toUpperCase() + s.mood.slice(1) : undefined,
-              symptoms: s.symptoms || [],
+              symptoms: parsedSymptoms,
               notes: s.notes || undefined,
             },
           }));
@@ -345,15 +351,42 @@ export default function PeriodTrackingPage() {
     if (todayLog) {
       if (todayLog.flow) setInlineFlow(todayLog.flow);
       if (todayLog.mood) setInlineMood(todayLog.mood);
-      if (todayLog.symptoms) setInlineSymptoms(todayLog.symptoms);
+      if (Array.isArray(todayLog.symptoms)) setInlineSymptoms(todayLog.symptoms);
       if (todayLog.notes) setInlineNotes(todayLog.notes);
     }
   }, [dailySymptomsMap, todayStr]);
 
   const toggleInlineSymptom = (label: string) => {
-    setInlineSymptoms((prev) =>
-      prev.includes(label) ? prev.filter((s) => s !== label) : [...prev, label]
-    );
+    const next = inlineSymptoms.includes(label)
+      ? inlineSymptoms.filter((s) => s !== label)
+      : [...inlineSymptoms, label];
+    setInlineSymptoms(next);
+    void saveSymptomLog(todayStr, {
+      flow: inlineFlow,
+      mood: inlineMood,
+      symptoms: next,
+      notes: inlineNotes,
+    });
+  };
+
+  const handleSelectFlow = (flowLabel: string) => {
+    setInlineFlow(flowLabel);
+    void saveSymptomLog(todayStr, {
+      flow: flowLabel,
+      mood: inlineMood,
+      symptoms: inlineSymptoms,
+      notes: inlineNotes,
+    });
+  };
+
+  const handleSelectMood = (moodLabel: string) => {
+    setInlineMood(moodLabel);
+    void saveSymptomLog(todayStr, {
+      flow: inlineFlow,
+      mood: moodLabel,
+      symptoms: inlineSymptoms,
+      notes: inlineNotes,
+    });
   };
 
   const handleSaveInlineSymptom = async () => {
@@ -675,11 +708,31 @@ export default function PeriodTrackingPage() {
     const periodDates = new Set<string>();
     periods.forEach((p) => {
       const sStr = p.start_date;
-      // If ongoing, only highlight the typical period duration (e.g. 5-7 days) or up to today, not indefinitely
-      const eStr = p.end_date || (p.is_ongoing ? (diffDaysUtc(sStr, todayStr) > 7 ? todayStr : todayStr) : sStr);
-      const totalSpan = diffDaysUtc(sStr, eStr);
+      if (!sStr) return;
+      let eStr: string;
+      if (p.end_date) {
+        eStr = p.end_date;
+      } else if (p.is_ongoing) {
+        // If active period is ongoing today, only mark up to today (max 7 days from start)
+        const daysSinceStart = diffDaysUtc(sStr, todayStr);
+        if (daysSinceStart >= 0 && daysSinceStart <= 7) {
+          eStr = todayStr;
+        } else {
+          // If started long ago and not ended, cap at 5 days
+          const startMs = parseUtcDate(sStr);
+          const cappedEnd = new Date(startMs + 4 * 86400000);
+          eStr = `${cappedEnd.getUTCFullYear()}-${String(cappedEnd.getUTCMonth() + 1).padStart(2, "0")}-${String(cappedEnd.getUTCDate()).padStart(2, "0")}`;
+        }
+      } else {
+        // Past logged period without explicit end_date: standard 5-day flow
+        const startMs = parseUtcDate(sStr);
+        const cappedEnd = new Date(startMs + 4 * 86400000);
+        eStr = `${cappedEnd.getUTCFullYear()}-${String(cappedEnd.getUTCMonth() + 1).padStart(2, "0")}-${String(cappedEnd.getUTCDate()).padStart(2, "0")}`;
+      }
+
+      const totalSpan = Math.min(9, Math.max(0, diffDaysUtc(sStr, eStr)));
       const startMs = parseUtcDate(sStr);
-      for (let offset = 0; offset <= Math.max(0, totalSpan); offset++) {
+      for (let offset = 0; offset <= totalSpan; offset++) {
         const dObj = new Date(startMs + offset * 86400000);
         const yStr = dObj.getUTCFullYear();
         const mStr = String(dObj.getUTCMonth() + 1).padStart(2, "0");
@@ -888,7 +941,7 @@ export default function PeriodTrackingPage() {
         ) : (
           <>
             {/* ============================================================ */}
-            {/* 1. FLO-INSPIRED HERO CYCLE DIAL & STATUS BANNER              */}
+            {/* 1. HERO CYCLE DIAL & STATUS BANNER              */}
             {/* ============================================================ */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-600 via-pink-600 to-purple-800 p-6 sm:p-10 text-white shadow-2xl shadow-rose-500/25 border border-white/10">
               {/* Ambient Orbs */}
@@ -1109,7 +1162,7 @@ export default function PeriodTrackingPage() {
                         <button
                           key={f.id}
                           type="button"
-                          onClick={() => setInlineFlow(f.label)}
+                          onClick={() => handleSelectFlow(f.label)}
                           className={cn(
                             "p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-between gap-1.5 active:scale-95 cursor-pointer min-h-[72px]",
                             isSelected
@@ -1163,7 +1216,7 @@ export default function PeriodTrackingPage() {
                         <button
                           key={m.id}
                           type="button"
-                          onClick={() => setInlineMood(m.label)}
+                          onClick={() => handleSelectMood(m.label)}
                           className={cn(
                             "p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center gap-1 active:scale-95",
                             isSelected
@@ -1521,7 +1574,7 @@ export default function PeriodTrackingPage() {
                 ))}
               </div>
 
-              {/* Calendar Days Grid — Enhanced Flo-Style Cells */}
+              {/* Calendar Days Grid — Enhanced Phase-Colored Cells */}
               <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                 {/* Empty padding cells */}
                 {Array.from({ length: startDayOfWeek }).map((_, idx) => (
@@ -1760,40 +1813,10 @@ export default function PeriodTrackingPage() {
                       </>
                     )}
                   </div>
-                ) : (
-                  periodCoveringSelectedDay && (
-                    <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500 text-white shadow-md">
-                          <Droplet className="h-5 w-5 fill-white text-white" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[var(--text-primary)]">
-                              {targetName || "Partner"}&apos;s Period: {periodCoveringSelectedDay.start_date} → {periodCoveringSelectedDay.end_date || "Ongoing"}
-                            </span>
-                            {!periodCoveringSelectedDay.end_date && (
-                              <span className="rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-bold px-2 py-0.5 text-[10px]">
-                                Active Flow
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
-                            {periodCoveringSelectedDay.end_date
-                              ? `${diffDaysUtc(periodCoveringSelectedDay.start_date, periodCoveringSelectedDay.end_date) + 1} days recorded flow duration`
-                              : "Currently active ongoing flow"}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-bold text-[var(--text-tertiary)] bg-[var(--bg-card)] border border-[var(--glass-border)] px-2.5 py-1 rounded-lg self-start sm:self-auto">
-                        Partner Read-Only View
-                      </span>
-                    </div>
-                  )
-                )}
+                ) : null}
 
-                {/* 3 Wellness Guidance Cards with Deep Links */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* 2 Wellness Guidance Cards with Deep Links */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Nutrition */}
                   <div className="rounded-2xl p-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] flex flex-col justify-between space-y-2">
                     <div className="space-y-1.5">
@@ -1832,17 +1855,6 @@ export default function PeriodTrackingPage() {
                       <span>Start Guided Session & Form</span>
                       <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </Link>
-                  </div>
-
-                  {/* Partner Caring Tip */}
-                  <div className="rounded-2xl p-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] flex flex-col justify-between space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400">
-                      <Heart className="h-4 w-4 fill-rose-500 text-rose-500" />
-                      <span>Partner Synergy</span>
-                    </div>
-                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                      {selectedCellData.phase.partnerTip}
-                    </p>
                   </div>
                 </div>
 
@@ -2197,7 +2209,7 @@ function SymptomLogModal({
         <div className="flex items-center justify-between pb-3 border-b border-[var(--glass-border)]">
           <div>
             <h3 className="text-base font-bold text-[var(--text-primary)]">
-              Flo Daily Log • {dateStr}
+              Daily Log • {dateStr}
             </h3>
             <p className="text-xs text-[var(--text-tertiary)]">
               Track flow intensity, body sensations & emotions

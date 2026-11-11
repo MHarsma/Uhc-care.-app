@@ -453,7 +453,7 @@ export function DashboardShell() {
                 </div>
                 <div>
                   <p className="text-sm sm:text-base font-bold text-rose-500 dark:text-rose-400">
-                    Cycle Active • Day {dashboard.cycle_status.cycle_day ? Math.max(1, dashboard.cycle_status.cycle_day) : 2}
+                    Cycle Active • Day {dashboard.cycle_status.cycle_day || 1}
                   </p>
                   <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
                     Prayer routines are paused and streak is safeguarded automatically.

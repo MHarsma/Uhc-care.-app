@@ -76,16 +76,18 @@ export async function apiClient<T = any>(
   }
 
   // Attach Sanctum Bearer token for cross-domain / mobile authentication
+  let authToken: string | null = null;
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("uhc_auth_token");
-    if (token) {
-      defaultHeaders["Authorization"] = `Bearer ${token}`;
+    authToken = localStorage.getItem("uhc_auth_token");
+    if (authToken) {
+      defaultHeaders["Authorization"] = `Bearer ${authToken}`;
     }
   }
 
-  // Attach XSRF-TOKEN for mutating requests (POST, PATCH, PUT, DELETE)
+  // Attach XSRF-TOKEN for cookie-based mutating requests (POST, PATCH, PUT, DELETE)
+  // Skip CSRF cookie prefetch when Bearer token is present (Bearer tokens are stateless & immune to CSRF)
   const method = (options.method || "GET").toUpperCase();
-  if (method !== "GET" && method !== "HEAD") {
+  if (!authToken && method !== "GET" && method !== "HEAD") {
     let xsrfToken = getCookie("XSRF-TOKEN");
     if (!xsrfToken && typeof window !== "undefined") {
       try {
@@ -143,6 +145,12 @@ export async function apiClient<T = any>(
       try {
         localStorage.removeItem("uhc_logged_in");
         localStorage.removeItem("uhc_auth_token");
+        if (
+          !window.location.pathname.startsWith("/login") &&
+          !window.location.pathname.startsWith("/register")
+        ) {
+          window.location.href = "/login";
+        }
       } catch {}
     }
     const errorMessage =

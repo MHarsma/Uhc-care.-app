@@ -34,6 +34,8 @@ type PartnerTask = {
   title: string;
   category?: string | null;
   time_of_day?: string | null;
+  is_prayer?: boolean;
+  is_paused?: boolean;
   done: boolean;
   completed_at?: string | null;
 };
@@ -41,6 +43,7 @@ type PartnerTask = {
 type PartnerData = {
   partner: { id?: number; name: string } | null;
   stats: { total: number; completed: number; percentage: number } | null;
+  partner_cycle_status?: { is_resting?: boolean; label?: string } | null;
   partner_tasks?: PartnerTask[];
   partner_fitness?: {
     active_calories: number;
@@ -146,6 +149,15 @@ export default function PartnerPage() {
   const percentage = stats?.percentage ?? 0;
   const partnerTasks = data?.partner_tasks ?? [];
   const pendingRequests = data?.pending_leave_requests ?? [];
+
+  const isPartnerOnActivePeriod = Boolean(
+    partnerPeriod?.active_summary?.has_active_period || data?.partner_cycle_status?.is_resting
+  );
+
+  const visiblePartnerTasks = React.useMemo(() => {
+    if (!isPartnerOnActivePeriod) return partnerTasks;
+    return partnerTasks.filter((t) => !t.is_prayer);
+  }, [partnerTasks, isPartnerOnActivePeriod]);
 
   const presetNudges = [
     "Thinking of you! Keep going strong 💕",
@@ -479,17 +491,17 @@ export default function PartnerPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                  {partner.name}&apos;s Daily Checklist ({partnerTasks.length})
+                  {partner.name}&apos;s Daily Checklist ({visiblePartnerTasks.length})
                 </h3>
               </div>
 
-              {partnerTasks.length === 0 ? (
+              {visiblePartnerTasks.length === 0 ? (
                 <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 text-center text-xs text-[var(--text-tertiary)] glass-card">
                   No routines found for {partner.name} today.
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {partnerTasks.map((task) => (
+                  {visiblePartnerTasks.map((task) => (
                     <div
                       key={task.id}
                       className={cn(
