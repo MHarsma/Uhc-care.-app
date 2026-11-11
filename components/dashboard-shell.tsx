@@ -74,6 +74,16 @@ export function DashboardShell() {
   const [nudgeSent, setNudgeSent] = React.useState(false);
   const [showCompleted, setShowCompleted] = React.useState(false);
 
+  // Mandatory Authentication Guard
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("uhc_auth_token");
+      if (!token) {
+        window.location.replace("/login");
+      }
+    }
+  }, []);
+
   // TanStack Query for Dashboard Data
   const {
     data: dashboard,
@@ -94,8 +104,8 @@ export function DashboardShell() {
       if (typeof window !== "undefined") {
         localStorage.removeItem("uhc_logged_in");
         localStorage.removeItem("uhc_auth_token");
+        window.location.replace("/login");
       }
-      window.location.href = "/login";
     }
   }, [dashboardError]);
 
@@ -453,7 +463,18 @@ export function DashboardShell() {
                 </div>
                 <div>
                   <p className="text-sm sm:text-base font-bold text-rose-500 dark:text-rose-400">
-                    Cycle Active • Day {dashboard.cycle_status.cycle_day || 1}
+                    Cycle Active • Day {(() => {
+                      const status = (dashboard.cycle_status as any);
+                      if (status?.start_date) {
+                        const [y, m, d] = String(status.start_date).split("-").map(Number);
+                        const startUtc = Date.UTC(y, m - 1, d);
+                        const now = new Date();
+                        const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+                        const diff = Math.floor((todayUtc - startUtc) / 86400000) + 1;
+                        if (diff >= 1) return diff;
+                      }
+                      return status?.cycle_day || 1;
+                    })()}
                   </p>
                   <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
                     Prayer routines are paused and streak is safeguarded automatically.

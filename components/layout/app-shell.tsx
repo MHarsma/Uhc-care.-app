@@ -77,6 +77,16 @@ export function AppShell({
     },
   });
 
+  // Mandatory Authentication Check
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("uhc_auth_token");
+      if (!token) {
+        window.location.replace("/login");
+      }
+    }
+  }, []);
+
   const isAuthError = (dashboardError as any)?.status === 401;
 
   React.useEffect(() => {
@@ -84,11 +94,11 @@ export function AppShell({
       if (typeof window !== "undefined") {
         localStorage.removeItem("uhc_logged_in");
         localStorage.removeItem("uhc_auth_token");
+        window.location.replace("/login");
       }
       queryClient.clear();
-      router.push("/login");
     }
-  }, [isAuthError, router, queryClient]);
+  }, [isAuthError, queryClient]);
 
   // When app returns to foreground (e.g. phone unlocked in the morning), refresh all live data immediately
   React.useEffect(() => {
