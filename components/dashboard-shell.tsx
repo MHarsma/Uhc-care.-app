@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { dashboardApi, DashboardData, DashboardTask } from "@/lib/api/dashboard";
 import { tasksApi } from "@/lib/api/tasks";
 import {
@@ -39,6 +39,7 @@ import {
   Quote,
   Activity,
   Droplets,
+  ChevronDown,
 } from "lucide-react";
 import {
   Dialog,
@@ -71,6 +72,7 @@ export function DashboardShell() {
   const [editTask, setEditTask] = React.useState<DashboardTask | null>(null);
   const [deleteTask, setDeleteTask] = React.useState<DashboardTask | null>(null);
   const [nudgeSent, setNudgeSent] = React.useState(false);
+  const [showCompleted, setShowCompleted] = React.useState(false);
 
   // TanStack Query for Dashboard Data
   const {
@@ -261,8 +263,11 @@ export function DashboardShell() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600 text-white font-bold text-xs ring-2 ring-[var(--bg-card)]">
                   {user?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 text-white font-bold text-xs ring-2 ring-[var(--bg-card)]">
-                  {partner.name.charAt(0).toUpperCase()}
+                <div className="relative">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 text-white font-bold text-xs ring-2 ring-[var(--bg-card)]">
+                    {partner.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[var(--bg-card)] shadow-xs animate-pulse" title="Partner Active" />
                 </div>
               </div>
 
@@ -569,19 +574,77 @@ export function DashboardShell() {
               </div>
             </motion.div>
           ) : (
-            <div className="space-y-2.5">
-              {timelineTasks.map((task, taskIdx) => (
-                <ModernTaskCard
-                  key={task.id}
-                  task={task}
-                  status={task._status}
-                  index={taskIdx}
-                  onToggle={handleToggleTask}
-                  onRequestLeave={(t) => setLeaveTask(t)}
-                  onEdit={(t) => setEditTask(t)}
-                  onDelete={(t) => setDeleteTask(t)}
-                />
-              ))}
+            <div className="space-y-4">
+              {/* Pending / Active Routines */}
+              <div className="space-y-2.5">
+                {timelineTasks
+                  .filter((t) => !t.done)
+                  .map((task, taskIdx) => (
+                    <ModernTaskCard
+                      key={task.id}
+                      task={task}
+                      status={task._status}
+                      index={taskIdx}
+                      onToggle={handleToggleTask}
+                      onRequestLeave={(t) => setLeaveTask(t)}
+                      onEdit={(t) => setEditTask(t)}
+                      onDelete={(t) => setDeleteTask(t)}
+                    />
+                  ))}
+              </div>
+
+              {/* Collapsible Completed Section */}
+              {timelineTasks.some((t) => t.done) && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCompleted((prev) => !prev)}
+                    className="flex items-center justify-between w-full px-4 py-2.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] text-xs font-bold text-[var(--text-secondary)] transition-all cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500 text-[11px] font-black">
+                        ✓
+                      </span>
+                      <span>
+                        Completed Today ({timelineTasks.filter((t) => t.done).length})
+                      </span>
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 text-[var(--text-tertiary)] transition-transform duration-200",
+                        showCompleted && "rotate-180"
+                      )}
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {showCompleted && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-2.5 pt-3 overflow-hidden"
+                      >
+                        {timelineTasks
+                          .filter((t) => t.done)
+                          .map((task, taskIdx) => (
+                            <ModernTaskCard
+                              key={task.id}
+                              task={task}
+                              status={task._status}
+                              index={taskIdx}
+                              onToggle={handleToggleTask}
+                              onRequestLeave={(t) => setLeaveTask(t)}
+                              onEdit={(t) => setEditTask(t)}
+                              onDelete={(t) => setDeleteTask(t)}
+                            />
+                          ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
           )}
         </div>

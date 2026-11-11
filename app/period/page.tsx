@@ -724,7 +724,13 @@ export default function PeriodTrackingPage() {
       const isOvulationDay = cellCycleDay === 14;
       const isFertileWindow = cellCycleDay !== null && cellCycleDay >= 12 && cellCycleDay <= 16;
       // Predicted period is ONLY for future dates that do not yet have a logged period
-      const isPredictedPeriod = isFuture && !isPeriodDay && cellCycleDay !== null && cellCycleDay <= periodLength;
+      // and NOT during an already active/ongoing period in the near future (e.g. within current 10 days)
+      const isPredictedPeriod =
+        isFuture &&
+        !isPeriodDay &&
+        !isPeriodActive &&
+        cellCycleDay !== null &&
+        cellCycleDay <= periodLength;
       const hasLoggedSymptoms = Boolean(dailySymptomsMap[dateStr]);
 
       cells.push({
