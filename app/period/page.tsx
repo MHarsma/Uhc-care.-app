@@ -433,8 +433,9 @@ export default function PeriodTrackingPage() {
     if (!latestPeriod) return null;
     const diffDays = diffDaysUtc(latestPeriod.start_date, todayStr) + 1;
     if (diffDays < 1) return 1;
-    return diffDays;
-  }, [latestPeriod, todayStr]);
+    // Normalize cycle day to cycle length (1..cycleLength) so it doesn't run away past 28
+    return ((diffDays - 1) % cycleLength) + 1;
+  }, [latestPeriod, todayStr, cycleLength]);
 
   // Robust period active status check
   const isPeriodActive = React.useMemo(() => {
@@ -674,7 +675,8 @@ export default function PeriodTrackingPage() {
     const periodDates = new Set<string>();
     periods.forEach((p) => {
       const sStr = p.start_date;
-      const eStr = p.end_date || todayStr;
+      // If ongoing, only highlight the typical period duration (e.g. 5-7 days) or up to today, not indefinitely
+      const eStr = p.end_date || (p.is_ongoing ? (diffDaysUtc(sStr, todayStr) > 7 ? todayStr : todayStr) : sStr);
       const totalSpan = diffDaysUtc(sStr, eStr);
       const startMs = parseUtcDate(sStr);
       for (let offset = 0; offset <= Math.max(0, totalSpan); offset++) {
@@ -1033,7 +1035,7 @@ export default function PeriodTrackingPage() {
                   <div className="mt-3">
                     <p className="text-xs font-bold text-amber-200">
                       {isPeriodActive
-                       ? `Period Active • Day ${activeSummary?.current_cycle_day || currentCycleDay || 1}`
+                       ? `Period Active • Day ${latestPeriod?.start_date ? Math.max(1, diffDaysUtc(latestPeriod.start_date, todayStr) + 1) : (activeSummary?.current_cycle_day || currentCycleDay || 1)}`
                        : nextPeriodInDays !== null ? `Period in ~${nextPeriodInDays} days` : "Regular 28-day model"}
                     </p>
                     <p className="text-[10px] text-white/70 mt-0.5">
