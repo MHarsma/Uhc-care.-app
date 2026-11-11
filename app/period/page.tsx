@@ -1644,7 +1644,7 @@ export default function PeriodTrackingPage() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
-                      href="/fitness"
+                      href="/workout"
                       className="inline-flex items-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 px-3.5 py-2 text-xs font-bold text-violet-700 dark:text-violet-300 transition-colors shadow-xs"
                     >
                       <Dumbbell className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
@@ -1798,7 +1798,7 @@ export default function PeriodTrackingPage() {
                       </p>
                     </div>
                     <Link
-                      href="/fitness"
+                      href="/workout"
                       className="mt-2 inline-flex items-center justify-between rounded-xl border border-emerald-500/25 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition-colors group"
                     >
                       <span>Log Water & Minerals</span>
@@ -1818,7 +1818,7 @@ export default function PeriodTrackingPage() {
                       </p>
                     </div>
                     <Link
-                      href="/fitness"
+                      href="/workout"
                       className="mt-2 inline-flex items-center justify-between rounded-xl border border-violet-500/25 bg-violet-500/10 hover:bg-violet-500/20 px-3 py-1.5 text-xs font-bold text-violet-700 dark:text-violet-300 transition-colors group"
                     >
                       <span>Start Guided Session & Form</span>

@@ -71,8 +71,6 @@ export function DashboardShell() {
   const [editTask, setEditTask] = React.useState<DashboardTask | null>(null);
   const [deleteTask, setDeleteTask] = React.useState<DashboardTask | null>(null);
   const [nudgeSent, setNudgeSent] = React.useState(false);
-  const [selectedCategory, setSelectedCategory] = React.useState<string>("all");
-  const [selectedTimeOfDay, setSelectedTimeOfDay] = React.useState<string>("all");
 
   // TanStack Query for Dashboard Data
   const {
@@ -93,6 +91,7 @@ export function DashboardShell() {
     if ((dashboardError as any)?.status === 401) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("uhc_logged_in");
+        localStorage.removeItem("uhc_auth_token");
       }
       window.location.href = "/login";
     }
@@ -173,95 +172,53 @@ export function DashboardShell() {
     return "Good evening";
   }, []);
 
-  // Filter and sort tasks chronologically (Time-of-day order)
-  const filteredTasks = React.useMemo(() => {
-    const list = tasks.filter((t) => {
-      if (
-        selectedCategory !== "all" &&
-        normalizeRoutineCategory(t.category) !== selectedCategory
-      ) {
-        return false;
+  // Sort tasks chronologically by time of day
+  const getTaskMinutes = React.useCallback((t: DashboardTask): number => {
+    if (t.time_of_day) {
+      const parts = t.time_of_day.split(":");
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1] || "0", 10);
+      if (!isNaN(h)) return h * 60 + (isNaN(m) ? 0 : m);
+    }
+    const titleLower = t.title.toLowerCase();
+    if (titleLower.includes("fajr")) return 5 * 60 + 15;
+    if (titleLower.includes("dhuhr")) return 13 * 60;
+    if (titleLower.includes("asr")) return 16 * 60 + 30;
+    if (titleLower.includes("maghrib")) return 18 * 60 + 25;
+    if (titleLower.includes("isha")) return 20 * 60;
+    if (titleLower.includes("morning") || titleLower.includes("wake")) return 7 * 60;
+    if (titleLower.includes("night") || titleLower.includes("sleep") || titleLower.includes("bed")) return 22 * 60;
+    return 12 * 60; // Default midday
+  }, []);
+
+  // Chronological timeline with temporal status
+  const timelineTasks = React.useMemo(() => {
+    const sorted = [...tasks].sort((a, b) => getTaskMinutes(a) - getTaskMinutes(b));
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    let foundNext = false;
+
+    return sorted.map((task) => {
+      const taskMinutes = getTaskMinutes(task);
+      let status: "done" | "overdue" | "next" | "upcoming";
+
+      if (task.done) {
+        status = "done";
+      } else if (task.is_paused) {
+        status = "upcoming"; // paused tasks keep neutral style
+      } else if (taskMinutes < currentMinutes && !foundNext) {
+        status = "overdue";
+      } else if (!foundNext) {
+        status = "next";
+        foundNext = true;
+      } else {
+        status = "upcoming";
       }
-      if (selectedTimeOfDay !== "all") {
-        if (!t.time_of_day) return false;
-        const hour = parseInt(t.time_of_day.split(":")[0], 10);
-        if (selectedTimeOfDay === "morning" && (hour < 5 || hour >= 12)) return false;
-        if (selectedTimeOfDay === "afternoon" && (hour < 12 || hour >= 17)) return false;
-        if (selectedTimeOfDay === "evening" && hour < 17) return false;
-      }
-      return true;
+
+      return { ...task, _status: status };
     });
-
-    // Helper to get minutes from midnight for sorting
-    const getTaskMinutes = (t: DashboardTask): number => {
-      if (t.time_of_day) {
-        const parts = t.time_of_day.split(":");
-        const h = parseInt(parts[0], 10);
-        const m = parseInt(parts[1] || "0", 10);
-        if (!isNaN(h)) return h * 60 + (isNaN(m) ? 0 : m);
-      }
-      const titleLower = t.title.toLowerCase();
-      if (titleLower.includes("fajr")) return 5 * 60 + 15;
-      if (titleLower.includes("dhuhr")) return 13 * 60;
-      if (titleLower.includes("asr")) return 16 * 60 + 30;
-      if (titleLower.includes("maghrib")) return 18 * 60 + 25;
-      if (titleLower.includes("isha")) return 20 * 60;
-      if (titleLower.includes("morning") || titleLower.includes("wake")) return 7 * 60;
-      if (titleLower.includes("night") || titleLower.includes("sleep") || titleLower.includes("bed")) return 22 * 60;
-      return 12 * 60; // Default midday
-    };
-
-    return [...list].sort((a, b) => getTaskMinutes(a) - getTaskMinutes(b));
-  }, [tasks, selectedCategory, selectedTimeOfDay]);
-
-  // Group by purpose while preserving scheduled-time ordering inside each category.
-  const categoryGroupedTasks = React.useMemo(() => {
-    const groups = new Map<string, DashboardTask[]>();
-
-    filteredTasks.forEach((task) => {
-      const categoryKey = normalizeRoutineCategory(task.category);
-      const categoryTasks = groups.get(categoryKey) ?? [];
-      categoryTasks.push(task);
-      groups.set(categoryKey, categoryTasks);
-    });
-
-    const categoryKeys = [
-      ...ROUTINE_CATEGORIES.map((category) => category.key).filter((key) =>
-        groups.has(key)
-      ),
-      ...Array.from(groups.keys())
-        .filter((key) => !ROUTINE_CATEGORIES.some((category) => category.key === key))
-        .sort(),
-    ];
-
-    return categoryKeys.map((key) => {
-      const category = ROUTINE_CATEGORIES.find((item) => item.key === key);
-
-      return {
-        key,
-        label: category?.label ?? getRoutineCategoryLabel(key),
-        icon: category?.icon ?? "✨",
-        description: category?.description ?? "Other routines and tasks",
-        tasks: groups.get(key) ?? [],
-      };
-    });
-  }, [filteredTasks]);
-
-  // Unique categories list for tab filters
-  const availableCategories = React.useMemo(() => {
-    const cats = new Set<string>();
-    tasks.forEach((t) => {
-      cats.add(normalizeRoutineCategory(t.category));
-    });
-    return [
-      ...ROUTINE_CATEGORIES.map((category) => category.key).filter((key) =>
-        cats.has(key)
-      ),
-      ...Array.from(cats)
-        .filter((key) => !ROUTINE_CATEGORIES.some((category) => category.key === key))
-        .sort(),
-    ];
-  }, [tasks]);
+  }, [tasks, getTaskMinutes]);
 
   if (isDashboardLoading) {
     return (
@@ -502,136 +459,33 @@ export function DashboardShell() {
             </motion.div>
           )}
 
-          {/* Time and category filters are separate; categories describe task purpose. */}
-          <div className="space-y-3">
-            {/* Time of Day Tabs */}
-            <div className="space-y-1.5">
-              <p className="px-1 text-[11px] font-bold text-[var(--text-secondary)]">
-                Filter by time of day
-              </p>
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {[
-                { key: "all", label: "All Day", icon: Sparkles },
-                { key: "morning", label: "Morning", icon: Sunrise },
-                { key: "afternoon", label: "Afternoon", icon: Sun },
-                { key: "evening", label: "Evening", icon: Sunset },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const active = selectedTimeOfDay === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setSelectedTimeOfDay(tab.key)}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold transition-all shrink-0 press-effect",
-                      active
-                        ? "bg-violet-600 text-white shadow-md shadow-violet-500/20"
-                        : "bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-              </div>
-            </div>
-
-            {/* Quick Category Jump Bar */}
-            {availableCategories.length > 1 && (
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-secondary)] px-1">
-                  <span className="flex items-center gap-1.5">
-                    <Target className="h-3.5 w-3.5 text-violet-500" />
-                    <span>Filter by category:</span>
-                  </span>
-                  {selectedCategory !== "all" && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCategory("all")}
-                      className="text-violet-500 hover:underline cursor-pointer"
-                    >
-                      Clear Filter (Show All)
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCategory("all")}
-                    className={cn(
-                      "rounded-xl px-3.5 py-2 text-xs font-bold transition-all shrink-0 press-effect cursor-pointer flex items-center gap-1.5",
-                      selectedCategory === "all"
-                        ? "bg-violet-600 text-white shadow-md shadow-violet-500/20"
-                        : "bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                    )}
-                  >
-                    <span>All ({tasks.length})</span>
-                  </button>
-                  {availableCategories.map((catKey) => {
-                    const count = tasks.filter(
-                      (t) => normalizeRoutineCategory(t.category) === catKey
-                    ).length;
-                    const meta = ROUTINE_CATEGORIES.find((c) => c.key === catKey);
-                    const icon = meta?.icon || "✨";
-                    const label = meta?.label || catKey;
-                    const isActive = selectedCategory === catKey;
-
-                    return (
-                      <button
-                        key={catKey}
-                        type="button"
-                        onClick={() => setSelectedCategory(catKey)}
-                        className={cn(
-                          "rounded-xl px-3.5 py-2 text-xs font-bold capitalize transition-all shrink-0 press-effect cursor-pointer flex items-center gap-1.5",
-                          isActive
-                            ? "bg-violet-600 text-white shadow-md shadow-violet-500/20"
-                            : "bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                        )}
-                      >
-                        <span>{icon}</span>
-                        <span>{label}</span>
-                        <span className={cn(
-                          "px-1.5 py-0.2 rounded-full text-[10px]",
-                          isActive ? "bg-white/20 text-white" : "bg-[var(--bg-card)] text-[var(--text-tertiary)]"
-                        )}>
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Section Header with Quick Add & Templates actions */}
           <div className="flex items-center justify-between px-1 pt-1">
             <div>
               <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                Today&apos;s Habits ({filteredTasks.length})
+                Today&apos;s Timeline ({timelineTasks.length})
               </h3>
               <p className="text-[11px] text-[var(--text-tertiary)]">
-                Tap to complete, or manage your routine schedule
+                Sorted by time — tap to complete
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsQuickAddOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-600 hover:bg-violet-700 px-2.5 py-1.5 text-[11px] font-bold text-white shadow-xs transition-all active:scale-95"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span>New Routine</span>
+                <span>New</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsLibraryOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] px-3 py-1.5 text-xs font-bold text-[var(--text-secondary)] transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--text-secondary)] transition-all active:scale-95"
               >
                 <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                <span className="hidden xs:inline">Templates</span>
+                <span>Templates</span>
               </button>
             </div>
           </div>
@@ -673,7 +527,7 @@ export function DashboardShell() {
                 </Link>
               </div>
             </div>
-          ) : filteredTasks.length === 0 ? (
+          ) : timelineTasks.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -684,9 +538,7 @@ export function DashboardShell() {
                 <Sparkles className="h-8 w-8" />
               </div>
               <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                {tasks.length === 0
-                  ? "No routines scheduled for today"
-                  : "No routines match the current filter"}
+                No routines scheduled for today
               </h3>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-2 max-w-md mx-auto leading-relaxed">
                 Build healthy habits together with your partner. Browse our pre-built routine packs or create your own custom daily rituals.
@@ -711,54 +563,19 @@ export function DashboardShell() {
               </div>
             </motion.div>
           ) : (
-            <div className="space-y-6">
-              {categoryGroupedTasks.map((category, groupIdx) => {
-                const catCompleted = category.tasks.filter((t) => t.done).length;
-                const catTotal = category.tasks.length;
-
-                return (
-                  <motion.div
-                    key={category.key}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: groupIdx * 0.06, duration: 0.35 }}
-                    className="space-y-3"
-                  >
-                    {/* Category Section Header */}
-                    <div className="flex items-center justify-between px-1 text-xs font-bold">
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-xl">{category.icon}</span>
-                        <div>
-                          <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">
-                            {category.label}
-                          </h3>
-                          <p className="text-[11px] font-normal text-[var(--text-tertiary)] -mt-0.5">
-                            {category.description}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
-                        {catCompleted} / {catTotal} completed
-                      </span>
-                    </div>
-
-                    {/* Task Cards List */}
-                    <div className="space-y-2.5">
-                      {category.tasks.map((task, taskIdx) => (
-                        <ModernTaskCard
-                          key={task.id}
-                          task={task}
-                          index={taskIdx}
-                          onToggle={handleToggleTask}
-                          onRequestLeave={(t) => setLeaveTask(t)}
-                          onEdit={(t) => setEditTask(t)}
-                          onDelete={(t) => setDeleteTask(t)}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                );
-              })}
+            <div className="space-y-2.5">
+              {timelineTasks.map((task, taskIdx) => (
+                <ModernTaskCard
+                  key={task.id}
+                  task={task}
+                  status={task._status}
+                  index={taskIdx}
+                  onToggle={handleToggleTask}
+                  onRequestLeave={(t) => setLeaveTask(t)}
+                  onEdit={(t) => setEditTask(t)}
+                  onDelete={(t) => setDeleteTask(t)}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -960,36 +777,6 @@ export function DashboardShell() {
                 : "Check off your daily routines to build your streak together."}
             </p>
           </motion.div>
-
-          {/* Routine Library Quick Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.4 }}
-            className="rounded-2xl lg:rounded-3xl glass-card p-4 sm:p-5 lg:p-6 shadow-md"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/15 text-violet-500">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <h3 className="text-base font-bold text-[var(--text-primary)]">
-                  Routine Library
-                </h3>
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
-              Explore curated routine templates for couples, Salah, health, and relationship check-ins.
-            </p>
-            <button
-              type="button"
-              onClick={() => setIsLibraryOpen(true)}
-              className="w-full flex items-center justify-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--bg-hover)] py-3 text-xs sm:text-sm font-bold text-[var(--text-primary)] transition-all press-effect"
-            >
-              <Sparkles className="h-4 w-4 text-violet-500" />
-              <span>Explore Templates</span>
-            </button>
-          </motion.div>
           </div>
         </div>
       </div>
@@ -1104,6 +891,7 @@ function resolveTaskTime(task: {
  */
 function ModernTaskCard({
   task,
+  status = "upcoming",
   index,
   onToggle,
   onRequestLeave,
@@ -1111,6 +899,7 @@ function ModernTaskCard({
   onDelete,
 }: {
   task: DashboardTask;
+  status?: "done" | "overdue" | "next" | "upcoming";
   index: number;
   onToggle: (taskId: number) => Promise<void>;
   onRequestLeave?: (task: DashboardTask) => void;
@@ -1191,7 +980,11 @@ function ModernTaskCard({
       className={cn(
         "group flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border transition-all duration-200 cursor-pointer select-none relative shadow-xs",
         isDone
-          ? "border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/5"
+          ? "border-emerald-500/25 bg-emerald-500/5 dark:bg-emerald-500/5"
+          : status === "next"
+          ? "border-violet-500/40 bg-violet-500/10 dark:bg-violet-500/10 ring-1 ring-violet-500/30 shadow-md shadow-violet-500/10"
+          : status === "overdue"
+          ? "border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/5 hover:border-amber-500/50"
           : "border-[var(--glass-border)] bg-[var(--bg-card)] hover:border-violet-500/30 hover:shadow-sm"
       )}
     >
@@ -1258,11 +1051,19 @@ function ModernTaskCard({
               </span>
             )}
 
-            {isDone && (
-              <span className="text-emerald-500 font-bold text-[11px] flex items-center gap-1">
+            {isDone ? (
+              <span className="text-emerald-500 font-bold text-[11px] flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
                 ✓ Done
               </span>
-            )}
+            ) : status === "next" ? (
+              <span className="text-violet-600 dark:text-violet-300 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 bg-violet-500/15 border border-violet-500/30 px-2 py-0.5 rounded-md animate-pulse">
+                Next Up
+              </span>
+            ) : status === "overdue" ? (
+              <span className="text-amber-600 dark:text-amber-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                Overdue
+              </span>
+            ) : null}
           </div>
         </div>
       </div>

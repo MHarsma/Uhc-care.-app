@@ -135,12 +135,14 @@ export function AppShell({
       await api.post("/auth/logout");
       if (typeof window !== "undefined") {
         localStorage.removeItem("uhc_logged_in");
+        localStorage.removeItem("uhc_auth_token");
       }
       queryClient.clear();
       router.push("/login");
     } catch {
       if (typeof window !== "undefined") {
         localStorage.removeItem("uhc_logged_in");
+        localStorage.removeItem("uhc_auth_token");
       }
       queryClient.clear();
       router.push("/login");
@@ -160,13 +162,6 @@ export function AppShell({
       shortLabel: "Today",
       href: "/dashboard",
       icon: CalendarCheck,
-    },
-    {
-      id: "tasks",
-      label: "All Routines",
-      shortLabel: "Routines",
-      href: "/tasks",
-      icon: ListOrdered,
     },
     {
       id: "history",
@@ -649,7 +644,6 @@ export function AppShell({
               badge?: number | string | undefined;
             }[] = [
               { id: "today", label: "Today", href: "/dashboard", icon: CalendarCheck },
-              { id: "tasks", label: "Routines", href: "/tasks", icon: ListOrdered },
             ];
 
             if (user?.is_female) {

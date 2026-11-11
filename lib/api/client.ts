@@ -142,6 +142,7 @@ export async function apiClient<T = any>(
     if (response.status === 401 && typeof window !== "undefined") {
       try {
         localStorage.removeItem("uhc_logged_in");
+        localStorage.removeItem("uhc_auth_token");
       } catch {}
     }
     const errorMessage =
