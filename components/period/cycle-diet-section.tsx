@@ -123,7 +123,7 @@ export function CycleDietSection({ currentPhaseKey }: CycleDietSectionProps) {
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
-            Tailored meal plans, micronutrient cofactors, seed cycling, and couple grocery synergy based on Flo endocrinology.
+            Tailored meal plans, micronutrient cofactors, seed cycling, and couple grocery synergy based on natural endocrinology.
           </p>
         </div>
 
@@ -187,7 +187,7 @@ export function CycleDietSection({ currentPhaseKey }: CycleDietSectionProps) {
             )}
           >
             <Sparkles className="h-3 w-3" />
-            <span>Flo Bio-Rhythm Active</span>
+            <span>Bio-Rhythm Active</span>
           </span>
         </div>
 

@@ -756,9 +756,9 @@ export default function PeriodTrackingPage() {
   return (
     <AppShell
       headerTitle="Cycle & Wellness"
-      headerSubtitle="Flo-inspired cycle phases, intelligent calendar & habit protection"
+      headerSubtitle="Smart cycle phases, calendar tracking & habit protection"
       headerAction={
-        canManagePeriods ? (
+        canManagePeriods && !isPeriodActive ? (
           <button
             type="button"
             onClick={() => openCreateModal()}
@@ -1370,7 +1370,7 @@ export default function PeriodTrackingPage() {
                   </h3>
                 </div>
                 <span className="text-xs text-[var(--text-tertiary)]">
-                  Based on Flo hormone rhythm biology
+                  Natural hormonal rhythm & energy guide
                 </span>
               </div>
 

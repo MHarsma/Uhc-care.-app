@@ -193,7 +193,13 @@ export function DashboardShell() {
 
   // Chronological timeline with temporal status
   const timelineTasks = React.useMemo(() => {
-    const sorted = [...tasks].sort((a, b) => getTaskMinutes(a) - getTaskMinutes(b));
+    // If the female partner has an active period, filter out prayer tasks completely on the frontend too
+    const isFemaleOnPeriod = Boolean(user?.is_female && dashboard?.cycle_status?.is_active);
+    const visibleTasks = isFemaleOnPeriod
+      ? tasks.filter((t) => !t.is_prayer)
+      : tasks;
+
+    const sorted = [...visibleTasks].sort((a, b) => getTaskMinutes(a) - getTaskMinutes(b));
 
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -218,7 +224,7 @@ export function DashboardShell() {
 
       return { ...task, _status: status };
     });
-  }, [tasks, getTaskMinutes]);
+  }, [tasks, user?.is_female, dashboard?.cycle_status?.is_active, getTaskMinutes]);
 
   if (isDashboardLoading) {
     return (
@@ -442,7 +448,7 @@ export function DashboardShell() {
                 </div>
                 <div>
                   <p className="text-sm sm:text-base font-bold text-rose-500 dark:text-rose-400">
-                    Cycle Active • Day {dashboard.cycle_status.cycle_day || 1}
+                    Cycle Active • Day {dashboard.cycle_status.cycle_day ? Math.max(1, dashboard.cycle_status.cycle_day) : 2}
                   </p>
                   <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
                     Prayer routines are paused and streak is safeguarded automatically.
