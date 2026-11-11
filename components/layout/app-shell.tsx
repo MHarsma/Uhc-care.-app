@@ -608,19 +608,8 @@ export function AppShell({
               </button>
             )}
 
-            {/* Custom Header Action or Default Add Routine CTA */}
-            {headerAction ? (
-              headerAction
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsQuickAddOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-violet-500/15 hover:shadow-violet-500/25 active:scale-95 transition-all"
-              >
-                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-                <span>New Routine</span>
-              </button>
-            )}
+            {/* Custom Header Action if explicitly passed */}
+            {headerAction || null}
           </div>
         </header>
 
