@@ -72,10 +72,12 @@ export default function LoginPage() {
     const backendUrl = getBackendBaseUrl();
 
     try {
-      const headers = await csrfHeaders(backendUrl);
       const response = await fetch(`${apiUrl}/auth/login`, {
         method: "POST",
-        headers,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
         credentials: "include",
         body: JSON.stringify({ email, password }),
       });

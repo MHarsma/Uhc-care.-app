@@ -246,8 +246,7 @@ export default function HomePage() {
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       const hasToken = Boolean(localStorage.getItem("uhc_auth_token"));
-      const hasFlag = localStorage.getItem("uhc_logged_in") === "true";
-      if (hasToken || hasFlag) {
+      if (hasToken) {
         router.replace("/dashboard");
       } else {
         router.replace("/login");

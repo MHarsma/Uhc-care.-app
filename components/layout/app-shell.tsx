@@ -83,6 +83,7 @@ export function AppShell({
     if (isAuthError) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("uhc_logged_in");
+        localStorage.removeItem("uhc_auth_token");
       }
       queryClient.clear();
       router.push("/login");
