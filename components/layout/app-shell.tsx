@@ -62,6 +62,24 @@ export function AppShell({
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  const [authToken, setAuthToken] = React.useState<string | null>(null);
+  const [authChecked, setAuthChecked] = React.useState(false);
+
+  // Mandatory Authentication Check
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("uhc_auth_token");
+      if (!token || token.trim() === "" || token === "undefined" || token === "null") {
+        localStorage.removeItem("uhc_logged_in");
+        localStorage.removeItem("uhc_auth_token");
+        window.location.replace("/login");
+      } else {
+        setAuthToken(token);
+        setAuthChecked(true);
+      }
+    }
+  }, []);
+
   // Fetch Dashboard & Partner Data
   const {
     data: dashboard,
@@ -71,21 +89,12 @@ export function AppShell({
     queryKey: ["dashboard"],
     queryFn: dashboardApi.getDashboard,
     staleTime: 1000 * 30,
+    enabled: Boolean(authChecked && authToken),
     retry: (failureCount, error: any) => {
       if (error?.status === 401) return false;
       return failureCount < 1;
     },
   });
-
-  // Mandatory Authentication Check
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("uhc_auth_token");
-      if (!token) {
-        window.location.replace("/login");
-      }
-    }
-  }, []);
 
   const isAuthError = (dashboardError as any)?.status === 401;
 
@@ -121,6 +130,7 @@ export function AppShell({
     queryKey: ["partnerSummary"],
     queryFn: dashboardApi.getPartnerSummary,
     staleTime: 1000 * 60,
+    enabled: Boolean(authChecked && authToken),
   });
 
   const user = dashboard?.user;

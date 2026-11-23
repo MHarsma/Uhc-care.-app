@@ -73,13 +73,20 @@ export function DashboardShell() {
   const [deleteTask, setDeleteTask] = React.useState<DashboardTask | null>(null);
   const [nudgeSent, setNudgeSent] = React.useState(false);
   const [showCompleted, setShowCompleted] = React.useState(false);
+  const [authToken, setAuthToken] = React.useState<string | null>(null);
+  const [authChecked, setAuthChecked] = React.useState(false);
 
   // Mandatory Authentication Guard
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("uhc_auth_token");
-      if (!token) {
+      if (!token || token.trim() === "" || token === "undefined" || token === "null") {
+        localStorage.removeItem("uhc_logged_in");
+        localStorage.removeItem("uhc_auth_token");
         window.location.replace("/login");
+      } else {
+        setAuthToken(token);
+        setAuthChecked(true);
       }
     }
   }, []);
@@ -93,6 +100,7 @@ export function DashboardShell() {
     queryKey: ["dashboard"],
     queryFn: dashboardApi.getDashboard,
     staleTime: 1000 * 30,
+    enabled: Boolean(authChecked && authToken),
     retry: (failureCount, error: any) => {
       if (error?.status === 401) return false;
       return failureCount < 1;
@@ -114,6 +122,7 @@ export function DashboardShell() {
     queryKey: ["partnerSummary"],
     queryFn: dashboardApi.getPartnerSummary,
     staleTime: 1000 * 60,
+    enabled: Boolean(authChecked && authToken),
   });
 
   // Instant 0ms Optimistic Task Toggle
@@ -237,6 +246,19 @@ export function DashboardShell() {
       return { ...task, _status: status };
     });
   }, [tasks, user?.is_female, dashboard?.cycle_status?.is_active, getTaskMinutes]);
+
+  if (!authChecked || !authToken) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 to-rose-500 text-white font-black text-xl shadow-lg shadow-violet-500/25 animate-pulse">
+            U
+          </div>
+          <p className="text-xs font-semibold text-[var(--text-tertiary)]">Verifying session...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isDashboardLoading) {
     return (

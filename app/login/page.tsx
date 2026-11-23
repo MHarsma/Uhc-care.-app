@@ -72,15 +72,29 @@ export default function LoginPage() {
     const backendUrl = getBackendBaseUrl();
 
     try {
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
+      let response: Response;
+      try {
+        response = await fetch(`${apiUrl}/auth/login`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        });
+      } catch (err) {
+        // Fallback for mobile WebViews / browsers that block cross-origin credentials
+        response = await fetch(`${apiUrl}/auth/login`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({ email, password }),
+        });
+      }
 
       const body = await response.json().catch(() => null);
 

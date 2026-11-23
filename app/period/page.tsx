@@ -1925,49 +1925,49 @@ export default function PeriodTrackingPage() {
             <CycleDietSection currentPhaseKey={currentPhase.type} />
 
             {/* ============================================================ */}
-            {/* 5. CYCLE HISTORY & MANAGEMENT                                */}
+            {/* 5. CYCLE HISTORY & MANAGEMENT (Female User Only)            */}
             {/* ============================================================ */}
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
-                <div>
-                  <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                    Past Cycle Logs ({periods.length})
-                  </h3>
-                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                    Review and edit past menstruation cycles, start dates, and durations.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {/* Filter tabs */}
-                  <div className="inline-flex rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-1 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setCycleLogsFilter("all")}
-                      className={cn(
-                        "rounded-lg px-2.5 py-1 font-semibold transition-all cursor-pointer",
-                        cycleLogsFilter === "all"
-                          ? "bg-rose-500 text-white font-bold shadow-xs"
-                          : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                      )}
-                    >
-                      All ({periods.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCycleLogsFilter("month")}
-                      className={cn(
-                        "rounded-lg px-2.5 py-1 font-semibold transition-all cursor-pointer",
-                        cycleLogsFilter === "month"
-                          ? "bg-rose-500 text-white font-bold shadow-xs"
-                          : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                      )}
-                    >
-                      {monthName} {year} ({monthPeriodLogs.length})
-                    </button>
+            {canManagePeriods && (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+                  <div>
+                    <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                      Past Cycle Logs ({periods.length})
+                    </h3>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                      Review and edit past menstruation cycles, start dates, and durations.
+                    </p>
                   </div>
 
-                  {canManagePeriods && (
+                  <div className="flex items-center gap-2">
+                    {/* Filter tabs */}
+                    <div className="inline-flex rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setCycleLogsFilter("all")}
+                        className={cn(
+                          "rounded-lg px-2.5 py-1 font-semibold transition-all cursor-pointer",
+                          cycleLogsFilter === "all"
+                            ? "bg-rose-500 text-white font-bold shadow-xs"
+                            : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                        )}
+                      >
+                        All ({periods.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCycleLogsFilter("month")}
+                        className={cn(
+                          "rounded-lg px-2.5 py-1 font-semibold transition-all cursor-pointer",
+                          cycleLogsFilter === "month"
+                            ? "bg-rose-500 text-white font-bold shadow-xs"
+                            : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                        )}
+                      >
+                        {monthName} {year} ({monthPeriodLogs.length})
+                      </button>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => openCreateModal(selectedDayDate || `${year}-${String(month + 1).padStart(2, "0")}-01`, 5)}
@@ -1976,14 +1976,12 @@ export default function PeriodTrackingPage() {
                       <Plus className="h-3.5 w-3.5" />
                       <span>+ Log Past Period</span>
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
 
-              {displayedPeriodLogs.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-[var(--glass-border)] glass-card p-10 text-center text-xs text-[var(--text-tertiary)] space-y-2">
-                  <p>No cycle entries recorded {cycleLogsFilter === "month" ? `for ${monthName} ${year}` : "yet"}.</p>
-                  {canManagePeriods && (
+                {displayedPeriodLogs.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-[var(--glass-border)] glass-card p-10 text-center text-xs text-[var(--text-tertiary)] space-y-2">
+                    <p>No cycle entries recorded {cycleLogsFilter === "month" ? `for ${monthName} ${year}` : "yet"}.</p>
                     <button
                       type="button"
                       onClick={() => openCreateModal(`${year}-${String(month + 1).padStart(2, "0")}-01`, 5)}
@@ -1992,41 +1990,39 @@ export default function PeriodTrackingPage() {
                       <Plus className="h-3.5 w-3.5" />
                       <span>Log Period for {monthName} {year}</span>
                     </button>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {displayedPeriodLogs.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 glass-card flex items-center justify-between transition-all hover:border-rose-500/30"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
-                          <Calendar className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[var(--text-primary)]">
-                              {entry.start_date} → {entry.end_date || "Ongoing"}
-                            </span>
-                            {!entry.end_date && (
-                              <span className="rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-2 py-0.5 text-[10px]">
-                                Active Period
-                              </span>
-                            )}
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {displayedPeriodLogs.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 glass-card flex items-center justify-between transition-all hover:border-rose-500/30"
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                            <Calendar className="h-4 w-4" />
                           </div>
-                          <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
-                            {entry.duration_days
-                              ? `${entry.duration_days} days total flow duration`
-                              : entry.end_date
-                              ? `${diffDaysUtc(entry.start_date, entry.end_date) + 1} days flow duration`
-                              : "Currently ongoing active phase"}
-                          </p>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-[var(--text-primary)]">
+                                {entry.start_date} → {entry.end_date || "Ongoing"}
+                              </span>
+                              {!entry.end_date && (
+                                <span className="rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold px-2 py-0.5 text-[10px]">
+                                  Active Period
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
+                              {entry.duration_days
+                                ? `${entry.duration_days} days total flow duration`
+                                : entry.end_date
+                                ? `${diffDaysUtc(entry.start_date, entry.end_date) + 1} days flow duration`
+                                : "Currently ongoing active phase"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
 
-                      {canManagePeriods && (
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
@@ -2045,12 +2041,12 @@ export default function PeriodTrackingPage() {
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

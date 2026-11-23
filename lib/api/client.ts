@@ -111,22 +111,27 @@ export async function apiClient<T = any>(
       ...defaultHeaders,
       ...headers,
     },
-    credentials: "include", // Essential for Laravel Sanctum cookie authentication
+    // When a Bearer token is present, omit cross-origin cookies to avoid mobile/Safari third-party cookie blocks.
+    // Only send cookies when relying on session-based Sanctum authentication.
+    credentials: customConfig.credentials ?? (authToken ? "same-origin" : "include"),
     ...customConfig,
-    // Re-assert credentials after spread to prevent override
-    ...(customConfig.credentials ? {} : { credentials: "include" as RequestCredentials }),
   };
 
   let response: Response;
   try {
     response = await fetch(url, config);
   } catch (networkError) {
-    // Network-level failure: server offline, tunnel down, DNS unreachable, CORS blocked
-    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
-    const friendlyMessage = isOffline
-      ? "You appear to be offline. Please check your internet connection and try again."
-      : "Could not connect to the server. Please check your connection or try again in a moment.";
-    throw new ApiError(friendlyMessage, 0, { originalError: String(networkError) });
+    // Retry once if mobile network had a transient handshake / socket interruption
+    try {
+      response = await fetch(url, config);
+    } catch {
+      // Network-level failure: server offline, tunnel down, DNS unreachable, CORS blocked
+      const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+      const friendlyMessage = isOffline
+        ? "You appear to be offline. Please check your internet connection and try again."
+        : "Could not connect to the server. Please check your connection or try again in a moment.";
+      throw new ApiError(friendlyMessage, 0, { originalError: String(networkError) });
+    }
   }
 
   if (response.status === 204) {
