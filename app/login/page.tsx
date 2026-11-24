@@ -53,6 +53,7 @@ export default function LoginPage() {
         if (typeof window !== "undefined") {
           localStorage.setItem("uhc_logged_in", "true");
           localStorage.setItem("uhc_auth_token", res.token);
+          document.cookie = `uhc_auth_token=${res.token}; path=/; max-age=31536000; SameSite=Lax; Secure`;
         }
         router.push("/dashboard");
       }
@@ -108,6 +109,8 @@ export default function LoginPage() {
         localStorage.setItem("uhc_logged_in", "true");
         if (body?.token) {
           localStorage.setItem("uhc_auth_token", body.token);
+          // Set cookie for Next.js server-side middleware auth enforcement
+          document.cookie = `uhc_auth_token=${body.token}; path=/; max-age=31536000; SameSite=Lax; Secure`;
           // Auto-refresh stored biometric token if this user enrolled biometrics
           const enrolledUser = localStorage.getItem("uhc_biometric_user");
           if (enrolledUser === email) {

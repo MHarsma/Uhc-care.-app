@@ -157,6 +157,7 @@ export function AppShell({
       if (typeof window !== "undefined") {
         localStorage.removeItem("uhc_logged_in");
         localStorage.removeItem("uhc_auth_token");
+        document.cookie = "uhc_auth_token=; path=/; max-age=0; SameSite=Lax; Secure";
       }
       queryClient.clear();
       router.push("/login");
@@ -164,6 +165,7 @@ export function AppShell({
       if (typeof window !== "undefined") {
         localStorage.removeItem("uhc_logged_in");
         localStorage.removeItem("uhc_auth_token");
+        document.cookie = "uhc_auth_token=; path=/; max-age=0; SameSite=Lax; Secure";
       }
       queryClient.clear();
       router.push("/login");

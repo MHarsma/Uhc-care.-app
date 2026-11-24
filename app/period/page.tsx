@@ -36,6 +36,8 @@ import {
   CheckCircle2,
   Feather,
   Zap,
+  Droplets,
+  Users,
   Coffee,
   BedDouble,
   Dumbbell,
@@ -54,7 +56,6 @@ interface PhaseInfo {
   type: PhaseType;
   title: string;
   subtitle: string;
-  dayRange: string;
   startDay: number;
   endDay: number;
   colorHex: string;
@@ -69,93 +70,94 @@ interface PhaseInfo {
   nutritionTip: string;
   exerciseTip: string;
   partnerTip: string;
-  salahStatus: "Exempt (Paused)" | "Obligatory (Active)";
+  comfortRitual: string;
+  hydrationGoal: string;
 }
 
 const CYCLE_PHASES: Record<PhaseType, PhaseInfo> = {
   menstrual: {
     type: "menstrual",
     title: "Menstrual Phase",
-    subtitle: "Rest, Reset & Renewal",
-    dayRange: "Days 1 – 5",
+    subtitle: "Rest, Reset & Gentle Care",
     startDay: 1,
     endDay: 5,
     colorHex: "#F43F5E",
     badgeBg: "bg-rose-500/15 border-rose-500/30",
     badgeText: "text-rose-600 dark:text-rose-400",
     gradient: "from-rose-500 via-pink-600 to-rose-700",
-    energyLevel: "Lowest • Prioritize gentle rest",
+    energyLevel: "Gentle Rest & Recovery",
     fertilityChance: "Very Low",
     pregnancyRisk: "Very Low",
     icon: "🩸",
-    description: "The uterine lining sheds. Estrogen and progesterone are at their baseline. Your body is directing its energy inward.",
-    nutritionTip: "Rich iron foods, warm broths, ginger tea, dark chocolate, and plenty of electrolytes.",
+    description: "The body directs energy inward. Prioritize deep rest, warmth, emotional comfort, and gentle hydration.",
+    nutritionTip: "Rich iron foods, warm broths, ginger tea, dark chocolate, and electrolyte hydration.",
     exerciseTip: "Gentle stretching, restorative yoga, relaxed walks, and guilt-free sleep.",
     partnerTip: "Offer back massages, prepare warm herbal tea, and handle demanding chores without being asked 💕",
-    salahStatus: "Exempt (Paused)",
+    comfortRitual: "Warm compress, chamomile tea & comfortable loose clothing.",
+    hydrationGoal: "2.2L – 2.5L Warm Fluids",
   },
   follicular: {
     type: "follicular",
     title: "Follicular Phase",
-    subtitle: "Rising Vitality & Creativity",
-    dayRange: "Days 6 – 13",
+    subtitle: "Rising Vitality & Motivation",
     startDay: 6,
     endDay: 13,
     colorHex: "#8B5CF6",
     badgeBg: "bg-violet-500/15 border-violet-500/30",
     badgeText: "text-violet-600 dark:text-violet-400",
     gradient: "from-violet-600 via-indigo-600 to-purple-700",
-    energyLevel: "Rising • Sharp focus & motivation",
-    fertilityChance: "Low to Medium (Approaching fertile window)",
+    energyLevel: "Rising Vitality & Clarity",
+    fertilityChance: "Natural Progression",
     pregnancyRisk: "Medium",
     icon: "🌱",
-    description: "Estrogen climbs as follicles mature in the ovaries. Brain energy, mood, and optimism naturally increase.",
+    description: "Natural estrogen ascends. Brain energy, mood, optimism, and daily motivation naturally build up.",
     nutritionTip: "Fermented foods, sprouted seeds, lean proteins, crisp salads, and citrus fruits.",
-    exerciseTip: "Cardio, HIIT, strength building, and starting exciting new habits.",
-    partnerTip: "Great time for romantic dates, trying new adventures together, and deep conversations ✨",
-    salahStatus: "Obligatory (Active)",
+    exerciseTip: "Cardio, brisk walks, strength building, and starting exciting new habits together.",
+    partnerTip: "Great time for romantic dates, trying new adventures together, and inspiring conversations ✨",
+    comfortRitual: "Morning sunshine, active walks & creative projects.",
+    hydrationGoal: "2.0L Fresh Water",
   },
   ovulation: {
     type: "ovulation",
-    title: "Ovulation Phase",
-    subtitle: "Peak Vitality & High Fertility",
-    dayRange: "Days 14 – 17",
+    title: "Vitality Peak Phase",
+    subtitle: "Peak Radiance & Connection",
     startDay: 14,
     endDay: 17,
     colorHex: "#F59E0B",
     badgeBg: "bg-amber-500/15 border-amber-500/30",
     badgeText: "text-amber-600 dark:text-amber-400",
     gradient: "from-amber-500 via-orange-500 to-rose-500",
-    energyLevel: "Peak • High confidence & radiance",
-    fertilityChance: "Peak Fertility • Highest chance of conception",
+    energyLevel: "Peak Energy & Confidence",
+    fertilityChance: "High Vitality Window",
     pregnancyRisk: "Peak",
     icon: "🌸",
-    description: "An egg is released during a surge of Luteinizing Hormone (LH). Estrogen reaches its highest level.",
+    description: "Peak hormonal balance. High emotional clarity, social confidence, and bodily stamina.",
     nutritionTip: "Antioxidant-rich berries, asparagus, leafy greens, wild salmon, and zinc.",
-    exerciseTip: "High intensity workouts, circuit training, dance sessions, and weight lifting.",
-    partnerTip: "Maximum emotional connection! Flirt, compliment her glow, and express love deeply 💖",
-    salahStatus: "Obligatory (Active)",
+    exerciseTip: "High vitality workouts, active couple walks, dance sessions, and fitness routines.",
+    partnerTip: "Maximum emotional connection! Compliment her, express love deeply, and plan quality couple time 💖",
+    comfortRitual: "Hydrating fruit smoothies & shared joyful moments.",
+    hydrationGoal: "2.5L Hydration",
   },
   luteal: {
     type: "luteal",
     title: "Luteal Phase",
     subtitle: "Mindful Harmony & Comfort",
-    dayRange: "Days 18 – 28",
     startDay: 18,
     endDay: 28,
     colorHex: "#06B6D4",
     badgeBg: "bg-cyan-500/15 border-cyan-500/30",
     badgeText: "text-cyan-600 dark:text-cyan-400",
     gradient: "from-cyan-600 via-teal-600 to-indigo-700",
-    energyLevel: "Gradual decline • PMS awareness",
-    fertilityChance: "Low",
+    energyLevel: "Calming & Grounding",
+    fertilityChance: "Balanced Baseline",
     pregnancyRisk: "Low",
     icon: "🌙",
-    description: "Progesterone dominates to prepare the body. Metabolism speeds up slightly, but physical endurance lowers.",
+    description: "Progesterone dominates to bring natural relaxation. Metabolism adjusts and the body appreciates extra peace and comfort.",
     nutritionTip: "Magnesium-rich pumpkin seeds, sweet potatoes, complex grains, calming chamomile.",
     exerciseTip: "Moderate pilates, nature walks, calming breathwork, and early bedtime.",
-    partnerTip: "Be extra patient, validate feelings without offering unsolicited solutions, and provide comfort foods 🫂",
-    salahStatus: "Obligatory (Active)",
+    partnerTip: "Be extra patient, validate feelings, handle evening chores, and provide comfort foods 🫂",
+    comfortRitual: "Warm evening bath, gentle stretches & screen-free bedtime.",
+    hydrationGoal: "2.2L Calming Teas & Water",
   },
 };
 
@@ -419,6 +421,34 @@ export default function PeriodTrackingPage() {
     }
   };
 
+  const handleSendQuickCareAction = async (title: string, message: string) => {
+    try {
+      await api.post("/notifications/nudge", { message });
+      setNudgeSentToast(`${title} care action sent to ${targetName || "your partner"}! 💕`);
+      setTimeout(() => setNudgeSentToast(null), 3500);
+    } catch (err) {
+      console.error("Failed to send care action:", err);
+    }
+  };
+
+  const [waterGlasses, setWaterGlasses] = React.useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`uhc_water_${getLocalTodayStr()}`);
+      if (saved) return Number(saved);
+    }
+    return 4;
+  });
+
+  const handleIncrementWater = () => {
+    setWaterGlasses((prev) => {
+      const next = Math.min(12, prev + 1);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`uhc_water_${getLocalTodayStr()}`, String(next));
+      }
+      return next;
+    });
+  };
+
   const loadData = React.useCallback(async (isSilent = false) => {
     try {
       if (!isSilent) setLoading(true);
@@ -461,24 +491,27 @@ export default function PeriodTrackingPage() {
   const cycleLength = 28; // Standard average or derived
   const periodLength = 5;
 
-  // Calculate current cycle day relative to latest period start date
-  const currentCycleDay = React.useMemo(() => {
-    if (!latestPeriod) return null;
-    const diffDays = diffDaysUtc(latestPeriod.start_date, todayStr) + 1;
-    if (diffDays < 1) return 1;
-    // Normalize cycle day to cycle length (1..cycleLength) so it doesn't run away past 28
-    return ((diffDays - 1) % cycleLength) + 1;
-  }, [latestPeriod, todayStr, cycleLength]);
-
   // Robust period active status check
   const isPeriodActive = React.useMemo(() => {
     if (activeSummary?.has_active_period || activeSummary?.is_active) return true;
     if (latestPeriod && (!latestPeriod.end_date || latestPeriod.is_ongoing)) {
-      // If ongoing and started today or in the past
       return diffDaysUtc(latestPeriod.start_date, todayStr) >= 0;
     }
     return false;
   }, [activeSummary, latestPeriod, todayStr]);
+
+  // Calculate current cycle day relative to latest period start date
+  const currentCycleDay = React.useMemo(() => {
+    if (activeSummary?.current_cycle_day) {
+      return activeSummary.current_cycle_day;
+    }
+    if (!latestPeriod) return null;
+    const sDate = (activeSummary as any)?.start_date || latestPeriod.start_date;
+    const diffDays = diffDaysUtc(sDate, todayStr) + 1;
+    if (diffDays < 1) return 1;
+    if (isPeriodActive) return diffDays;
+    return ((diffDays - 1) % cycleLength) + 1;
+  }, [latestPeriod, activeSummary, isPeriodActive, todayStr, cycleLength]);
 
   const currentPhase = React.useMemo(() => {
     if (!currentCycleDay) {
@@ -871,7 +904,7 @@ export default function PeriodTrackingPage() {
               <>
                 <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                   You are paired with <strong className="text-[var(--text-primary)]">{targetName || "your partner"}</strong>.
-                  Cycle tracking is customized for female profiles. If your partner is female, she can set her gender to &ldquo;Female&rdquo; in <strong>Settings → Profile</strong> and ensure <strong>Period Sharing</strong> is turned on so her real-time cycle phases, ovulation predictions, and care tips display here for you.
+                  Cycle tracking is customized for female profiles. If your partner is female, she can set her gender to &ldquo;Female&rdquo; in <strong>Settings → Profile</strong> and ensure <strong>Period Sharing</strong> is turned on so her real-time cycle phases, wellness insights, and daily care tips display here for you.
                 </p>
                 <div className="pt-2 flex items-center justify-center gap-3">
                   <Link
@@ -954,25 +987,23 @@ export default function PeriodTrackingPage() {
                   <div className="flex flex-wrap items-center gap-2 mb-4">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3.5 py-1 text-xs font-bold backdrop-blur-md border border-white/20">
                       <span>{currentPhase.icon}</span>
-                      <span>{currentPhase.title}</span>
+                      <span>{isPeriodActive ? "Menstrual Flow Active" : currentPhase.title}</span>
                     </span>
 
-                    <span className="inline-flex items-center gap-1 rounded-full bg-black/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-                      <Clock className="h-3 w-3 text-rose-200" />
-                      <span>{currentPhase.dayRange}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-black/25 px-3 py-1 text-xs font-semibold backdrop-blur-md border border-white/10">
+                      <Zap className="h-3 w-3 text-amber-300" />
+                      <span>{currentPhase.energyLevel}</span>
                     </span>
 
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/30 border border-emerald-300/30 px-3 py-1 text-xs font-bold text-emerald-100">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>Salah: {currentPhase.salahStatus}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/25 border border-cyan-300/30 px-3 py-1 text-xs font-bold text-cyan-100">
+                      <Droplets className="h-3.5 w-3.5" />
+                      <span>{currentPhase.hydrationGoal}</span>
                     </span>
 
-                    {isPartnerView && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/30 border border-amber-300/30 px-3 py-1 text-xs font-bold text-amber-100">
-                        <Heart className="h-3 w-3 fill-amber-200" />
-                        <span>Supporting {targetName || "Partner"}</span>
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-400/25 border border-rose-300/30 px-3 py-1 text-xs font-bold text-rose-100">
+                      <Heart className="h-3 w-3 fill-rose-200" />
+                      <span>{isPartnerView ? "Partner Empathy Mode" : "Couple Sync Active"}</span>
+                    </span>
                   </div>
 
                   <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none">
@@ -987,15 +1018,50 @@ export default function PeriodTrackingPage() {
                     {currentPhase.description}
                   </p>
 
-                  {/* Partner Guidance Tip if viewing as partner */}
+                  {/* Dynamic 1-Tap Partner Care Dispatcher if viewing as partner */}
                   {isPartnerView && (
-                    <div className="mt-4 rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur-md max-w-xl">
-                      <p className="text-[11px] font-bold text-rose-200 uppercase tracking-wider">
-                        How to support {targetName || "her"} today:
-                      </p>
-                      <p className="text-sm font-semibold text-white mt-1">
-                        {currentPhase.partnerTip}
-                      </p>
+                    <div className="mt-5 rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur-md max-w-xl shadow-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-rose-100 uppercase tracking-wider flex items-center gap-1.5">
+                          <Heart className="h-3 w-3 fill-rose-300 text-rose-300" />
+                          <span>1-Tap Care Dispatcher for Her</span>
+                        </span>
+                        <span className="text-[10px] text-white/80 font-medium">Instant comfort sync</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSendQuickCareAction("Warm Tea", "I just prepared warm soothing herbal tea for you 💕")}
+                          className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white active:scale-95 transition-all text-center cursor-pointer shadow-xs"
+                        >
+                          <span className="text-xl">☕</span>
+                          <span className="text-[11px] font-bold mt-1">Warm Tea</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSendQuickCareAction("Heating Pad", "Heating pad ready whenever you need relaxing warmth 🌸")}
+                          className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white active:scale-95 transition-all text-center cursor-pointer shadow-xs"
+                        >
+                          <span className="text-xl">💆</span>
+                          <span className="text-[11px] font-bold mt-1">Comfort Pad</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSendQuickCareAction("Chores Done", "I took care of all the chores so you can relax completely 🛋️")}
+                          className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white active:scale-95 transition-all text-center cursor-pointer shadow-xs"
+                        >
+                          <span className="text-xl">🧺</span>
+                          <span className="text-[11px] font-bold mt-1">Chores Done</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSendQuickCareAction("Comfort Meal", "Making a gentle, nourishing meal for you today 🍲")}
+                          className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white active:scale-95 transition-all text-center cursor-pointer shadow-xs"
+                        >
+                          <span className="text-xl">🍲</span>
+                          <span className="text-[11px] font-bold mt-1">Comfort Meal</span>
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1094,7 +1160,7 @@ export default function PeriodTrackingPage() {
                   <div className="mt-3">
                     <p className="text-xs font-bold text-amber-200">
                       {isPeriodActive
-                       ? `Period Active • Day ${latestPeriod?.start_date ? Math.max(1, diffDaysUtc(latestPeriod.start_date, todayStr) + 1) : (activeSummary?.current_cycle_day || currentCycleDay || 1)}`
+                       ? `Period Active • Day ${currentCycleDay || 1}`
                        : nextPeriodInDays !== null ? `Period in ~${nextPeriodInDays} days` : "Regular 28-day model"}
                     </p>
                     <p className="text-[10px] text-white/70 mt-0.5">
@@ -1418,59 +1484,130 @@ export default function PeriodTrackingPage() {
             )}
 
             {/* ============================================================ */}
-            {/* 2. THE 4 PHASES BREAKDOWN STRIP                              */}
+            {/* 2. DYNAMIC COUPLE CARE & COMFORT HUB                         */}
             {/* ============================================================ */}
             <div>
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-violet-500" />
+                  <Sparkles className="h-4 w-4 text-rose-500" />
                   <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                    4 Menstrual Cycle Phases
+                    Cycle Care & Wellness Hub
                   </h3>
                 </div>
                 <span className="text-xs text-[var(--text-tertiary)]">
-                  Natural hormonal rhythm & energy guide
+                  Dynamic daily comfort, nutrition & hydration
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {Object.values(CYCLE_PHASES).map((phase) => {
-                  const isActive = currentPhase.type === phase.type;
-                  return (
-                    <div
-                      key={phase.type}
-                      className={cn(
-                        "rounded-2xl p-4 border transition-all glass-card flex flex-col justify-between",
-                        isActive
-                          ? "border-rose-500/50 bg-rose-500/10 shadow-md ring-2 ring-rose-500/20"
-                          : "border-[var(--glass-border)] bg-[var(--bg-card)] hover:border-violet-500/30"
-                      )}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-2xl">{phase.icon}</span>
-                          <span className={cn("px-2 py-0.5 rounded-md text-[10px] font-bold border", phase.badgeBg, phase.badgeText)}>
-                            {phase.dayRange}
-                          </span>
-                        </div>
-                        <h4 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
-                          {phase.title}
-                        </h4>
-                        <p className="text-[11px] font-medium text-[var(--text-secondary)] mt-0.5">
-                          {phase.subtitle}
-                        </p>
-                        <p className="text-[11px] text-[var(--text-tertiary)] mt-2 leading-relaxed">
-                          {phase.description}
-                        </p>
-                      </div>
-
-                      <div className="mt-3 pt-2.5 border-t border-[var(--glass-border)] flex items-center justify-between text-[10px]">
-                        <span className="text-[var(--text-muted)]">Energy</span>
-                        <span className="font-bold text-[var(--text-secondary)]">{phase.energyLevel.split("•")[0]}</span>
-                      </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* 1. Daily Comfort Protocol */}
+                <div className="rounded-2xl p-4 border border-[var(--glass-border)] bg-[var(--bg-card)] glass-card flex flex-col justify-between shadow-xs">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
+                        <Heart className="h-4 w-4 fill-rose-500" />
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400">
+                        Comfort Protocol
+                      </span>
                     </div>
-                  );
-                })}
+                    <h4 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
+                      Daily Soothing Ritual
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">
+                      {currentPhase.comfortRitual}
+                    </p>
+                  </div>
+                  <div className="mt-3 pt-2.5 border-t border-[var(--glass-border)] flex items-center justify-between text-[11px]">
+                    <span className="text-[var(--text-tertiary)]">Routine</span>
+                    <span className="font-semibold text-rose-500">Active Daily</span>
+                  </div>
+                </div>
+
+                {/* 2. Targeted Cycle Nutrition */}
+                <div className="rounded-2xl p-4 border border-[var(--glass-border)] bg-[var(--bg-card)] glass-card flex flex-col justify-between shadow-xs">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                        <Sparkles className="h-4 w-4" />
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                        Nourishment
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
+                      Targeted Nutrition
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">
+                      {currentPhase.nutritionTip}
+                    </p>
+                  </div>
+                  <div className="mt-3 pt-2.5 border-t border-[var(--glass-border)] flex items-center justify-between text-[11px]">
+                    <span className="text-[var(--text-tertiary)]">Focus</span>
+                    <span className="font-semibold text-emerald-500">Recovery & Iron</span>
+                  </div>
+                </div>
+
+                {/* 3. Interactive Hydration Tracker */}
+                <div className="rounded-2xl p-4 border border-[var(--glass-border)] bg-[var(--bg-card)] glass-card flex flex-col justify-between shadow-xs">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500">
+                        <Droplets className="h-4 w-4" />
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-cyan-500/10 border-cyan-500/20 text-cyan-600 dark:text-cyan-400">
+                        {waterGlasses} / 8 Glasses
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
+                      Hydration Tracker
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1.5">
+                      Goal: {currentPhase.hydrationGoal}
+                    </p>
+                    {/* Visual Progress Bar */}
+                    <div className="mt-2.5 h-2 w-full rounded-full bg-cyan-500/10 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.round((waterGlasses / 8) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-2.5 border-t border-[var(--glass-border)] flex items-center justify-between">
+                    <span className="text-[11px] text-[var(--text-tertiary)]">Log Glass</span>
+                    <button
+                      type="button"
+                      onClick={handleIncrementWater}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-500 text-white hover:bg-cyan-600 active:scale-95 transition-all shadow-xs cursor-pointer"
+                    >
+                      +1 Glass 💧
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. Couple Empathy & Care Connection */}
+                <div className="rounded-2xl p-4 border border-[var(--glass-border)] bg-[var(--bg-card)] glass-card flex flex-col justify-between shadow-xs">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500">
+                        <Users className="h-4 w-4" />
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-violet-500/10 border-violet-500/20 text-violet-600 dark:text-violet-400">
+                        Harmony
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
+                      Couple Support Sync
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">
+                      {currentPhase.partnerTip}
+                    </p>
+                  </div>
+                  <div className="mt-3 pt-2.5 border-t border-[var(--glass-border)] flex items-center justify-between text-[11px]">
+                    <span className="text-[var(--text-tertiary)]">Connection</span>
+                    <span className="font-semibold text-violet-500">Empathetic Care</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1534,31 +1671,23 @@ export default function PeriodTrackingPage() {
                 </div>
               </div>
 
-              {/* Color Code Legend — Exact 4-Phase Match */}
+              {/* Clean, Professional Cycle Legend */}
               <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-xs font-semibold text-[var(--text-secondary)]">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500 text-white font-bold shadow-xs">
                   <span className="h-2 w-2 rounded-full bg-white" />
-                  <span>Period (Days 1–5)</span>
+                  <span>Period Flow Days</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-dashed border-rose-400 bg-rose-500/15 text-rose-600 dark:text-rose-300 font-bold">
                   <span className="h-2 w-2 rounded-full border border-rose-400 border-dashed" />
-                  <span>Predicted Period</span>
+                  <span>Predicted Cycle Window</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-700 dark:text-violet-300 font-bold">
                   <span className="h-2 w-2 rounded-full bg-violet-500" />
-                  <span>Follicular (Days 6–13)</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-400/20 border border-amber-400/50 text-amber-800 dark:text-amber-200 font-bold">
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
-                  <span>Fertile Window</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-600 text-white font-bold shadow-xs">
-                  <span className="h-2 w-2 rounded-full bg-white" />
-                  <span>Ovulation (Day 14)</span>
+                  <span>Natural Vitality & Energy</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 font-bold">
                   <span className="h-2 w-2 rounded-full bg-cyan-500" />
-                  <span>Luteal (Days 18–28)</span>
+                  <span>Rest & Reset Phase</span>
                 </span>
               </div>
 
@@ -1636,8 +1765,6 @@ export default function PeriodTrackingPage() {
                           "text-[8px] sm:text-[10px] font-bold leading-none mt-1",
                           cell.isPeriodDay
                             ? "text-rose-100"
-                            : cell.isOvulationDay
-                            ? "text-amber-100"
                             : "text-[var(--text-muted)]"
                         )}>
                           D{cell.cycleDayNumber}
@@ -1649,11 +1776,6 @@ export default function PeriodTrackingPage() {
                         <Droplet className="absolute top-1 right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 fill-white text-white drop-shadow-xs" />
                       )}
 
-                      {/* Ovulation flower/star icon */}
-                      {cell.isOvulationDay && (
-                        <Sparkles className="absolute top-1 right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 text-white fill-white drop-shadow-xs" />
-                      )}
-
                       {/* Symptom logged indicator dot */}
                       {cell.hasLoggedSymptoms && (
                         <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-violet-400 ring-1 ring-white" />
@@ -1663,7 +1785,7 @@ export default function PeriodTrackingPage() {
                       {cell.isToday && (
                         <span className={cn(
                           "absolute -top-1.5 left-1/2 -translate-x-1/2 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-full shadow-xs",
-                          cell.isPeriodDay || cell.isOvulationDay
+                          cell.isPeriodDay
                             ? "bg-white text-slate-900"
                             : "bg-violet-600 text-white"
                         )}>

@@ -389,7 +389,7 @@ export default function PartnerPage() {
                           <span>🌸</span>
                           <span>
                             {partnerPeriod.active_summary?.has_active_period
-                              ? `Active Period • Day ${(() => {
+                              ? `Active Period • Day ${partnerPeriod.active_summary.current_cycle_day || (() => {
                                   const sDate = (partnerPeriod.active_summary as any)?.start_date || partnerPeriod.periods[0]?.start_date;
                                   if (sDate) {
                                     const [y, m, d] = String(sDate).split("-").map(Number);
@@ -399,7 +399,7 @@ export default function PartnerPage() {
                                     const diff = Math.floor((todayUtc - startUtc) / 86400000) + 1;
                                     if (diff >= 1) return diff;
                                   }
-                                  return partnerPeriod.active_summary.current_cycle_day || 1;
+                                  return 1;
                                 })()}`
                               : partnerPeriod.active_summary?.current_cycle_day
                               ? `Cycle Day ${partnerPeriod.active_summary.current_cycle_day}`

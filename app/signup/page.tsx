@@ -64,6 +64,7 @@ export default function SignupPage() {
         localStorage.setItem("uhc_logged_in", "true");
         if (body?.token) {
           localStorage.setItem("uhc_auth_token", body.token);
+          document.cookie = `uhc_auth_token=${body.token}; path=/; max-age=31536000; SameSite=Lax; Secure`;
         }
       }
 

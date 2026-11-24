@@ -487,6 +487,7 @@ export function DashboardShell() {
                   <p className="text-sm sm:text-base font-bold text-rose-500 dark:text-rose-400">
                     Cycle Active • Day {(() => {
                       const status = (dashboard.cycle_status as any);
+                      if (status?.cycle_day) return status.cycle_day;
                       if (status?.start_date) {
                         const [y, m, d] = String(status.start_date).split("-").map(Number);
                         const startUtc = Date.UTC(y, m - 1, d);
@@ -495,7 +496,7 @@ export function DashboardShell() {
                         const diff = Math.floor((todayUtc - startUtc) / 86400000) + 1;
                         if (diff >= 1) return diff;
                       }
-                      return status?.cycle_day || 1;
+                      return 1;
                     })()}
                   </p>
                   <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
