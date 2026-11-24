@@ -220,6 +220,93 @@ function getLocalTodayStr(): string {
   return `${year}-${month}-${day}`;
 }
 
+export interface CycleVarianceInfo {
+  type: "early" | "late" | "delayed" | "on_time";
+  daysDiff: number;
+  title: string;
+  badge: string;
+  badgeClass: string;
+  cause: string;
+  instruction: string;
+}
+
+export function computeCycleVariance(
+  periods: PeriodEntry[],
+  latestPeriod: PeriodEntry | null,
+  isPeriodActive: boolean,
+  cycleLength: number = 28,
+  todayStr: string
+): CycleVarianceInfo | null {
+  if (!latestPeriod) return null;
+
+  const sorted = periods.slice().sort((a, b) => b.start_date.localeCompare(a.start_date));
+
+  // Case A: At least 2 periods logged - compare latest period start date to its predicted date
+  if (sorted.length >= 2) {
+    const current = sorted[0];
+    const previous = sorted[1];
+    const prevStartMs = parseUtcDate(previous.start_date);
+    const predictedStartMs = prevStartMs + cycleLength * 86400000;
+    const actualStartMs = parseUtcDate(current.start_date);
+    const diffDays = Math.round((actualStartMs - predictedStartMs) / 86400000);
+
+    if (diffDays <= -2) {
+      return {
+        type: "early",
+        daysDiff: Math.abs(diffDays),
+        title: `Period started ${Math.abs(diffDays)} days earlier than predicted`,
+        badge: `${Math.abs(diffDays)} Days Early`,
+        badgeClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+        cause: "Acute stress, intense physical exertion, or shortened follicular phase.",
+        instruction: "Prioritize 8+ hours of deep rest, taper intense cardio late in cycle, and replenish with warm magnesium-rich foods.",
+      };
+    } else if (diffDays >= 2) {
+      return {
+        type: "late",
+        daysDiff: diffDays,
+        title: `Period started ${diffDays} days later than predicted`,
+        badge: `${diffDays} Days Late`,
+        badgeClass: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
+        cause: "Delayed ovulation triggered by cortisol spikes, illness, or travel.",
+        instruction: "Sip soothing chamomile/spearmint tea, avoid strict fasting in luteal phase, and maintain steady hydration.",
+      };
+    } else {
+      return {
+        type: "on_time",
+        daysDiff: Math.abs(diffDays),
+        title: "Period arrived right on predicted schedule",
+        badge: "On Schedule ✨",
+        badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+        cause: "Hormonal rhythm and daily routine are balanced and synchronized.",
+        instruction: "Maintain your regular sleep schedule and balanced daily habits to sustain this natural rhythm.",
+      };
+    }
+  }
+
+  // Case B: Waiting for next period and today is past the expected date
+  if (sorted.length >= 1 && !isPeriodActive) {
+    const last = sorted[0];
+    const lastStartMs = parseUtcDate(last.start_date);
+    const nextPredictedMs = lastStartMs + cycleLength * 86400000;
+    const todayMs = parseUtcDate(todayStr);
+    const overdueDays = Math.round((todayMs - nextPredictedMs) / 86400000);
+
+    if (overdueDays >= 2) {
+      return {
+        type: "delayed",
+        daysDiff: overdueDays,
+        title: `Cycle is ${overdueDays} days past predicted start date`,
+        badge: `${overdueDays} Days Past Expected`,
+        badgeClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+        cause: "Temporary delay in ovulation due to stress, travel, or physical fatigue.",
+        instruction: "Take warm baths, reduce caffeine, stay well hydrated, and give yourself extra space to rest.",
+      };
+    }
+  }
+
+  return null;
+}
+
 export default function PeriodTrackingPage() {
   const [periods, setPeriods] = React.useState<PeriodEntry[]>([]);
   const [activeSummary, setActiveSummary] = React.useState<ActiveCycleSummary | null>(null);
@@ -529,6 +616,10 @@ export default function PeriodTrackingPage() {
     const remaining = cycleLength - normDay + 1;
     return remaining > 0 ? remaining : 1;
   }, [currentCycleDay, cycleLength]);
+
+  const cycleVariance = React.useMemo(() => {
+    return computeCycleVariance(periods, latestPeriod, isPeriodActive, cycleLength, todayStr);
+  }, [periods, latestPeriod, isPeriodActive, cycleLength, todayStr]);
 
   // Handlers for 1-Tap Period start / end
   const handleStartToday = async () => {
@@ -989,21 +1080,6 @@ export default function PeriodTrackingPage() {
                       <span>{currentPhase.icon}</span>
                       <span>{isPeriodActive ? "Menstrual Flow Active" : currentPhase.title}</span>
                     </span>
-
-                    <span className="inline-flex items-center gap-1 rounded-full bg-black/25 px-3 py-1 text-xs font-semibold backdrop-blur-md border border-white/10">
-                      <Zap className="h-3 w-3 text-amber-300" />
-                      <span>{currentPhase.energyLevel}</span>
-                    </span>
-
-                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/25 border border-cyan-300/30 px-3 py-1 text-xs font-bold text-cyan-100">
-                      <Droplets className="h-3.5 w-3.5" />
-                      <span>{currentPhase.hydrationGoal}</span>
-                    </span>
-
-                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-400/25 border border-rose-300/30 px-3 py-1 text-xs font-bold text-rose-100">
-                      <Heart className="h-3 w-3 fill-rose-200" />
-                      <span>{isPartnerView ? "Partner Empathy Mode" : "Couple Sync Active"}</span>
-                    </span>
                   </div>
 
                   <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none">
@@ -1017,53 +1093,6 @@ export default function PeriodTrackingPage() {
                   <p className="mt-3 text-xs sm:text-sm text-white/90 max-w-xl leading-relaxed">
                     {currentPhase.description}
                   </p>
-
-                  {/* Dynamic 1-Tap Partner Care Dispatcher if viewing as partner */}
-                  {isPartnerView && (
-                    <div className="mt-5 rounded-2xl bg-white/15 p-4 border border-white/20 backdrop-blur-md max-w-xl shadow-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[11px] font-bold text-rose-100 uppercase tracking-wider flex items-center gap-1.5">
-                          <Heart className="h-3 w-3 fill-rose-300 text-rose-300" />
-                          <span>1-Tap Care Dispatcher for Her</span>
-                        </span>
-                        <span className="text-[10px] text-white/80 font-medium">Instant comfort sync</span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => handleSendQuickCareAction("Warm Tea", "I just prepared warm soothing herbal tea for you 💕")}
-                          className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white active:scale-95 transition-all text-center cursor-pointer shadow-xs"
-                        >
-                          <span className="text-xl">☕</span>
-                          <span className="text-[11px] font-bold mt-1">Warm Tea</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSendQuickCareAction("Heating Pad", "Heating pad ready whenever you need relaxing warmth 🌸")}
-                          className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white active:scale-95 transition-all text-center cursor-pointer shadow-xs"
-                        >
-                          <span className="text-xl">💆</span>
-                          <span className="text-[11px] font-bold mt-1">Comfort Pad</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSendQuickCareAction("Chores Done", "I took care of all the chores so you can relax completely 🛋️")}
-                          className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white active:scale-95 transition-all text-center cursor-pointer shadow-xs"
-                        >
-                          <span className="text-xl">🧺</span>
-                          <span className="text-[11px] font-bold mt-1">Chores Done</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSendQuickCareAction("Comfort Meal", "Making a gentle, nourishing meal for you today 🍲")}
-                          className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white active:scale-95 transition-all text-center cursor-pointer shadow-xs"
-                        >
-                          <span className="text-xl">🍲</span>
-                          <span className="text-[11px] font-bold mt-1">Comfort Meal</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Action Buttons: Only for the female user herself (not partner view) */}
                   {canManagePeriods && (
@@ -1172,444 +1201,33 @@ export default function PeriodTrackingPage() {
             </div>
 
             {/* ============================================================ */}
-            {/* DEDICATED DAILY SYMPTOMS & WELLNESS CHECK-IN HUB             */}
+            {/* 2. CYCLE TIMING & ROUTINE OPTIMIZATION INSIGHT              */}
             {/* ============================================================ */}
-            {!isPartnerView ? (
-              /* For Her: Dedicated 1-Tap Daily Symptom & Mood Logger */
-              <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-7 shadow-sm glass-card space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--glass-border)]">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
-                        <Smile className="h-4 w-4" />
-                      </span>
-                      <h3 className="text-base sm:text-lg font-black text-[var(--text-primary)]">
-                        Daily Symptoms & Mood Log 🌸
-                      </h3>
-                    </div>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">
-                      Fast 1-tap check-in for today. Updates your calendar and syncs care advice for your partner.
-                    </p>
-                  </div>
-
+            {cycleVariance && (
+              <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 sm:p-6 shadow-sm glass-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1.5 flex-1">
                   <div className="flex items-center gap-2">
-                    {inlineSymptomToast && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        {inlineSymptomToast}
-                      </span>
-                    )}
-                    {dailySymptomsMap[todayStr]?.mood || dailySymptomsMap[todayStr]?.symptoms?.length ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 px-2.5 py-0.5 text-xs font-bold">
-                        <Check className="h-3 w-3 stroke-[3]" /> Logged Today
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2.5 py-0.5 text-xs font-bold">
-                        Pending Today
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* 1. Blood Flow Intensity */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)] flex items-center justify-between">
-                    <span>1. Blood Flow Intensity</span>
-                    <span className="text-[11px] font-bold text-rose-500">
-                      Selected: {inlineFlow ? inlineFlow : "None"}
+                    <span className={cn("px-2.5 py-0.5 rounded-full text-[11px] font-black border", cycleVariance.badgeClass)}>
+                      {cycleVariance.badge}
                     </span>
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                    {FLOW_OPTIONS.map((f) => {
-                      const isSelected =
-                        inlineFlow.toLowerCase() === f.label.toLowerCase() ||
-                        inlineFlow.toLowerCase() === f.id.toLowerCase();
-                      return (
-                        <button
-                          key={f.id}
-                          type="button"
-                          onClick={() => handleSelectFlow(f.label)}
-                          className={cn(
-                            "p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-between gap-1.5 active:scale-95 cursor-pointer min-h-[72px]",
-                            isSelected
-                              ? "border-rose-500 bg-rose-500 text-white font-black shadow-md shadow-rose-500/25 ring-2 ring-rose-300"
-                              : "border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-primary)] hover:border-rose-500/40 hover:bg-rose-500/5 font-semibold"
-                          )}
-                        >
-                          <div className="flex items-center justify-center gap-0.5 h-5">
-                            {f.drops === 0 ? (
-                              <span className={cn("text-xs font-bold", isSelected ? "text-rose-100" : "text-[var(--text-muted)]")}>
-                                —
-                              </span>
-                            ) : (
-                              Array.from({ length: f.drops }).map((_, i) => (
-                                <Droplet
-                                  key={i}
-                                  className={cn(
-                                    "h-3.5 w-3.5",
-                                    isSelected
-                                      ? "fill-white text-white drop-shadow-xs"
-                                      : "fill-rose-500 text-rose-500"
-                                  )}
-                                />
-                              ))
-                            )}
-                          </div>
-                          <div className="text-center w-full">
-                            <p className={cn("text-xs font-extrabold leading-tight", isSelected ? "text-white" : "text-[var(--text-primary)]")}>
-                              {f.label}
-                            </p>
-                            <p className={cn("text-[10px] mt-0.5 leading-none", isSelected ? "text-rose-100" : "text-[var(--text-tertiary)]")}>
-                              {f.desc}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
+                    <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-primary)]">
+                      {cycleVariance.title}
+                    </h3>
                   </div>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                    <strong className="text-[var(--text-primary)]">Cause:</strong> {cycleVariance.cause}
+                  </p>
+                  <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold leading-relaxed">
+                    <strong>Next Routine Tip:</strong> {cycleVariance.instruction}
+                  </p>
                 </div>
-
-                {/* 2. Mood & Energy */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)] flex items-center justify-between">
-                    <span>2. Mood & Sensations</span>
-                    <span className="text-[11px] font-bold text-violet-500">{inlineMood || "Select mood"}</span>
-                  </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {MOOD_OPTIONS.map((m) => {
-                      const isSelected = inlineMood.toLowerCase() === m.label.toLowerCase();
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => handleSelectMood(m.label)}
-                          className={cn(
-                            "p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center gap-1 active:scale-95",
-                            isSelected
-                              ? "border-violet-500 bg-violet-500/15 text-violet-600 dark:text-violet-300 font-bold shadow-xs ring-2 ring-violet-500/20"
-                              : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                          )}
-                        >
-                          <span className="text-xl">{m.icon}</span>
-                          <span className="text-xs truncate w-full font-semibold">{m.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 3. Common Physical Symptoms */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)] flex items-center justify-between">
-                    <span>3. Physical Symptoms</span>
-                    <span className="text-[11px] text-[var(--text-secondary)]">Tap all that apply ({inlineSymptoms.length})</span>
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {SYMPTOM_OPTIONS.map((s) => {
-                      const isSelected = inlineSymptoms.includes(s.label);
-                      return (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => toggleInlineSymptom(s.label)}
-                          className={cn(
-                            "p-2.5 rounded-xl border text-left transition-all flex items-center gap-2 active:scale-95",
-                            isSelected
-                              ? "border-rose-500/50 bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold ring-2 ring-rose-500/20"
-                              : "border-[var(--glass-border)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                          )}
-                        >
-                          <span className="text-base">{s.icon}</span>
-                          <span className="text-xs font-semibold truncate">{s.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 4. Quick Personal Note & Save */}
-                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <input
-                    type="text"
-                    value={inlineNotes}
-                    onChange={(e) => setInlineNotes(e.target.value)}
-                    placeholder="Optional private note (e.g., cravings, headache intensity, energy)..."
-                    className="flex-1 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2.5 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-rose-500/40"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSaveInlineSymptom}
-                    disabled={isSavingInlineSymptom}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-rose-500/25 active:scale-95 transition-all disabled:opacity-50 shrink-0"
-                  >
-                    {isSavingInlineSymptom ? (
-                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Check className="h-4 w-4 stroke-[2.5]" />
-                    )}
-                    <span>{isSavingInlineSymptom ? "Saving..." : "Save Today's Check-in"}</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* For Him: Synced Partner Daily Health & Care Hub */
-              <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-6 sm:p-7 shadow-sm glass-card space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--glass-border)]">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
-                        <Heart className="h-4 w-4 fill-rose-500 text-rose-500" />
-                      </span>
-                      <h3 className="text-base sm:text-lg font-black text-[var(--text-primary)]">
-                        🌸 {targetName || "Partner"}&apos;s Daily Health & Sensations Today
-                      </h3>
-                    </div>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">
-                      Live synced status so you always know how she feels and how to support her without having to ask.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {nudgeSentToast && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        {nudgeSentToast}
-                      </span>
-                    )}
-                    {dailySymptomsMap[todayStr]?.mood || dailySymptomsMap[todayStr]?.symptoms?.length || (dailySymptomsMap[todayStr]?.flow && dailySymptomsMap[todayStr]?.flow !== "none") ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-bold">
-                        <Check className="h-3 w-3" /> Synced Live
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/10 text-[var(--text-tertiary)] border border-[var(--glass-border)] px-2.5 py-0.5 text-xs font-bold">
-                        Awaiting Check-in
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {dailySymptomsMap[todayStr]?.mood || dailySymptomsMap[todayStr]?.symptoms?.length || (dailySymptomsMap[todayStr]?.flow && dailySymptomsMap[todayStr]?.flow !== "none") ? (
-                  <div className="space-y-4">
-                    {/* Status Badges */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      {dailySymptomsMap[todayStr]?.flow && dailySymptomsMap[todayStr]?.flow !== "none" && (
-                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 font-bold text-rose-700 dark:text-rose-300">
-                          <span>Flow:</span>
-                          <span>{dailySymptomsMap[todayStr].flow}</span>
-                        </span>
-                      )}
-                      {dailySymptomsMap[todayStr]?.mood && (
-                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 font-bold text-violet-700 dark:text-violet-300">
-                          <span>Mood:</span>
-                          <span>{dailySymptomsMap[todayStr].mood}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Reported Symptoms Chips */}
-                    {dailySymptomsMap[todayStr]?.symptoms && dailySymptomsMap[todayStr].symptoms.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
-                          Reported Sensations Today:
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {dailySymptomsMap[todayStr].symptoms.map((symp) => (
-                            <span
-                              key={symp}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)]"
-                            >
-                              <span>•</span> {symp}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Partner Care Suggestion */}
-                    <div className="rounded-2xl border border-rose-500/25 bg-gradient-to-r from-rose-500/10 via-pink-500/5 to-violet-500/10 p-4 space-y-2">
-                      <span className="text-xs font-bold text-rose-700 dark:text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5 text-rose-500" />
-                        What She Needs From You Right Now:
-                      </span>
-                      <p className="text-xs text-[var(--text-primary)] leading-relaxed font-medium">
-                        {dailySymptomsMap[todayStr]?.symptoms?.some((s) => s.toLowerCase().includes("cramp"))
-                          ? `${targetName || "She"} has cramps today. Bring her a warm heating pad, brew chamomile or ginger tea, and take over any heavy chores so she can rest comfortably 💕`
-                          : dailySymptomsMap[todayStr]?.symptoms?.some((s) => s.toLowerCase().includes("headache") || s.toLowerCase().includes("fatigue"))
-                          ? `${targetName || "She"} is experiencing lower energy and tension today. Keep the atmosphere calming, dim bright lights, and encourage an early night of sleep.`
-                          : `${targetName || "She"} is checking in with good energy. A sweet compliment, warm hug, and helping prepare dinner together will keep her smiling!`}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-1">
-                      <button
-                        type="button"
-                        onClick={handleSendCaringNudge}
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:opacity-95 active:scale-95 transition-all"
-                      >
-                        <Heart className="h-3.5 w-3.5" />
-                        <span>Send Love Nudge</span>
-                      </button>
-                      <Link
-                        href="/notes"
-                        className="inline-flex items-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-2 text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all"
-                      >
-                        <span>Write Her a Sweet Note →</span>
-                      </Link>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-6 text-center space-y-3">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500 text-2xl">
-                      🌸
-                    </div>
-                    <h4 className="text-sm font-bold text-[var(--text-primary)]">
-                      {targetName || "Umaima"} hasn&apos;t checked in her symptoms today
-                    </h4>
-                    <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">
-                      Once she opens her app and logs her mood, flow, or symptoms for today, her live updates and tailored partner care recommendations will appear right here for you.
-                    </p>
-                    <div className="pt-2 flex items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleSendCaringNudge}
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95 active:scale-95 transition-all"
-                      >
-                        <Coffee className="h-3.5 w-3.5" />
-                        <span>Send Caring Check-in Nudge</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
             {/* ============================================================ */}
-            {/* 2. DYNAMIC COUPLE CARE & COMFORT HUB                         */}
+            {/* 3. DYNAMIC CYCLE NUTRITION & MEAL GUIDE (COLLAPSIBLE DROPDOWN) */}
             {/* ============================================================ */}
-            <div>
-              <div className="flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-rose-500" />
-                  <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                    Cycle Care & Wellness Hub
-                  </h3>
-                </div>
-                <span className="text-xs text-[var(--text-tertiary)]">
-                  Dynamic daily comfort, nutrition & hydration
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                {/* 1. Daily Comfort Protocol */}
-                <div className="rounded-2xl p-4 border border-[var(--glass-border)] bg-[var(--bg-card)] glass-card flex flex-col justify-between shadow-xs">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
-                        <Heart className="h-4 w-4 fill-rose-500" />
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400">
-                        Comfort Protocol
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
-                      Daily Soothing Ritual
-                    </h4>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">
-                      {currentPhase.comfortRitual}
-                    </p>
-                  </div>
-                  <div className="mt-3 pt-2.5 border-t border-[var(--glass-border)] flex items-center justify-between text-[11px]">
-                    <span className="text-[var(--text-tertiary)]">Routine</span>
-                    <span className="font-semibold text-rose-500">Active Daily</span>
-                  </div>
-                </div>
-
-                {/* 2. Targeted Cycle Nutrition */}
-                <div className="rounded-2xl p-4 border border-[var(--glass-border)] bg-[var(--bg-card)] glass-card flex flex-col justify-between shadow-xs">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
-                        <Sparkles className="h-4 w-4" />
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                        Nourishment
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
-                      Targeted Nutrition
-                    </h4>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">
-                      {currentPhase.nutritionTip}
-                    </p>
-                  </div>
-                  <div className="mt-3 pt-2.5 border-t border-[var(--glass-border)] flex items-center justify-between text-[11px]">
-                    <span className="text-[var(--text-tertiary)]">Focus</span>
-                    <span className="font-semibold text-emerald-500">Recovery & Iron</span>
-                  </div>
-                </div>
-
-                {/* 3. Interactive Hydration Tracker */}
-                <div className="rounded-2xl p-4 border border-[var(--glass-border)] bg-[var(--bg-card)] glass-card flex flex-col justify-between shadow-xs">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500">
-                        <Droplets className="h-4 w-4" />
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-cyan-500/10 border-cyan-500/20 text-cyan-600 dark:text-cyan-400">
-                        {waterGlasses} / 8 Glasses
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
-                      Hydration Tracker
-                    </h4>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1.5">
-                      Goal: {currentPhase.hydrationGoal}
-                    </p>
-                    {/* Visual Progress Bar */}
-                    <div className="mt-2.5 h-2 w-full rounded-full bg-cyan-500/10 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
-                        style={{ width: `${Math.min(100, Math.round((waterGlasses / 8) * 100))}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-2.5 border-t border-[var(--glass-border)] flex items-center justify-between">
-                    <span className="text-[11px] text-[var(--text-tertiary)]">Log Glass</span>
-                    <button
-                      type="button"
-                      onClick={handleIncrementWater}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-500 text-white hover:bg-cyan-600 active:scale-95 transition-all shadow-xs cursor-pointer"
-                    >
-                      +1 Glass 💧
-                    </button>
-                  </div>
-                </div>
-
-                {/* 4. Couple Empathy & Care Connection */}
-                <div className="rounded-2xl p-4 border border-[var(--glass-border)] bg-[var(--bg-card)] glass-card flex flex-col justify-between shadow-xs">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500">
-                        <Users className="h-4 w-4" />
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-violet-500/10 border-violet-500/20 text-violet-600 dark:text-violet-400">
-                        Harmony
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-bold text-[var(--text-primary)] leading-tight">
-                      Couple Support Sync
-                    </h4>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">
-                      {currentPhase.partnerTip}
-                    </p>
-                  </div>
-                  <div className="mt-3 pt-2.5 border-t border-[var(--glass-border)] flex items-center justify-between text-[11px]">
-                    <span className="text-[var(--text-tertiary)]">Connection</span>
-                    <span className="font-semibold text-violet-500">Empathetic Care</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <CycleDietSection currentPhaseKey={currentPhase.type} />
 
             {/* ============================================================ */}
             {/* 3. COMPACT CYCLE CALENDAR                                     */}
@@ -2040,11 +1658,6 @@ export default function PeriodTrackingPage() {
                 ) : null}
               </motion.div>
             )}
-
-            {/* ============================================================ */}
-            {/* 4. REBUILT HORMONAL NUTRITION & DIET SANCTUARY               */}
-            {/* ============================================================ */}
-            <CycleDietSection currentPhaseKey={currentPhase.type} />
 
             {/* ============================================================ */}
             {/* 5. CYCLE HISTORY & MANAGEMENT (Female User Only)            */}
