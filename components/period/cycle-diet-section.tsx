@@ -100,11 +100,11 @@ export function CycleDietSection({
             <Utensils className="h-5 w-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base sm:text-lg font-black text-[var(--text-primary)]">
                 Cycle Nutrition & Meal Guide
               </h3>
-              <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border", theme.accentBg, theme.accentText, theme.border)}>
+              <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border shrink-0", theme.accentBg, theme.accentText, theme.border)}>
                 {nutritionData.icon} {nutritionData.phaseName}
               </span>
             </div>
@@ -220,27 +220,32 @@ export function CycleDietSection({
 
             {/* 2. Suggested Daily Meal Plate (Breakfast, Lunch, Dinner, Snack) */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)] flex items-center gap-1.5">
-                  <Utensils className="h-3.5 w-3.5 text-violet-500" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)] flex items-center gap-1.5 shrink-0">
+                  <Utensils className="h-3.5 w-3.5 text-violet-500 shrink-0" />
                   <span>Curated Daily Meal Plate</span>
                 </h4>
-                <div className="flex items-center gap-1">
-                  {nutritionData.meals.map((meal, idx) => (
-                    <button
-                      key={meal.mealType}
-                      type="button"
-                      onClick={() => setActiveMealTab(idx)}
-                      className={cn(
-                        "px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                        activeMealTab === idx
-                          ? "bg-violet-600 text-white shadow-xs"
-                          : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg)]"
-                      )}
-                    >
-                      {meal.mealType.split(" ")[0]}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                  {nutritionData.meals.map((meal, idx) => {
+                    const shortName = meal.mealType.toLowerCase().includes("snack")
+                      ? "Snack"
+                      : meal.mealType.split(" ")[0];
+                    return (
+                      <button
+                        key={meal.mealType}
+                        type="button"
+                        onClick={() => setActiveMealTab(idx)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer",
+                          activeMealTab === idx
+                            ? "bg-violet-600 text-white shadow-xs"
+                            : "text-[var(--text-secondary)] bg-[var(--bg-secondary)] hover:bg-[var(--glass-bg)] hover:text-[var(--text-primary)]"
+                        )}
+                      >
+                        {shortName}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

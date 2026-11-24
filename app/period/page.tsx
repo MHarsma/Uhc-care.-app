@@ -1201,36 +1201,7 @@ export default function PeriodTrackingPage() {
             </div>
 
             {/* ============================================================ */}
-            {/* 2. CYCLE TIMING & ROUTINE OPTIMIZATION INSIGHT              */}
-            {/* ============================================================ */}
-            {cycleVariance && (
-              <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 sm:p-6 shadow-sm glass-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("px-2.5 py-0.5 rounded-full text-[11px] font-black border", cycleVariance.badgeClass)}>
-                      {cycleVariance.badge}
-                    </span>
-                    <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-primary)]">
-                      {cycleVariance.title}
-                    </h3>
-                  </div>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong className="text-[var(--text-primary)]">Cause:</strong> {cycleVariance.cause}
-                  </p>
-                  <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold leading-relaxed">
-                    <strong>Next Routine Tip:</strong> {cycleVariance.instruction}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* 3. DYNAMIC CYCLE NUTRITION & MEAL GUIDE (COLLAPSIBLE DROPDOWN) */}
-            {/* ============================================================ */}
-            <CycleDietSection currentPhaseKey={currentPhase.type} />
-
-            {/* ============================================================ */}
-            {/* 3. COMPACT CYCLE CALENDAR                                     */}
+            {/* 2. COMPACT CYCLE CALENDAR                                     */}
             {/* ============================================================ */}
             <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 sm:p-6 shadow-sm glass-card space-y-4">
               {/* Calendar Header & Month Switcher */}
@@ -1444,19 +1415,11 @@ export default function PeriodTrackingPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href="/workout"
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 px-3.5 py-2 text-xs font-bold text-violet-700 dark:text-violet-300 transition-colors shadow-xs"
-                    >
-                      <Dumbbell className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
-                      <span>Start Today&apos;s Workout →</span>
-                    </Link>
-
                     {!isPartnerView ? (
                       <button
                         type="button"
                         onClick={() => setIsSymptomDrawerOpen(true)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-violet-500/20 active:scale-95 transition-all"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-violet-500/20 active:scale-95 transition-all cursor-pointer"
                       >
                         <Smile className="h-3.5 w-3.5" />
                         <span>{selectedDateLogged.mood || selectedDateLogged.symptoms?.length ? "Edit Daily Log" : "Log Symptoms"}</span>
@@ -1555,49 +1518,6 @@ export default function PeriodTrackingPage() {
                   </div>
                 ) : null}
 
-                {/* 2 Wellness Guidance Cards with Deep Links */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Nutrition */}
-                  <div className="rounded-2xl p-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] flex flex-col justify-between space-y-2">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                        <Coffee className="h-4 w-4" />
-                        <span>Phase Nutrition</span>
-                      </div>
-                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                        {selectedCellData.phase.nutritionTip}
-                      </p>
-                    </div>
-                    <Link
-                      href="/workout"
-                      className="mt-2 inline-flex items-center justify-between rounded-xl border border-emerald-500/25 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition-colors group"
-                    >
-                      <span>Log Water & Minerals</span>
-                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </div>
-
-                  {/* Exercise */}
-                  <div className="rounded-2xl p-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] flex flex-col justify-between space-y-2">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-xs font-bold text-violet-600 dark:text-violet-400">
-                        <Zap className="h-4 w-4" />
-                        <span>Workout & Energy</span>
-                      </div>
-                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                        {selectedCellData.phase.exerciseTip}
-                      </p>
-                    </div>
-                    <Link
-                      href="/workout"
-                      className="mt-2 inline-flex items-center justify-between rounded-xl border border-violet-500/25 bg-violet-500/10 hover:bg-violet-500/20 px-3 py-1.5 text-xs font-bold text-violet-700 dark:text-violet-300 transition-colors group"
-                    >
-                      <span>Start Guided Session & Form</span>
-                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </div>
-                </div>
-
                 {/* Logged Symptoms on this day */}
                 {selectedDateLogged.mood || selectedDateLogged.symptoms?.length || selectedDateLogged.notes ? (
                   <div className="p-4 rounded-2xl bg-violet-500/5 border border-violet-500/15 space-y-3">
@@ -1658,6 +1578,35 @@ export default function PeriodTrackingPage() {
                 ) : null}
               </motion.div>
             )}
+
+            {/* ============================================================ */}
+            {/* 4. CYCLE TIMING & ROUTINE OPTIMIZATION INSIGHT              */}
+            {/* ============================================================ */}
+            {cycleVariance && (
+              <div className="rounded-3xl border border-[var(--glass-border)] bg-[var(--bg-card)] p-4 sm:p-6 shadow-sm glass-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("px-2.5 py-0.5 rounded-full text-[11px] font-black border", cycleVariance.badgeClass)}>
+                      {cycleVariance.badge}
+                    </span>
+                    <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-primary)]">
+                      {cycleVariance.title}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                    <strong className="text-[var(--text-primary)]">Cause:</strong> {cycleVariance.cause}
+                  </p>
+                  <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold leading-relaxed">
+                    <strong>Next Routine Tip:</strong> {cycleVariance.instruction}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* 5. DYNAMIC CYCLE NUTRITION & MEAL GUIDE (COLLAPSIBLE DROPDOWN) */}
+            {/* ============================================================ */}
+            <CycleDietSection currentPhaseKey={currentPhase.type} />
 
             {/* ============================================================ */}
             {/* 5. CYCLE HISTORY & MANAGEMENT (Female User Only)            */}
